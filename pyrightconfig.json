@@ -1,0 +1,6 @@
+{
+    "ignore": ["build"],
+    "failOnWarnings": true,
+    "strict": ["."],
+    "typeCheckingMode": "off"
+}

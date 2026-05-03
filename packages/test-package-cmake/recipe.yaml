@@ -1,0 +1,45 @@
+package:
+  name: ${{ load_from_file("../test-package-cmake/pyproject.toml").project.name }}
+  version: ${{ load_from_file("../test-package-cmake/pyproject.toml").project.version }}
+
+source:
+  path: ../..
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: test ! -d .pixi
+    - cd packages/test-package-cmake
+    - uv pip install --no-deps --no-build-isolation -vv --system .
+  python:
+    version_independent: ${{ match(python, ">=3.12.0") }}
+
+requirements:
+  build:
+    # https://discourse.cmake.org/t/cmake-3-28-cmake-cxx-compiler-clang-scan-deps-notfound-not-found/9244
+    - if: osx
+      then: clang-tools
+    - cmake >=4.0.0
+    - ${{ compiler("cxx") }}
+    - ninja >=1.11.1,<2.0.0
+    - ${{ stdlib("c") }}
+    - if: microarch_level|int > 0
+      then: x86_64-microarch-level ==${{ microarch_level }}
+  host:
+    - kimnara
+    - if: match(python, ">=3.12.0")
+      then: python-abi3 ${{ python }}.*
+      else: python ${{ python }}.*
+    - python-gil ${{ python }}.*
+    - scikit-build-core >=0.11.3
+    - uv >=0.10.2
+  run:
+    - kimnara
+    - python
+
+about:
+  homepage: ${{ load_from_file("../test-package-cmake/pyproject.toml").project.urls.Homepage }}
+  license: ${{ load_from_file("../test-package-cmake/pyproject.toml").project.license }}
+  summary: ${{ load_from_file("../test-package-cmake/pyproject.toml").project.description }}
+  repository: ${{ load_from_file("../test-package-cmake/pyproject.toml").project.urls["Source Code"] }}

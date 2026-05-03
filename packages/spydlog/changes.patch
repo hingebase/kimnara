@@ -1,0 +1,92 @@
+--- a/cmake/target_options.cmake
++++ b/cmake/target_options.cmake
+@@ -25,11 +25,7 @@
+                 list(APPEND COMPILE_OPTIONS -march=armv8-a+fp+simd)
+             endif()
+         else()
+-            if(CMAKE_CXX_COMPILER_ID STREQUAL "AppleClang")
+-                list(APPEND COMPILE_OPTIONS -mavx2 -mfma)
+-            else()
+-                list(APPEND COMPILE_OPTIONS $<$<CONFIG:Release,RelWithDebInfo>:-ftree-vectorizer-verbose=2> -mveclibabi=svml -mavx2 -mfma)
+-            endif()
++            list(APPEND COMPILE_OPTIONS -mavx -mfma)
+         endif()
+
+         target_compile_options(${target_name} PRIVATE ${COMPILE_OPTIONS})
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -19,7 +19,7 @@
+     set(DEV_MODULE Development.Module)
+ endif()
+
+-find_package(Python ${PYTHON_VERSION} COMPONENTS Interpreter ${DEV_MODULE} REQUIRED)
++find_package(Python REQUIRED Interpreter ${DEV_MODULE} ${SKBUILD_SABI_COMPONENT})
+
+ if(NOT ${Python_FOUND})
+     message(FATAL_ERROR "Python can't be found, exiting CMake")
+@@ -29,12 +29,10 @@
+ link_directories(${Python_LIBRARY_DIRS})
+
+ # nanobind
+-add_subdirectory(${CMAKE_SOURCE_DIR}/ext/nanobind CONFIG)
+-include_directories(${CMAKE_SOURCE_DIR}/ext/nanobind/include)
++find_package(nanobind 2.10.2...<3.0.0 REQUIRED CONFIG)
+
+ # spdlog
+-set(spdlog_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/ext/spdlog/include")
+-include_directories(${spdlog_INCLUDE_DIRS})
++find_package(spdlog 1.16.0...<2.0.0 REQUIRED CONFIG)
+
+ # spydlog module
+ if(SANITIZE)
+@@ -41,9 +39,15 @@
+     # We can't link nanobind statically when building with sanitizer
+     nanobind_add_module(${LIB_NAME} NB_SHARED src/spydlog.cpp)
+ else()
+-    nanobind_add_module(${LIB_NAME} NB_STATIC src/spydlog.cpp)
++    nanobind_add_module(
++        ${LIB_NAME}
++        STABLE_ABI
++        LTO
++        NB_DOMAIN ${SKBUILD_PROJECT_NAME}
++        src/spydlog.cpp
++    )
+ endif()
+-
++target_link_libraries(${LIB_NAME} PRIVATE spdlog::spdlog)
+ set_target_options(${LIB_NAME})
+
+ # install
+@@ -50,7 +54,7 @@
+ install(TARGETS ${LIB_NAME}
+         DESTINATION spydlog)
+
+-install(FILES src/__init__.py
++install(FILES src/__init__.py stubs/spydlog.pyi
+         DESTINATION spydlog)
+
+ if(EXISTS ${CMAKE_SOURCE_DIR}/src/_version.py)
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -29,10 +29,19 @@
+ ]
+
+ [tool.scikit-build]
+-cmake.minimum-version = "3.15"
+-ninja.minimum-version = "1.10"
++cmake.version = ">=3.26"
++logging.level = "INFO"
++ninja.version = ">=1.10"
+ metadata.version.provider = "scikit_build_core.metadata.setuptools_scm"
+
++[[tool.scikit-build.overrides]]
++if.platform-system = "^(darwin|linux)"
++cmake.args = ["-GNinja"]
++
++[[tool.scikit-build.overrides]]
++if = { abi-flags = "^[^t]*$", python-version = ">=3.12" }
++wheel.py-api = "cp312"
++
+ [tool.setuptools_scm]
+ write_to = "src/_version.py"
+ version_scheme = "no-guess-dev"

@@ -1,0 +1,49 @@
+[build-system]
+requires = [
+    "kimnara",
+    "scikit-build-core >=0.11.3",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "test-package-cmake"
+version = "0.0.1"
+description = "A package built with Kimnara"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+dependencies = [
+    "kimnara",
+]
+
+[[project.authors]]
+name = "hingebase"
+email = "zcliu@pku.edu.cn"
+
+[project.urls]
+Homepage = "https://github.com/hingebase/kimnara"
+"Source Code" = "https://github.com/hingebase/kimnara/tree/main/packages/test-package-cmake"
+"Issue Tracker" = "https://github.com/hingebase/kimnara/issues"
+
+[tool.scikit-build]
+build-dir = "build/{wheel_tag}"
+logging.level = "INFO"
+wheel.exclude = ["*.cpp"]
+
+# Same overrides as the pyproject.toml at workspace root
+[[tool.scikit-build.overrides]]
+if.env.CONDA_BUILD = true
+cmake.args = ["-GNinja"]
+
+[[tool.scikit-build.overrides]]
+if = { abi-flags = "^[^t]*$", python-version = ">=3.12" }
+wheel.py-api = "cp312"
+
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "src/**/*.cpp" },
+    { file = "CMakeLists.txt" },
+]
+
+[tool.uv.sources]
+kimnara = { workspace = true }

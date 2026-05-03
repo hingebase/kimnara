@@ -1,0 +1,254 @@
+[workspace]
+channels = ["conda-forge"]
+platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+preview = ["pixi-build"]
+requires-pixi = ">=0.66.0"
+
+[workspace.target]
+linux-64 = { build-variants = { microarch_level = ["1"] } }
+linux-aarch64 = { build-variants = { microarch_level = ["0"] } }
+
+[workspace.target.linux.build-variants]
+c_compiler = ["gcc"]
+c_compiler_version = ["15.2"]
+c_stdlib = ["sysroot"]
+c_stdlib_version = ["2.28"]
+cxx_compiler = ["gxx"]
+cxx_compiler_version = ["15.2"]
+
+[workspace.target.osx.build-variants]
+c_compiler = ["clang"]
+c_stdlib = ["macosx_deployment_target"]
+cxx_compiler = ["clangxx"]
+
+[workspace.target.osx-64.build-variants]
+c_compiler_version = ["21.1"]
+c_stdlib_version = ["10.15"]
+cxx_compiler_version = ["21.1"]
+microarch_level = ["1"]
+
+[workspace.target.osx-arm64.build-variants]
+c_compiler_version = ["22.1"]
+c_stdlib_version = ["11.0"]
+cxx_compiler_version = ["22.1"]
+microarch_level = ["0"]
+
+[workspace.target.win.build-variants]
+c_compiler = ["vs"]
+c_compiler_version = ["2022.14"]
+c_stdlib = ["vs"]
+c_stdlib_version = ["2022.14"]
+cxx_compiler = ["vs"]
+cxx_compiler_version = ["2022.14"]
+microarch_level = ["0"]
+
+[dependencies]
+basedpyright = ">=1.39.3"
+pytest = ">=9.0.3"
+
+[environments]
+default = ["py310", "np124", "nb", "ruff"]
+py310np125 = ["py310", "np125", "nb"]
+py310np126 = ["py310", "np126", "nb"]
+py310np20 = ["py310", "np20", "nb"]
+py310np21 = ["py310", "np21", "nb"]
+py310np22 = ["py310", "np22", "nb"]
+py311np124 = ["py311", "np124", "nb"]
+py311np125 = ["py311", "np125", "nb"]
+py311np126 = ["py311", "np126", "nb"]
+py311np20 = ["py311", "np20", "nb"]
+py311np21 = ["py311", "np21", "nb"]
+py311np22 = ["py311", "np22", "nb"]
+py311np23 = ["py311", "np23", "nb"]
+py311np24 = ["py311", "np24", "nb"]
+py312np126 = ["abi3", "py312", "np126", "nb"]
+py312np20 = ["abi3", "py312", "np20", "nb"]
+py312np21 = ["abi3", "py312", "np21", "nb"]
+py312np22 = ["abi3", "py312", "np22", "nb"]
+py312np23 = ["abi3", "py312", "np23", "nb"]
+py312np24 = ["abi3", "py312", "np24", "nb"]
+py313np21 = ["abi3", "py313", "np21", "nbx"]
+py313np22 = ["abi3", "py313", "np22", "nbx"]
+py313np23 = ["abi3", "py313", "np23", "nbx"]
+py313np24 = ["abi3", "py313", "np24", "nb"]
+py314np23 = ["abi3", "py314", "np23", "nb"]
+py314np24 = ["abi3", "py314", "np24", "nb"]
+
+[feature]
+# One variant per directory, see
+# https://github.com/python/cpython/tree/59b41c8c3ba3251f15e6b58d9793d72499b298c0/Tools/pixi-packages
+abi3 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake" } } }
+py310 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py310" } } }
+py311 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py311" } } }
+py312 = { dependencies = { python-gil = "3.12.*" } }
+py313 = { dependencies = { python-gil = "3.13.*" } }
+np124 = { dependencies = { numpy = "1.24.*" } }
+np125 = { dependencies = { numpy = "1.25.*" } }
+np126 = { dependencies = { numpy = "1.26.*" } }
+np20 = { dependencies = { numpy = "2.0.*" } }
+np21 = { dependencies = { numpy = "2.1.*" } }
+np22 = { dependencies = { numpy = "2.2.*" } }
+np23 = { dependencies = { numpy = "2.3.*" } }
+ruff = { dependencies = { ruff = ">=0.15.1" } }
+
+[feature.py314]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64", "win-64"]
+dependencies = { python-gil = "3.14.*" }
+
+[feature.np24]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64", "win-64"]
+dependencies = { numpy = "2.4.*" }
+
+[feature.nb]
+channels = ["numba"]
+
+[feature.nb.dependencies]
+llvmlite = { channel = "numba" }
+numba = { channel = "numba" }
+
+[feature.nbx]
+channels = ["conda-forge", "numba"]
+
+[feature.nbx.target.linux.dependencies]
+llvmlite = { channel = "numba" }
+numba = { channel = "numba" }
+
+[feature.nbx.target.osx-64.dependencies]
+numba = { channel = "conda-forge" }
+
+[feature.nbx.target.osx-arm64.dependencies]
+llvmlite = { channel = "numba" }
+numba = { channel = "numba" }
+
+[feature.nbx.target.win.dependencies]
+llvmlite = { channel = "numba" }
+numba = { channel = "numba" }
+
+# https://github.com/prefix-dev/pixi/issues/3275
+[feature.clangd.system-requirements]
+# macos = "10.15"
+
+[system-requirements]
+# macos = "10.15"
+
+[target]
+linux-64 = { dependencies = { libblas = { build = "*_mkl" } } }
+linux-aarch64 = { dependencies = { libblas = { build = "*_openblas" } } }
+# https://conda-forge.org/news/2025/07/31/new-accelerate-macos/
+osx-64 = { dependencies = { libblas = { build = "*accelerate" } } }
+osx-arm64 = { dependencies = { libblas = { build = "*accelerate" } } }
+win-64 = { dependencies = { libblas = { build = "*_mkl" } } }
+
+[tasks]
+pytest = "pytest"
+
+[environments.clangd]
+features = ["clangd"]
+no-default-feature = true
+
+[feature.clangd.dependencies]
+cmake = ">=4.0.0"
+llvm-openmp = ">=11.0.0"
+mimalloc = ">=3.1.5,<4.0.0"
+nanobind = ">=2.10.2,<3.0.0"
+ninja = ">=1.11.1,<2.0.0"
+python = ">=3.10.0"
+spdlog = ">=1.16.0,<2.0.0"
+tbb-devel = ">=2021.6.0,<2023.0.0"
+
+[feature.clangd.target]
+linux-64 = { dependencies = { gxx_linux-64 = ">=15.2.0" } }
+linux-aarch64 = { dependencies = { gxx_linux-aarch64 = ">=15.2.0" } }
+osx-64 = { dependencies = { clangxx_osx-64 = ">=21.1.0" } }
+osx-arm64 = { dependencies = { clangxx_osx-arm64 = ">=22.1.0" } }
+# https://discourse.cmake.org/t/cmake-3-28-cmake-cxx-compiler-clang-scan-deps-notfound-not-found/9244
+osx = { dependencies = { clang-tools = ">=21.1.0" } }
+
+[feature.clangd.target.win-64.dependencies]
+vs_win-64 = "2022.14.*"
+
+[feature.clangd.target.win-64.activation.env]
+CMAKE_GENERATOR_PLATFORM = ""  # tombi: lint.rules.string-min-length.disabled = true
+CMAKE_GENERATOR_TOOLSET = ""  # tombi: lint.rules.string-min-length.disabled = true
+
+[feature.clangd.tasks.configure]
+cmd = "cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -GNinja"
+inputs = [
+    "CMakeLists.txt",
+    "src/kimnara/align/CMakeLists.txt",
+    "src/kimnara/cmake/kimnara-config.cmake.in",
+    "src/kimnara/lib/CMakeLists.txt",
+    "src/kimnara/logging/CMakeLists.txt",
+    "src/kimnara/threading/CMakeLists.txt",
+]
+# We don't care about other outputs
+outputs = ["build/compile_commands.json"]
+
+[environments.tests]
+features = ["tests"]
+no-default-feature = true
+
+[feature.tests]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64", "win-64"]
+
+[feature.tests.tasks]
+test = [
+    { task = "pytest", environment = "default" },
+    { task = "pytest", environment = "py310np125" },
+    { task = "pytest", environment = "py310np126" },
+    { task = "pytest", environment = "py310np20" },
+    { task = "pytest", environment = "py310np21" },
+    { task = "pytest", environment = "py310np22" },
+    { task = "pytest", environment = "py311np124" },
+    { task = "pytest", environment = "py311np125" },
+    { task = "pytest", environment = "py311np126" },
+    { task = "pytest", environment = "py311np20" },
+    { task = "pytest", environment = "py311np21" },
+    { task = "pytest", environment = "py311np22" },
+    { task = "pytest", environment = "py311np23" },
+    { task = "pytest", environment = "py311np24" },
+    { task = "pytest", environment = "py312np126" },
+    { task = "pytest", environment = "py312np20" },
+    { task = "pytest", environment = "py312np21" },
+    { task = "pytest", environment = "py312np22" },
+    { task = "pytest", environment = "py312np23" },
+    { task = "pytest", environment = "py312np24" },
+    { task = "pytest", environment = "py313np21" },
+    { task = "pytest", environment = "py313np22" },
+    { task = "pytest", environment = "py313np23" },
+    { task = "pytest", environment = "py313np24" },
+    { task = "pytest", environment = "py314np23" },
+    { task = "pytest", environment = "py314np24" },
+]
+
+[environments.tests-osx-64]
+features = ["tests-osx-64"]
+no-default-feature = true
+
+[feature.tests-osx-64]
+platforms = ["osx-64"]
+
+[feature.tests-osx-64.tasks]
+test = [
+    { task = "pytest", environment = "default" },
+    { task = "pytest", environment = "py310np125" },
+    { task = "pytest", environment = "py310np126" },
+    { task = "pytest", environment = "py310np20" },
+    { task = "pytest", environment = "py310np21" },
+    { task = "pytest", environment = "py310np22" },
+    { task = "pytest", environment = "py311np124" },
+    { task = "pytest", environment = "py311np125" },
+    { task = "pytest", environment = "py311np126" },
+    { task = "pytest", environment = "py311np20" },
+    { task = "pytest", environment = "py311np21" },
+    { task = "pytest", environment = "py311np22" },
+    { task = "pytest", environment = "py311np23" },
+    { task = "pytest", environment = "py312np126" },
+    { task = "pytest", environment = "py312np20" },
+    { task = "pytest", environment = "py312np21" },
+    { task = "pytest", environment = "py312np22" },
+    { task = "pytest", environment = "py312np23" },
+    { task = "pytest", environment = "py313np21" },
+    { task = "pytest", environment = "py313np22" },
+    { task = "pytest", environment = "py313np23" },
+]

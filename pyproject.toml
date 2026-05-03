@@ -1,0 +1,158 @@
+[build-system]
+requires = [
+    "nanobind >=2.10.2,<3.0.0",
+    "scikit-build-core >=0.11.3,<2.0.0",
+
+    # Only the PyPI wheels contain proprietary dependencies.
+    # When building Conda packages, build isolation is disabled
+    # and the proprietary dependencies are ignored. See
+    # https://docs.astral.sh/uv/reference/cli/#uv-pip-install--no-build-isolation
+    "intel-openmp ==2023.2.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "intel-openmp ==2024.1.0; sys_platform == 'linux' and platform_machine == 'x86_64' or sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "tbb-devel ==2021.10.0; platform_machine == 'AMD64' or platform_machine == 'x86_64'",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "kimnara"
+version = "0.0.1"
+description = "Modern scientific computing framework"
+readme = "README.md"
+requires-python = ">=3.10,<3.15"
+license = "Apache-2.0"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "Intended Audience :: Education",
+    "Intended Audience :: Science/Research",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: C++",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Topic :: Education",
+    "Topic :: Scientific/Engineering :: Mathematics",
+    "Topic :: Scientific/Engineering :: Physics",
+    "Topic :: Software Development :: Code Generators",
+    "Topic :: Software Development :: Libraries :: Application Frameworks",
+    "Typing :: Typed",
+]
+dependencies = [
+    "exceptiongroup >=1.3.0,<2.0.0; python_version < '3.11'",
+    "numba >=0.57.0,<2.0.0",
+    "numba <0.63.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "numpy >=1.24.0,<3.0.0",
+    "numpy-allocator >=1.2.1,<2.0.0",
+    "numpy-typing-compat >=20250818.1.23",
+    "spydlog >=1.0.1,<2.0.0",
+    "typing-extensions >=4.12.0,<5.0.0",
+]
+
+[project.optional-dependencies]
+nonfree = [
+    "intel-openmp >=2023.2.0; platform_machine == 'AMD64' or platform_machine == 'x86_64'",
+    "tbb >=2021.6.0,<2023.0.0; platform_machine == 'AMD64' or platform_machine == 'x86_64'",
+]
+
+[dependency-groups]
+dev = [
+    "basedpyright >=1.39.3",
+    "clangd >=22.1.1",
+    "clangd-tidy >=1.1.1",
+    "nodejs-wheel-binaries <=20.18.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "pytest >=9.0.3",
+    "ruff >=0.15.1",
+    "test-package-cmake",
+]
+wheel = [
+    "abi3audit",
+    "auditwheel >=6.4.2; sys_platform == 'linux'",
+    "patchelf; sys_platform == 'linux'",
+]
+
+[[project.authors]]
+name = "hingebase"
+email = "zcliu@pku.edu.cn"
+
+[project.urls]
+Homepage = "https://github.com/hingebase/kimnara"
+"Source Code" = "https://github.com/hingebase/kimnara"
+"Issue Tracker" = "https://github.com/hingebase/kimnara/issues"
+
+[tool.pytest]
+testpaths = ["tests"]
+
+[tool.ruff]
+extend-exclude = [".pixi", "build"]
+line-length = 79  # https://github.com/astral-sh/ruff/issues/16057
+preview = true
+
+[tool.ruff.lint]
+select = ["ALL"]
+
+[tool.ruff.lint.per-file-ignores]
+"scripts/**/*.py" = ["INP001"]
+"tests/**/*.py" = ["INP001", "S101"]
+
+[tool.ruff.lint.pycodestyle]
+max-doc-length = 72
+
+[tool.scikit-build]
+build-dir = "build/{wheel_tag}"
+logging.level = "INFO"
+sdist.exclude = [
+    ".*",
+    "docs",
+    "packages",
+    "scripts",
+    "tests",
+    "pixi.*",
+    "pyrightconfig.json",
+]
+wheel.exclude = ["CMakeLists.txt", "*.cmake.in", "*.cpp"]
+
+# https://github.com/scikit-build/scikit-build-core/issues/1089#issuecomment-2926373236
+[[tool.scikit-build.overrides]]
+if.env.CONDA_BUILD = true
+cmake.args = ["-GNinja"]
+
+# Build abi3 wheels to save storage space on PyPI
+[[tool.scikit-build.overrides]]
+wheel.py-api = "cp312"
+
+[tool.scikit-build.overrides.if]
+abi-flags = "^[^t]*$"  # https://github.com/scikit-build/scikit-build-core/issues/770
+python-version = ">=3.12"
+
+[tool.tombi.files]
+exclude = [".venv/**/*.toml"]
+
+[tool.tombi.lint.rules]
+tables-out-of-order = "off"
+
+[tool.uv]
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "src/**/*.{cmake.in,cpp,h}" },
+    { file = "CMakeLists.txt" },
+    { file = "src/**/CMakeLists.txt" },
+]
+required-environments = [
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+    "sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "sys_platform == 'linux' and platform_machine == 'aarch64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+]
+
+[tool.uv.sources]
+test-package-cmake = { workspace = true }
+
+[tool.uv.workspace]
+members = ["packages/test-package-cmake"]

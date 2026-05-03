@@ -1,0 +1,50 @@
+context:
+  name: spydlog
+  version: 1.0.1
+  sha256: 2f7ff4eb6ec6851dfe261282f2789102437106697ed96b442b7f35026410a46c
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[:1] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  patches:
+    - changes.patch
+
+build:
+  number: 0
+  script: uv pip install --no-deps --no-build-isolation -vv --system .
+  python:
+    version_independent: ${{ match(python, ">=3.12.0") }}
+
+requirements:
+  build:
+    - cmake >=3.26.0
+    - ${{ compiler("cxx") }}
+    - ninja >=1.10.0
+    - ${{ stdlib("c") }}
+  host:
+    - nanobind >=2.10.2,<3.0.0
+    - if: match(python, ">=3.12.0")
+      then: python-abi3 ${{ python }}.*
+      else: python ${{ python }}.*
+    - python-gil ${{ python }}.*
+    - scikit-build-core >=0.9.0
+    - setuptools-scm >=6.2.0
+    - spdlog >=1.16.0,<2.0.0
+    - uv >=0.10.2
+  run:
+    - python
+
+about:
+  homepage: https://github.com/romainaugier/spydlog
+  license: MIT
+  license_file:
+  - LICENSE
+  - ext/nanobind/LICENSE
+  - ext/nanobind/ext/robin_map/LICENSE
+  summary: Python bindings for spdlog
+  repository: https://github.com/romainaugier/spydlog
+  documentation: https://github.com/romainaugier/spydlog/blob/v${{ version }}/DOCUMENTATION.md

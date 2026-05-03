@@ -1,0 +1,16 @@
+[package.build.backend]
+name = "pixi-build-rattler-build"
+version = ">=0.3.9,<0.4.0"
+# conda-forge::pixi-build-rattler-build 0.3.9 requires __osx>=11.0, see
+# https://conda-forge.org/news/2026/02/06/macOS-11/
+channels = ["https://prefix.dev/pixi-build-backends", "conda-forge"]
+
+[package.build.config]
+experimental = true
+recipe = "../test-package-cmake/recipe.yaml"
+
+[package.host-dependencies]
+kimnara = { path = "../kimnara-py310" }
+
+[package.run-dependencies]
+kimnara = { path = "../kimnara-py310" }

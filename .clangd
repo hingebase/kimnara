@@ -1,0 +1,29 @@
+If:
+  PathMatch: src/.*
+Diagnostics:
+  ClangTidy:
+    Add: "*"
+---
+If:
+  PathMatch: packages/test-package-cmake/src/test_package_cmake/.*
+Diagnostics:
+  ClangTidy:
+    Add: "*"
+---
+CompileFlags:
+  Remove:
+    - -fmodules-ts
+    - -fmodule-mapper=*
+    - -fdeps-format=p1689r5
+Diagnostics:
+  ClangTidy:
+    Remove:
+      - "*-avoid-c-arrays"
+      - altera-struct-pack-align
+      - altera-unroll-loops
+      - bugprone-easily-swappable-parameters
+      - concurrency-mt-unsafe
+      - cppcoreguidelines-pro-bounds-pointer-arithmetic
+      - cppcoreguidelines-pro-type-reinterpret-cast
+      - llvmlibc-*
+      - modernize-use-trailing-return-type

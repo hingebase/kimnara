@@ -1,0 +1,34 @@
+@PACKAGE_INIT@
+
+# https://cmake.org/cmake/help/latest/module/CMakePackageConfigHelpers.html#command:configure_package_config_file
+if(CMAKE_VERSION VERSION_LESS "3.30")
+    message(FATAL_ERROR "Kimnara requires CMake 3.30 or higher")
+endif()
+
+find_package(
+    Python
+    REQUIRED Interpreter Development.Module ${SKBUILD_SABI_COMPONENT}
+)
+
+include("${CMAKE_CURRENT_LIST_DIR}/kimnara-targets.cmake")
+
+target_include_directories(
+    kimnara::kimnara
+    INTERFACE
+    "${PACKAGE_PREFIX_DIR}/kimnara/include"
+)
+
+if(SKBUILD_SABI_COMPONENT)
+    target_compile_definitions(kimnara::kimnara INTERFACE KN_INCLUDE_GUARD)
+    target_link_libraries(kimnara::kimnara INTERFACE Python::SABIModule)
+else()
+    target_link_libraries(kimnara::kimnara INTERFACE Python::Module)
+endif()
+
+if(WIN32)
+    target_link_libraries(
+        kimnara::kimnara
+        INTERFACE
+        "${PACKAGE_PREFIX_DIR}/kimnara/logging/_spdlog.lib"
+    )
+endif()
