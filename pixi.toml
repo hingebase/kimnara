@@ -2,7 +2,7 @@
 channels = ["conda-forge"]
 platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 preview = ["pixi-build"]
-requires-pixi = ">=0.66.0"
+requires-pixi = ">=0.68.0"
 
 [workspace.target]
 linux-64 = { build-variants = { microarch_level = ["1"] } }
@@ -35,15 +35,15 @@ microarch_level = ["0"]
 
 [workspace.target.win.build-variants]
 c_compiler = ["vs"]
-c_compiler_version = ["2022.14"]
+c_compiler_version = ["2026.1"]
 c_stdlib = ["vs"]
-c_stdlib_version = ["2022.14"]
+c_stdlib_version = ["2026.1"]
 cxx_compiler = ["vs"]
-cxx_compiler_version = ["2022.14"]
+cxx_compiler_version = ["2026.1"]
 microarch_level = ["0"]
 
 [dependencies]
-basedpyright = ">=1.39.3"
+basedpyright = ">=1.39.5"
 pytest = ">=9.0.3"
 
 [environments]
@@ -165,7 +165,7 @@ osx-arm64 = { dependencies = { clangxx_osx-arm64 = ">=22.1.0" } }
 osx = { dependencies = { clang-tools = ">=21.1.0" } }
 
 [feature.clangd.target.win-64.dependencies]
-vs_win-64 = "2022.14.*"
+vs_win-64 = "2026.1.*"
 
 [feature.clangd.target.win-64.activation.env]
 CMAKE_GENERATOR_PLATFORM = ""  # tombi: lint.rules.string-min-length.disabled = true
