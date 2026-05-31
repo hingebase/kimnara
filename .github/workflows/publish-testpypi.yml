@@ -20,7 +20,7 @@ jobs:
           # Produce manylinux_2_34 wheels; use containers to target older glibc
           # https://github.com/actions/runner-images/issues/6647#issuecomment-1331870478
           # https://github.com/prefix-dev/pixi/issues/5734
-          # - ubuntu-22.04
+          - ubuntu-22.04
     runs-on: ${{ matrix.os }}
     environment:
       name: testpypi
@@ -38,6 +38,8 @@ jobs:
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
+      - if: matrix.os == 'ubuntu-22.04'
+        run: uv build --sdist
       - run: uv run --only-group wheel scripts/_build_wheels.py
       - if: matrix.os != 'windows-2025-vs2026'
         uses: astral-sh/attest-action@v0.0.6
