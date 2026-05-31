@@ -1,0 +1,39 @@
+name: TestPyPI
+
+on:
+  push:
+    branches:
+      - testpypi
+
+permissions: read-all
+
+jobs:
+  pypi:
+    name: Publish to TestPyPI
+    permissions:
+      id-token: write
+    strategy:
+      matrix:
+        os:
+          - macos-15-intel
+          - windows-2025-vs2026
+          # Produce manylinux_2_35 wheels; use containers to target older glibc
+          # https://github.com/actions/runner-images/issues/6647#issuecomment-1331870478
+          # https://github.com/prefix-dev/pixi/issues/5734
+          - ubuntu-22.04
+    runs-on: ${{ matrix.os }}
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/project/kimnara
+    steps:
+      - uses: actions/checkout@v6
+      - if: matrix.os == 'macos-15-intel'
+        uses: KyleMayes/install-llvm-action@v2
+        with:
+          version: 15.0.3
+      - uses: astral-sh/setup-uv@v8.1.0
+        with:
+          enable-cache: false
+      - run: uv run --only-group wheel scripts/_build_wheels.py
+      - uses: astral-sh/attest-action@v0.0.6
+      - run: uv publish --index testpypi --trusted-publishing always
