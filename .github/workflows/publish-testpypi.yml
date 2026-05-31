@@ -39,5 +39,6 @@ jobs:
         with:
           enable-cache: false
       - run: uv run --only-group wheel scripts/_build_wheels.py
-      - uses: astral-sh/attest-action@v0.0.6
+      - if: matrix.os != 'windows-2025-vs2026'
+        uses: astral-sh/attest-action@v0.0.6
       - run: uv publish --index testpypi --trusted-publishing always
