@@ -17,10 +17,10 @@ jobs:
         os:
           - macos-15-intel
           - windows-2025-vs2026
-          # Produce manylinux_2_35 wheels; use containers to target older glibc
+          # Produce manylinux_2_34 wheels; use containers to target older glibc
           # https://github.com/actions/runner-images/issues/6647#issuecomment-1331870478
           # https://github.com/prefix-dev/pixi/issues/5734
-          - ubuntu-22.04
+          # - ubuntu-22.04
     runs-on: ${{ matrix.os }}
     environment:
       name: testpypi
@@ -31,6 +31,9 @@ jobs:
         uses: KyleMayes/install-llvm-action@v2
         with:
           version: 15.0.3
+      - if: matrix.os == 'macos-15-intel'
+        name: Fix DYLD_LIBRARY_PATH
+        run: echo "DYLD_LIBRARY_PATH=/usr/lib:$DYLD_LIBRARY_PATH" >> "$GITHUB_ENV"
       - uses: astral-sh/setup-uv@v8.1.0
         with:
           enable-cache: false
