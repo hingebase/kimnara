@@ -98,7 +98,7 @@ def test_clangd_tidy(monkeypatch: pytest.MonkeyPatch) -> None:
     src = pathlib.Path(__file__).parent.with_name("src").resolve(strict=True)
     config = src.with_name("build") / "compile_commands.json"
     if not config.is_file():
-        if sys.platform == "win32":
+        if sys.platform.startswith(("darwin", "win32")):
             pytest.fail("Please run `pixi r configure` manually")
         assert subprocess.call(["pixi", "r", "--clean-env", "configure"]) == 0  # noqa: S607
         assert config.is_file()
