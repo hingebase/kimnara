@@ -7,7 +7,7 @@ channels = ["conda-forge"]
 experimental = true
 
 [package.host-dependencies]
-kimnara = { path = "../kimnara" }
+kimnara = { workspace = true }
 
 [package.run-dependencies]
-kimnara = { path = "../kimnara" }
+kimnara = { workspace = true }

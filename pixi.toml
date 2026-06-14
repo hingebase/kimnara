@@ -2,7 +2,11 @@
 channels = ["conda-forge"]
 platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 preview = ["pixi-build"]
-requires-pixi = ">=0.68.0"
+requires-pixi = ">=0.70.0"
+
+[workspace.dependencies]
+kimnara = { path = "packages/kimnara" }
+spydlog = { path = "packages/spydlog" }
 
 [workspace.target]
 linux-64 = { build-variants = { microarch_level = ["1"] } }
@@ -43,7 +47,7 @@ cxx_compiler_version = ["2026.1"]
 microarch_level = ["0"]
 
 [dependencies]
-basedpyright = ">=1.39.5"
+basedpyright = ">=1.39.7"
 pytest = ">=9.0.3"
 
 [environments]
