@@ -1,7 +1,7 @@
 set(OpenMP_RUNTIME_MSVC llvm)
 find_package(OpenMP REQUIRED)
 
-find_package(TBB 2021.6.0...<2023.0.0 REQUIRED CONFIG)
+find_package(TBB 2021.6.0...<2024.0.0 REQUIRED CONFIG)
 
 kimnara_add_module(_openmp openmp.cpp)
 kimnara_add_module(_tbb tbb.cpp)
