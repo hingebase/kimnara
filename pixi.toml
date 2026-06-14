@@ -47,7 +47,7 @@ cxx_compiler_version = ["2026.1"]
 microarch_level = ["0"]
 
 [dependencies]
-basedpyright = ">=1.39.6"
+basedpyright = ">=1.39.7"
 pytest = ">=9.0.3"
 
 [environments]
