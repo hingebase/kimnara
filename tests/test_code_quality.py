@@ -15,7 +15,6 @@
 """Type checking and linting."""
 
 import contextlib
-import json
 import os
 import pathlib
 import runpy
@@ -45,38 +44,6 @@ else:
             assert patched
 
 
-if (
-    os.getenv("PIXI_PROJECT_NAME") == "kimnara"
-    and os.getenv("PIXI_ENVIRONMENT_NAME", "default") == "default"
-):
-    @contextlib.contextmanager
-    def _basedpyright_context() -> Generator[object]:
-        # basedpyright doesn't accept extra rules or configuration files
-        # from CLI. There is only a `--project` option to replace the
-        # configuration completely.
-        config = pathlib.Path(__file__).parent.with_name("pyrightconfig.json")
-        with config.open("r+", encoding="ascii") as f:
-            data = f.read()
-            obj = dict(
-                json.loads(data),
-                # It's impossible to conditionally suppress error in
-                # basedpyright, see
-                # https://github.com/detachhead/basedpyright/issues/1185
-                reportUnnecessaryTypeIgnoreComment="warning",
-            )
-            f.seek(0)
-            json.dump(obj, f, separators=(",", ":"))
-            f.truncate()
-        try:
-            yield
-        finally:
-            config.write_text(data, encoding="ascii", newline="")
-else:
-    from contextlib import (
-        nullcontext as _basedpyright_context,  # pyright: ignore[reportAssignmentType]
-    )
-
-
 def test_basedpyright(monkeypatch: pytest.MonkeyPatch) -> None:
     """Type checking with basedpyright."""
     argv = [
@@ -85,8 +52,7 @@ def test_basedpyright(monkeypatch: pytest.MonkeyPatch) -> None:
         # "--threads",  # Enable if better performance observed
     ]
     monkeypatch.setattr(sys, "argv", argv)
-    with _basedpyright_context():
-        _run_module("basedpyright")
+    _run_module("basedpyright")
 
 
 @pytest.mark.skipif(

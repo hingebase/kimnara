@@ -12,31 +12,6 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-"""Kimnara: Modern scientific computing framework."""
+__all__ = ["Mutable"]
 
-__all__ = [
-    "AVX",
-    "AVX512",
-    "SSE",
-    "A",
-    "Alignment",
-    "C",
-    "Error",
-    "F",
-    "Mut",
-    "PerformanceWarning",
-    "cfunc",
-    "func",
-    "gufunc",
-    "ufunc",
-]
-
-from . import align as align
-from . import logging as logging
-from . import threading as threading
-from ._functions import cfunc, func, gufunc, ufunc
-from ._types import AVX, AVX512, SSE, A, Alignment, C, F, Mut
-from .exceptions import (
-    Error,
-    PerformanceWarning,
-)
+from ._definitions import Mutable
