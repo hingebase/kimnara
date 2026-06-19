@@ -22,6 +22,7 @@ from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
     cpu_options,
     ir,
 )
+from optype.typing import AnyComplex
 from typing_extensions import Any, overload
 
 if TYPE_CHECKING:
@@ -119,6 +120,7 @@ def func(
     inline: Literal["never"] = ...,
     nogil: Literal[False] = ...,
     nopython: Literal[False] = ...,
+    pad_value: AnyComplex = ...,
     parallel: Literal[False] = ...,
     pipeline_class: None = ...,
 ) -> ...: ...
@@ -135,6 +137,7 @@ def func(
     inline: Literal["always", "never"] | _CustomInliningRule = ...,
     nogil: bool = ...,
     nopython: bool,
+    pad_value: AnyComplex = ...,
     parallel: bool | str = ...,
     pipeline_class: type[compiler.CompilerBase] | None = ...,
 ) -> ...: ...
@@ -153,6 +156,7 @@ def func(  # noqa: PLR0913
     inline: Literal["always", "never"] | _CustomInliningRule = "never",
     nogil: bool = False,
     nopython: bool = False,
+    pad_value: AnyComplex = 0,
     parallel: bool | str = False,
     pipeline_class: type[compiler.CompilerBase] | None = None,
 ) -> ...:
@@ -168,6 +172,7 @@ def gufunc(
     cache: Literal[False] | None = ...,
     fastmath: Literal[False] = ...,
     nopython: Literal[False] = ...,
+    pad_value: AnyComplex = ...,
     parallel: bool | str = ...,
 ) -> ...: ...
 
@@ -180,6 +185,7 @@ def gufunc(
     cache: bool | None = ...,
     fastmath: _FastMathOptions = ...,
     nopython: bool,
+    pad_value: AnyComplex = ...,
     parallel: bool | str = ...,
 ) -> ...: ...
 
@@ -192,6 +198,7 @@ def gufunc(  # noqa: PLR0913
     cache: bool | None = None,
     fastmath: _FastMathOptions = False,
     nopython: bool = False,
+    pad_value: AnyComplex = 0,
     parallel: bool | str = False,
 ) -> ...:
     raise NotImplementedError

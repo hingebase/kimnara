@@ -12,8 +12,38 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Mutable"]
+__all__ = ["Mutable", "scalar"]
+
+import contextlib
+import operator
+import sys
+
+from optype.typing import AnyComplex
+from typing_extensions import SupportsComplex, SupportsFloat, SupportsIndex
+
+if sys.version_info >= (3, 11):
+    _Complex = SupportsComplex
+else:
+    _Complex = SupportsComplex | complex
 
 
 class Mutable:
     pass
+
+
+def scalar(value: AnyComplex) -> complex:
+    if isinstance(value, SupportsIndex):
+        with _suppress:
+            return operator.index(value)
+    if isinstance(value, SupportsFloat):
+        with _suppress:
+            return float(value)
+    if isinstance(value, _Complex):
+        with _suppress:
+            return complex(value)
+    class_repr = type.__repr__(type(value))  # noqa: PLC2801
+    message = f"Cannot convert object of type {class_repr} to a numeric scalar"
+    raise TypeError(message)
+
+
+_suppress = contextlib.suppress(Exception)

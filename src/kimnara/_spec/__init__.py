@@ -12,6 +12,6 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Mutable"]
+__all__ = ["Mutable", "scalar"]
 
-from ._definitions import Mutable
+from ._definitions import Mutable, scalar

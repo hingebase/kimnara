@@ -12,12 +12,13 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["AVX", "AVX512", "SSE", "A", "Alignment", "C", "F", "Mut"]
+__all__ = ["AVX", "AVX512", "SSE", "A", "Alignment", "C", "F", "Mut", "Pad"]
 
 import enum
 from typing import Annotated
 
 import numpy as np
+from optype.typing import AnyComplex
 from typing_extensions import TypeVar, final
 
 from . import _spec
@@ -60,3 +61,10 @@ F = Alignment.F
 SSE = Alignment.SSE
 AVX = Alignment.AVX
 AVX512 = Alignment.AVX512
+
+
+class Pad:
+    __slots__ = ("value",)
+
+    def __init__(self, value: AnyComplex) -> None:
+        self.value = _spec.scalar(value)
