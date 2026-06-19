@@ -12,26 +12,17 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = [
-    "OpenMPNumPyVectorize",
-    "openmp_available",
-]
+__all__ = ["OpenMPNumPyVectorize", "openmp_available"]
 
 import sys
 from collections.abc import Callable
 
 from typing_extensions import override
 
-from . import _genericpool
+from . import _genericpool, register_custom_backend
 
 if sys.version_info < (3, 11):
     from exceptiongroup import BaseExceptionGroup
-
-with _genericpool.add_dll_directory():
-    try:
-        from . import _openmp
-    except ImportError:
-        _openmp = None
 
 
 class OpenMPNumPyVectorize(_genericpool.NumPyVectorize):
@@ -50,6 +41,21 @@ class OpenMPNumPyVectorize(_genericpool.NumPyVectorize):
         if excs:
             message = "Error calling OpenMP parallelized function"
             raise BaseExceptionGroup(message, excs)
+
+
+with _genericpool.add_dll_directory():
+    try:
+        from . import _openmp
+    except ImportError:
+        _openmp = None
+    else:
+        register_custom_backend(
+            "openmp",
+            _openmp.get_num_threads,
+            _openmp.get_thread_id,
+            _openmp.parallel_for,
+            OpenMPNumPyVectorize,
+        )
 
 
 def openmp_available() -> bool:

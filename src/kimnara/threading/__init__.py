@@ -19,16 +19,13 @@ __all__ = [
     "OpenMPNumPyVectorize",
     "TBBNumPyVectorize",
     "openmp_available",
+    "register_custom_backend",
     "tbb_available",
+    "using_backend",
 ]
 
 from kimnara.exceptions import BackendUnavailableError
 
-from ._omppool import (
-    OpenMPNumPyVectorize,
-    openmp_available,
-)
-from ._tbbpool import (
-    TBBNumPyVectorize,
-    tbb_available,
-)
+from ._custom import register_custom_backend, using_backend
+from ._omppool import OpenMPNumPyVectorize, openmp_available
+from ._tbbpool import TBBNumPyVectorize, tbb_available

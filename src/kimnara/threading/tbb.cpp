@@ -67,8 +67,16 @@ const auto &TBBConstraints() {
     return constraints;
 }
 
-int TBBGetNumThreads() {
+intptr_t TBBGetNumThreads() {
     return TBBConstraints().max_concurrency;
+}
+
+intptr_t TBBGetThreadID() {
+    int tid = tbb::this_task_arena::current_thread_index();
+    if (tid == tbb::task_arena::not_initialized) {
+        return 0;
+    }
+    return tid;
 }
 
 void TBBNumPyVectorize(const std::function<void(intptr_t)> &func, intptr_t n) {
@@ -105,7 +113,7 @@ void TBBParallelFor(
     void *data,
     size_t inner_ndim,
     size_t array_count,
-    [[maybe_unused]] int num_threads
+    [[maybe_unused]] intptr_t num_threads
 ) {
     tbb::enumerable_thread_specific<TBBScratchSpace> ets {
         dimensions, inner_ndim+1, array_count,
@@ -142,6 +150,7 @@ NB_MODULE(_tbb, m)
 // NOLINTEND
 {
     m.attr("get_num_threads") = reinterpret_cast<uintptr_t>(TBBGetNumThreads);
+    m.attr("get_thread_id") = reinterpret_cast<uintptr_t>(TBBGetThreadID);
     m.attr("parallel_for") = reinterpret_cast<uintptr_t>(TBBParallelFor);
     m.def(
         "np_vectorize",

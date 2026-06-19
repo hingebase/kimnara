@@ -17,7 +17,6 @@ from typing import Final
 
 get_num_threads: Final[int]
 get_thread_id: Final[int]
-launch_threads: Final[int]
 parallel_for: Final[int]
 
 def np_vectorize(

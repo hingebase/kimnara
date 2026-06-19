@@ -12,11 +12,7 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = [
-    "NumPyVectorize",
-    "add_dll_directory",
-    "check_num_threads",
-]
+__all__ = ["NumPyVectorize", "add_dll_directory", "check_num_threads"]
 
 import abc
 import contextlib
@@ -64,14 +60,20 @@ class NumPyVectorize(np.vectorize, abc.ABC):
     def backend_site_package_name(cls) -> str:
         raise NotImplementedError
 
-    def backend_unavailable(self, message: str) -> NoReturn:
+    @classmethod
+    def backend_unavailable(
+        cls,
+        message: str,
+        *,
+        cause: Exception | None = None,
+    ) -> NoReturn:
         if not (
             "AMD64" != platform.machine() != "x86_64"
             or pathlib.Path(sys.prefix, "conda-meta").is_dir()
-            or self.backend_site_package_available()
+            or cls.backend_site_package_available()
         ):
             message = "Install kimnara[nonfree] to enable threading"
-        raise kn.threading.BackendUnavailableError(message)
+        raise kn.threading.BackendUnavailableError(message) from cause
 
     @abc.abstractmethod
     def np_vectorize_impl(self, func: Callable[[int], None], n: int) -> None:

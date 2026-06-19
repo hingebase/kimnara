@@ -49,6 +49,14 @@
 )
 
 namespace {
+intptr_t OpenMPGetNumThreads() {
+    return omp_get_max_threads();
+}
+
+intptr_t OpenMPGetThreadID() {
+    return omp_get_thread_num();
+}
+
 MAYBE_CONSTEXPR_1 bool OpenMPHybridCores() {
     // Reference implementation:
     // - llvm-project/openmp/runtime/src/kmp_platform.h
@@ -80,9 +88,6 @@ MAYBE_CONSTEXPR_1 bool OpenMPHybridCores() {
 #else  // linux-aarch64 or osx-64
     return false;
 #endif
-}
-
-void OpenMPLaunchThreads([[maybe_unused]] int count) {
 }
 
 void OpenMPNumPyVectorize(
@@ -117,10 +122,10 @@ void OpenMPParallelFor(
     void *data,
     size_t inner_ndim,
     size_t array_count,
-    [[maybe_unused]] int num_threads
+    [[maybe_unused]] intptr_t num_threads
 ) {
     const size_t arg_len = inner_ndim + 1;
-    const auto size = static_cast<ptrdiff_t>(dimensions[0]);
+    const auto size = static_cast<intptr_t>(dimensions[0]);
     #pragma omp parallel default(none) shared(func, args, dimensions, steps, data, array_count, arg_len, size)
     {
         auto *count_space = reinterpret_cast<size_t *>(
@@ -130,7 +135,7 @@ void OpenMPParallelFor(
         std::copy_n(dimensions, arg_len, count_space);
         count_space[0] = 1;
         #pragma omp for nowait schedule(guided)
-        for (ptrdiff_t i = 0; i < size; i++) {
+        for (intptr_t i = 0; i < size; i++) {
             for (size_t j = 0; j < array_count; j++) {
                 char *base = args[j];
                 size_t step = steps[j];
@@ -194,9 +199,8 @@ NB_MODULE(_openmp, m)
         kmp_set_defaults(KMP_DEFAULTS("", ""));
     }
 
-    m.attr("get_num_threads") = reinterpret_cast<uintptr_t>(omp_get_max_threads);
-    m.attr("get_thread_id") = reinterpret_cast<uintptr_t>(omp_get_thread_num);
-    m.attr("launch_threads") = reinterpret_cast<uintptr_t>(OpenMPLaunchThreads);
+    m.attr("get_num_threads") = reinterpret_cast<uintptr_t>(OpenMPGetNumThreads);
+    m.attr("get_thread_id") = reinterpret_cast<uintptr_t>(OpenMPGetThreadID);
     m.attr("parallel_for") = reinterpret_cast<uintptr_t>(OpenMPParallelFor);
     m.def(
         "np_vectorize",

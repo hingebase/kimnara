@@ -16,6 +16,7 @@ from collections.abc import Callable
 from typing import Final
 
 get_num_threads: Final[int]
+get_thread_id: Final[int]
 parallel_for: Final[int]
 
 def np_vectorize(func: Callable[[int], None], n: int, /) -> None: ...

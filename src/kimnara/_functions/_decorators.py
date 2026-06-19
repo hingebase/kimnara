@@ -79,7 +79,7 @@ def cfunc(
     inline: Literal["always", "never"] | _CustomInliningRule = ...,
     nogil: bool = ...,
     nopython: bool,
-    parallel: bool | Literal["openmp", "tbb"] = ...,
+    parallel: bool | str = ...,
     pipeline_class: type[compiler.CompilerBase] | None = None,
 ) -> ...: ...
 
@@ -96,7 +96,7 @@ def cfunc(  # noqa: PLR0913
     inline: Literal["always", "never"] | _CustomInliningRule = "never",
     nogil: bool = False,
     nopython: bool = False,
-    parallel: bool | Literal["openmp", "tbb"] = False,
+    parallel: bool | str = False,
     pipeline_class: type[compiler.CompilerBase] | None = None,
 ) -> ...:
     raise NotImplementedError
@@ -135,7 +135,7 @@ def func(
     inline: Literal["always", "never"] | _CustomInliningRule = ...,
     nogil: bool = ...,
     nopython: bool,
-    parallel: bool | Literal["openmp", "tbb"] = ...,
+    parallel: bool | str = ...,
     pipeline_class: type[compiler.CompilerBase] | None = ...,
 ) -> ...: ...
 
@@ -153,7 +153,7 @@ def func(  # noqa: PLR0913
     inline: Literal["always", "never"] | _CustomInliningRule = "never",
     nogil: bool = False,
     nopython: bool = False,
-    parallel: bool | Literal["openmp", "tbb"] = False,
+    parallel: bool | str = False,
     pipeline_class: type[compiler.CompilerBase] | None = None,
 ) -> ...:
     raise NotImplementedError
@@ -168,7 +168,7 @@ def gufunc(
     cache: Literal[False] | None = ...,
     fastmath: Literal[False] = ...,
     nopython: Literal[False] = ...,
-    parallel: bool | Literal["openmp", "tbb"] = ...,
+    parallel: bool | str = ...,
 ) -> ...: ...
 
 @overload
@@ -180,7 +180,7 @@ def gufunc(
     cache: bool | None = ...,
     fastmath: _FastMathOptions = ...,
     nopython: bool,
-    parallel: bool | Literal["openmp", "tbb"] = ...,
+    parallel: bool | str = ...,
 ) -> ...: ...
 
 
@@ -192,7 +192,7 @@ def gufunc(  # noqa: PLR0913
     cache: bool | None = None,
     fastmath: _FastMathOptions = False,
     nopython: bool = False,
-    parallel: bool | Literal["openmp", "tbb"] = False,
+    parallel: bool | str = False,
 ) -> ...:
     raise NotImplementedError
 
@@ -212,7 +212,7 @@ def ufunc(
     # np.vectorize calls np.frompyfunc without the `identity` argument
     identity: None = ...,
     nopython: Literal[False] = ...,
-    parallel: bool | Literal["openmp", "tbb"] = ...,
+    parallel: bool | str = ...,
 ) -> ...: ...
 
 @overload
@@ -223,7 +223,7 @@ def ufunc(
     fastmath: _FastMathOptions = ...,
     identity: Literal[0, 1, "reorderable"] | None = ...,
     nopython: bool,
-    parallel: bool | Literal["openmp", "tbb"] = ...,
+    parallel: bool | str = ...,
 ) -> ...: ...
 
 
@@ -236,6 +236,6 @@ def ufunc(  # noqa: PLR0913
     fastmath: _FastMathOptions = False,
     identity: Literal[0, 1, "reorderable"] | None = None,
     nopython: bool = False,
-    parallel: bool | Literal["openmp", "tbb"] = False,
+    parallel: bool | str = False,
 ) -> ...:
     raise NotImplementedError
