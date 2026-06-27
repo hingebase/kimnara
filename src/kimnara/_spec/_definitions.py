@@ -12,19 +12,31 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Mutable", "scalar"]
+__all__ = ["Alignment", "Mutable", "scalar"]
 
 import contextlib
+import math
 import operator
 import sys
 
 from optype.typing import AnyComplex
-from typing_extensions import SupportsComplex, SupportsFloat, SupportsIndex
+from typing_extensions import (
+    NamedTuple,
+    SupportsComplex,
+    SupportsFloat,
+    SupportsIndex,
+)
 
 if sys.version_info >= (3, 11):
     _Complex = SupportsComplex
 else:
     _Complex = SupportsComplex | complex
+
+
+class Alignment(NamedTuple):
+    name: str
+    multiple_of: int = 1
+    not_multiple_of: float = math.nan
 
 
 class Mutable:

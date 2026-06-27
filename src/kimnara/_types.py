@@ -15,11 +15,13 @@
 __all__ = ["AVX", "AVX512", "SSE", "A", "Alignment", "C", "F", "Mut", "Pad"]
 
 import enum
-from typing import Annotated
+import functools
+from typing import Annotated, cast
 
+import llvmlite.binding  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 from optype.typing import AnyComplex
-from typing_extensions import TypeVar, final
+from typing_extensions import TypeVar, final, override
 
 from . import _spec
 
@@ -44,13 +46,33 @@ Mut = Annotated[_T, _spec.Mutable]
 
 @final
 class Alignment(enum.Enum):
-    A = "A"
-    C = "C"
-    F = "F"
-    SSE = "SSE"
-    AVX = "AVX"
-    AVX512 = "AVX512"
-    MKL = "MKL"
+    A = _spec.Alignment("A")
+    C = _spec.Alignment("C")
+    F = _spec.Alignment("F")
+    SSE = _spec.Alignment("SSE", multiple_of=16)
+    AVX = _spec.Alignment("AVX", multiple_of=32)
+    AVX512 = _spec.Alignment("AVX512", multiple_of=64)
+    MKL = _spec.Alignment("MKL", multiple_of=64, not_multiple_of=4096)
+    """Data alignment recommended by MKL.
+
+    https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/current/coding-techniques.html
+    """
+
+    @classmethod
+    @override
+    def _missing_(cls, value: object) -> "Alignment | None":
+        if isinstance(value, str):
+            if value == "host":
+                return _host_alignment()
+            value = value.upper()
+            if value.startswith(("AVX512", "AVX-512")):
+                return AVX512
+            if value.startswith("AVX"):
+                return AVX
+            if value.startswith("SSE"):
+                return SSE
+            return cls.__members__.get(value)
+        return None
 
 
 # We don't expose kn.Alignment.MKL to outer namespace
@@ -68,3 +90,23 @@ class Pad:
 
     def __init__(self, value: AnyComplex) -> None:
         self.value = _spec.scalar(value)
+
+
+@functools.lru_cache(maxsize=1)
+def _host_alignment() -> Alignment:
+    try:
+        features = cast(
+            "dict[str, bool]",
+            llvmlite.binding.get_host_cpu_features(),
+        )
+    except RuntimeError:
+        pass
+    else:
+        for k, v in features.items():
+            if v and k.startswith("avx512"):
+                return AVX512
+        if features.get("avx"):
+            return AVX
+        if features.get("sse"):
+            return SSE
+    return C

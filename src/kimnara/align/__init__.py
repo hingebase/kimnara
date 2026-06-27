@@ -17,6 +17,8 @@
 __all__ = [
     "AVX512Allocator",
     "AVXAllocator",
+    "isaligned",
 ]
 
 from ._allocators import AVX512Allocator, AVXAllocator
+from ._utils import isaligned
