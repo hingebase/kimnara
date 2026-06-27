@@ -2,7 +2,7 @@
 channels = ["conda-forge"]
 platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
 preview = ["pixi-build"]
-requires-pixi = ">=0.70.0"
+requires-pixi = ">=0.70.0,<0.71.0"
 
 [workspace.dependencies]
 kimnara = { path = "packages/kimnara" }
@@ -80,7 +80,7 @@ py314np24 = ["abi3", "py314", "np24", "nb"]
 
 [feature]
 # One variant per directory, see
-# https://github.com/python/cpython/tree/59b41c8c3ba3251f15e6b58d9793d72499b298c0/Tools/pixi-packages
+# https://github.com/numpy/numpy/tree/v2.5.0/pixi-packages
 abi3 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake" } } }
 py310 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py310" } } }
 py311 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py311" } } }
@@ -128,7 +128,7 @@ numba = { channel = "numba" }
 llvmlite = { channel = "numba" }
 numba = { channel = "numba" }
 
-# https://github.com/prefix-dev/pixi/issues/3275
+# TODO: Remove these sections once we update Pixi to 0.71.0
 [feature.clangd.system-requirements]
 # macos = "10.15"
 
