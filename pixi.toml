@@ -144,7 +144,7 @@ osx-arm64 = { dependencies = { libblas = { build = "*accelerate" } } }
 win-64 = { dependencies = { libblas = { build = "*_mkl" } } }
 
 [tasks]
-pytest = "pytest"
+pytest = "pytest -Werror"
 
 [environments.clangd]
 features = ["clangd"]
