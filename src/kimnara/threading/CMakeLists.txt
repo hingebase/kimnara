@@ -59,9 +59,9 @@ if(UNIX AND NOT DEFINED ENV{CONDA_BUILD})
     else()
         set(ORIGIN_TOKEN "$ORIGIN")
     endif()
-    set_property(
-        TARGET _openmp _tbb
-        PROPERTY INSTALL_RPATH "${ORIGIN_TOKEN}/../../../.."
+    set_target_properties(
+        _openmp _tbb
+        PROPERTIES INSTALL_RPATH "${ORIGIN_TOKEN}/../../../.."
     )
 endif()
 
