@@ -120,7 +120,7 @@ def func(
     inline: Literal["never"] = ...,
     nogil: Literal[False] = ...,
     nopython: Literal[False] = ...,
-    pad_value: AnyComplex = ...,
+    pad_value: AnyComplex | None = ...,
     parallel: Literal[False] = ...,
     pipeline_class: None = ...,
 ) -> ...: ...
@@ -137,7 +137,7 @@ def func(
     inline: Literal["always", "never"] | _CustomInliningRule = ...,
     nogil: bool = ...,
     nopython: bool,
-    pad_value: AnyComplex = ...,
+    pad_value: AnyComplex | None = ...,
     parallel: bool | str = ...,
     pipeline_class: type[compiler.CompilerBase] | None = ...,
 ) -> ...: ...
@@ -156,7 +156,7 @@ def func(  # noqa: PLR0913
     inline: Literal["always", "never"] | _CustomInliningRule = "never",
     nogil: bool = False,
     nopython: bool = False,
-    pad_value: AnyComplex = 0,
+    pad_value: AnyComplex | None = None,
     parallel: bool | str = False,
     pipeline_class: type[compiler.CompilerBase] | None = None,
 ) -> ...:
@@ -172,7 +172,7 @@ def gufunc(
     cache: Literal[False] | None = ...,
     fastmath: Literal[False] = ...,
     nopython: Literal[False] = ...,
-    pad_value: AnyComplex = ...,
+    pad_value: AnyComplex | None = ...,
     parallel: bool | str = ...,
 ) -> ...: ...
 
@@ -185,7 +185,7 @@ def gufunc(
     cache: bool | None = ...,
     fastmath: _FastMathOptions = ...,
     nopython: bool,
-    pad_value: AnyComplex = ...,
+    pad_value: AnyComplex | None = ...,
     parallel: bool | str = ...,
 ) -> ...: ...
 
@@ -198,7 +198,7 @@ def gufunc(  # noqa: PLR0913
     cache: bool | None = None,
     fastmath: _FastMathOptions = False,
     nopython: bool = False,
-    pad_value: AnyComplex = 0,
+    pad_value: AnyComplex | None = None,
     parallel: bool | str = False,
 ) -> ...:
     raise NotImplementedError

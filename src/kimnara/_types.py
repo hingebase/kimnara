@@ -85,11 +85,12 @@ AVX = Alignment.AVX
 AVX512 = Alignment.AVX512
 
 
+@final
 class Pad:
     __slots__ = ("value",)
 
-    def __init__(self, value: AnyComplex) -> None:
-        self.value = _spec.scalar(value)
+    def __init__(self, value: AnyComplex | None) -> None:
+        self.value = None if value is None else _spec.scalar(value)
 
 
 @functools.lru_cache(maxsize=1)
