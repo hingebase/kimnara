@@ -12,6 +12,21 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Alignment", "Mutable", "scalar", "ureg"]
+__all__ = ["base_repr", "isclass"]
 
-from ._definitions import Alignment, Mutable, scalar, ureg
+import sys
+import types
+
+if sys.version_info >= (3, 11):
+    from inspect import isclass
+else:
+    from typing_extensions import TypeIs
+
+    # Keep the return type same as `inspect.isclass`
+    def isclass(x: object, /) -> TypeIs[type[object]]:
+        # https://github.com/python/cpython/issues/89828
+        return not isinstance(x, types.GenericAlias) and isinstance(x, type)
+
+
+def base_repr(x: object, /) -> str:
+    return type.__repr__(x) if isclass(x) else object.__repr__(x)  # noqa: PLC2801

@@ -30,6 +30,7 @@ __all__ = [
     "func",
     "gufunc",
     "isaligned",
+    "quantity",
     "ufunc",
 ]
 
@@ -37,6 +38,7 @@ from . import align as align
 from . import logging as logging
 from . import threading as threading
 from ._functions import cfunc, func, gufunc, ufunc
+from ._quantity import quantity
 from ._types import AVX, AVX512, SSE, A, Alignment, C, F, Mut, Pad
 from .align import isaligned
 from .exceptions import (

@@ -49,6 +49,7 @@ microarch_level = ["0"]
 [dependencies]
 basedpyright = ">=1.39.7"
 hypothesis = ">=6.155.7"
+pandas-stubs = ">=1.4.2,<4.0.0"
 pytest = ">=9.0.3"
 
 [environments]

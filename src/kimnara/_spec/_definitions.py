@@ -12,13 +12,15 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Alignment", "Mutable", "scalar"]
+__all__ = ["Alignment", "Mutable", "scalar", "ureg"]
 
 import contextlib
 import math
 import operator
 import sys
+from typing import TYPE_CHECKING, cast
 
+import metpy.units  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
 from typing_extensions import (
     NamedTuple,
@@ -26,6 +28,11 @@ from typing_extensions import (
     SupportsFloat,
     SupportsIndex,
 )
+
+from kimnara import _utils
+
+if TYPE_CHECKING:
+    import pint
 
 if sys.version_info >= (3, 11):
     _Complex = SupportsComplex
@@ -53,9 +60,12 @@ def scalar(value: AnyComplex) -> complex:
     if isinstance(value, _Complex):
         with _suppress:
             return complex(value)
-    class_repr = type.__repr__(type(value))  # noqa: PLC2801
-    message = f"Cannot convert object of type {class_repr} to a numeric scalar"
+    message = f"Cannot convert {_utils.base_repr(value)} to a numeric scalar"
     raise TypeError(message)
 
 
+ureg = cast(
+    "pint.UnitRegistry",
+    cast("pint.registry.ApplicationRegistry", metpy.units.units).get(),
+)
 _suppress = contextlib.suppress(Exception)
