@@ -22,7 +22,7 @@ import sys
 from typing import TYPE_CHECKING, cast
 
 import metpy.units  # pyright: ignore[reportMissingTypeStubs]
-import numba  # pyright: ignore[reportMissingTypeStubs]
+import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
 from typing_extensions import (
     Any,
@@ -71,7 +71,7 @@ class Type(abc.ABC):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def to_numba(self) -> numba.types.Type:
+    def to_numba(self) -> numba.core.types.Type:
         raise NotImplementedError
 
     @abc.abstractmethod

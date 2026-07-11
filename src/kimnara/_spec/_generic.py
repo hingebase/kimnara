@@ -20,7 +20,7 @@ import sys
 import types
 from typing import Literal, get_args, no_type_check
 
-import numba  # pyright: ignore[reportMissingTypeStubs]
+import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 from typing_extensions import Any, NamedTuple, TypeForm, override
 from typing_inspection import introspection
 
@@ -77,8 +77,8 @@ class NoneType(_spec.Type):
             raise kn.TypeInferenceError(message)
 
     @override
-    def to_numba(self) -> numba.types.NoneType:
-        return numba.types.none
+    def to_numba(self) -> numba.core.types.NoneType:
+        return numba.core.types.none
 
     @override
     @no_type_check
@@ -114,8 +114,8 @@ class TupleType(_spec.Type):
                 self._args = tuple(map(ctx.infer, args))
 
     @override
-    def to_numba(self) -> numba.types.Tuple | numba.types.UniTuple:
-        return numba.types.Tuple(self._args)
+    def to_numba(self) -> numba.core.types.Tuple | numba.core.types.UniTuple:
+        return numba.core.types.Tuple(self._args)
 
     @override
     def to_python(self) -> TypeForm[tuple[Any, ...]]:
@@ -153,8 +153,8 @@ class UnionType(_spec.Type):
         self._type = t
 
     @override
-    def to_numba(self) -> numba.types.Optional:
-        return numba.types.Optional(self._type.to_numba())
+    def to_numba(self) -> numba.core.types.Optional:
+        return numba.core.types.Optional(self._type.to_numba())
 
     @override
     @no_type_check

@@ -19,6 +19,7 @@ import sys
 import typing
 from typing import get_args, get_origin
 
+import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import numpy.typing as npt
@@ -69,7 +70,7 @@ class TypingContext(_generic.TypingContext):
         message = f"Cannot infer the runtime type from {_utils.base_repr(tp)}"
         raise kn.TypeInferenceError(message)
 
-    def get_align(self, meta: list[Any]) -> kn.Alignment:
+    def get_align(self, meta: list[Any]) -> "kn.Alignment":
         if found := {x for x in meta if isinstance(x, kn.Alignment)}:
             if len(found) > 1:
                 flat = ", ".join(x._name_ for x in found)
@@ -88,7 +89,7 @@ class TypingContext(_generic.TypingContext):
         self,
         annotation: object,
         unit: pint.Unit | None,
-    ) -> tuple[type[np.number | np.bool_], bool]:
+    ) -> tuple[type[np.number[Any] | np.bool_], bool]:
         if get_origin(annotation) is not np.dtype:
             message = "The second argument of np.ndarray[] must be np.dtype[]"
             raise kn.TypeInferenceError(message)
@@ -204,13 +205,13 @@ class _ArrayType(_base.Type):
         self._pad_value = ctx.get_pad_value(meta)
 
     @override
-    def to_numba(self) -> numba.types.Array:
+    def to_numba(self) -> numba.core.types.Array:
         match self._align:
             case (kn.C | kn.F) as align:
                 layout = align._name_
             case _:
                 layout = "A"
-        return numba.types.Array(
+        return numba.core.types.Array(
             numba.np.numpy_support.from_dtype(self.dtype),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
             self._ndim,
             layout,
@@ -218,5 +219,8 @@ class _ArrayType(_base.Type):
         )
 
     @override
-    def validator(self, value: object) -> npt.NDArray[np.number | np.bool_]:
+    def validator(
+        self,
+        value: object,
+    ) -> npt.NDArray[np.number[Any] | np.bool_]:
         raise NotImplementedError

@@ -19,6 +19,7 @@ import functools
 from typing import Annotated, cast, no_type_check
 
 import annotated_types as at
+import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import pint
@@ -86,11 +87,11 @@ class ScalarType(Type):
 
     @override
     @no_type_check
-    def to_numba(self) -> numba.types.Boolean | numba.types.Number:
+    def to_numba(self) -> numba.core.types.Boolean | numba.core.types.Number:
         return numba.np.numpy_support.from_dtype(self.dtype)
 
     @override
-    def validator(self, value: object) -> np.number | np.bool_:
+    def validator(self, value: object) -> np.number[Any] | np.bool_:
         raise NotImplementedError
 
 
@@ -122,7 +123,7 @@ def dtype(value: object) -> np.dtype[Any] | None:
 def scalar_type(
     annotation: object,
     has_unit: bool,  # noqa: FBT001
-) -> type[np.number | np.bool_]:
+) -> type[np.number[Any] | np.bool_]:
     match annotation:
         case np.bool_:
             if has_unit:
@@ -152,4 +153,4 @@ class _ArrayInterface(TypedDict, closed=False):
     typestr: str
 
 
-_adapter = pydantic.TypeAdapter(_ArrayInterface, config={"strict": True})
+_adapter = pydantic.TypeAdapter(_ArrayInterface)
