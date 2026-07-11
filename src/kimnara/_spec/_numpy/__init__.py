@@ -12,7 +12,6 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Alignment", "Mutable", "Type", "TypingContext", "scalar", "ureg"]
+__all__ = ["TypingContext"]
 
-from ._definitions import Alignment, Mutable, Type, scalar, ureg
-from ._numpy import TypingContext
+from ._ndarray import TypingContext

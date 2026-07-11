@@ -26,6 +26,7 @@ __all__ = [
     "Mut",
     "Pad",
     "PerformanceWarning",
+    "TypeInferenceError",
     "cfunc",
     "func",
     "gufunc",
@@ -44,4 +45,5 @@ from .align import isaligned
 from .exceptions import (
     Error,
     PerformanceWarning,
+    TypeInferenceError,
 )

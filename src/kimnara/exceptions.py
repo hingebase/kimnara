@@ -37,6 +37,10 @@ class PerformanceWarning(UserWarning, Error):  # noqa: N818
     """Performance-related issues that users should be aware of."""
 
 
+class TypeInferenceError(Error):
+    """Fail to infer runtime type from annotations."""
+
+
 if (
     sys.platform.startswith("linux")
     and os.getenv("WSL_DISTRO_NAME")

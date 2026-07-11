@@ -12,8 +12,9 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Alignment", "Mutable", "scalar", "ureg"]
+__all__ = ["Alignment", "Mutable", "Type", "scalar", "ureg"]
 
+import abc
 import contextlib
 import math
 import operator
@@ -21,6 +22,7 @@ import sys
 from typing import TYPE_CHECKING, cast
 
 import metpy.units  # pyright: ignore[reportMissingTypeStubs]
+import numba  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
 from typing_extensions import (
     Any,
@@ -28,9 +30,12 @@ from typing_extensions import (
     SupportsComplex,
     SupportsFloat,
     SupportsIndex,
+    TypeForm,
+    final,
 )
+from typing_inspection import introspection
 
-from kimnara import _utils
+from kimnara import _spec, _utils
 
 if TYPE_CHECKING:
     import pint
@@ -42,14 +47,36 @@ else:
     _Complex = SupportsComplex | complex
 
 
+@final
 class Alignment(NamedTuple):
     name: str
     multiple_of: int = 1
     not_multiple_of: float = math.nan
 
 
+@final
 class Mutable:
     pass
+
+
+class Type(abc.ABC):
+    __slots__ = ()
+
+    @abc.abstractmethod
+    def __init__(
+        self,
+        annotation: introspection.InspectedAnnotation,
+        ctx: "_spec.TypingContext",
+    ) -> None:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def to_numba(self) -> numba.types.Type:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def to_python(self) -> TypeForm[Any]:
+        raise NotImplementedError
 
 
 def scalar(value: AnyComplex) -> complex:

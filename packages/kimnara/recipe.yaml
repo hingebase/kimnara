@@ -62,6 +62,7 @@ requirements:
       then: optype-numpy >=0.13.3,<2.0.0
       else: optype >=0.9.2,<0.10.0
     - pint >=0.24.4,<2.0.0
+    - pydantic >=2.12.4,<4.0.0
     - python
     - spydlog >=1.0.1,<2.0.0
     - tbb <2024.0.0
