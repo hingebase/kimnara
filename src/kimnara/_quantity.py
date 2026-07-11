@@ -41,7 +41,7 @@ if TYPE_CHECKING:
 
 _Quantity = _spec.ureg.Quantity
 _ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...])
-_T = TypeVar("_T", bound=np.number | npt.NDArray[np.number])
+_T = TypeVar("_T", bound=np.number[Any] | npt.NDArray[np.number[Any]])
 
 
 @overload
@@ -92,8 +92,8 @@ def _(value: np.timedelta64, units: str | None) -> PlainQuantity[Any]:
     return _convert_timedelta(value, value, units)
 
 
-@_numpy_quantity.register
-def _(value: np.number, units: str | None) -> PlainQuantity[Any]:
+@_numpy_quantity.register(np.number)
+def _(value: np.number[Any], units: str | None) -> PlainQuantity[Any]:
     return _Quantity(value, units)
 
 
@@ -142,7 +142,7 @@ def _(value: datetime.timedelta, units: str | None) -> PlainQuantity[Any]:
 @_quantity.register(PlainQuantity)
 def _(value: PlainQuantity[Any], units: str | None) -> PlainQuantity[Any]:
     # https://github.com/hgrecco/pint/issues/2207
-    if value._REGISTRY is not _spec.ureg:  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+    if value._REGISTRY is not _spec.ureg:  # noqa: SLF001  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
         message = "Cannot operate quantities of different registries"
         raise ValueError(message)
     value = _numpy_quantity(value.magnitude, value.units)

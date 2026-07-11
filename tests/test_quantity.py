@@ -16,7 +16,7 @@
 
 import datetime
 import math
-from typing import cast
+from typing import TypeGuard, cast
 
 import hypothesis
 import hypothesis.strategies as st
@@ -26,6 +26,8 @@ import pandas as pd
 import pint
 import pytest
 import xarray as xr
+from pint.facets.numpy.quantity import NumpyQuantity
+from typing_extensions import Any
 
 import kimnara as kn
 
@@ -40,7 +42,7 @@ _TYPE_CODES = (
 def test_builtin_complex(re: float, im: float) -> None:
     """Test `kn.quantity(builtins.complex)`."""
     magnitude = kn.quantity(complex(re, im)).magnitude
-    assert isinstance(magnitude, np.complex128)
+    assert isinstance(magnitude, np.complex128)  # pyright: ignore[reportArgumentType]
     np.testing.assert_equal(magnitude.real, re)
     np.testing.assert_equal(magnitude.imag, im)
 
@@ -49,7 +51,7 @@ def test_builtin_complex(re: float, im: float) -> None:
 def test_builtin_float(f: float) -> None:
     """Test `kn.quantity(builtins.float)`."""
     magnitude = kn.quantity(f).magnitude
-    assert isinstance(magnitude, np.float64)
+    assert isinstance(magnitude, np.float64)  # pyright: ignore[reportArgumentType]
     np.testing.assert_equal(magnitude, f)
 
 
@@ -135,7 +137,7 @@ def test_numpy_timedelta64() -> None:
         # https://github.com/pydata/xarray/blob/v2026.07.0/xarray/core/variable.py#L223
         if unit not in "YM":
             quantity = kn.quantity(xr.DataArray(array), "s").data
-            assert isinstance(quantity, pint.Quantity)
+            assert _is_quantity(quantity)
             np.testing.assert_allclose(quantity.magnitude, seconds)
 
     sctype = np.dtype("m8[as]")
@@ -148,7 +150,7 @@ def test_numpy_timedelta64() -> None:
         # Precision loss during the same conversion as above
         if unit not in {"ps", "fs", "as"}:
             quantity = kn.quantity(xr.DataArray(array), "as").data
-            assert isinstance(quantity, pint.Quantity)
+            assert _is_quantity(quantity)
             np.testing.assert_allclose(quantity.magnitude, attoseconds)
 
 
@@ -158,7 +160,7 @@ def test_numpy_timedelta64() -> None:
 )
 def test_numpy_number(i: int, dtype: str) -> None:
     """Test `kn.quantity(np.number)` and its pint/xarray variants."""
-    number = cast("type[np.number]", np.dtype(dtype).type)
+    number = cast("type[np.number[Any]]", np.dtype(dtype).type)
     assert issubclass(number, np.number)
     scalar = number(i)
 
@@ -174,15 +176,15 @@ def test_numpy_number(i: int, dtype: str) -> None:
 
     da = xr.DataArray(quantity)
     quantity = kn.quantity(da).data
-    assert isinstance(quantity, pint.Quantity)
-    magnitude = cast("npt.NDArray[np.number]", quantity.magnitude)
+    assert _is_quantity(quantity)
+    magnitude = quantity.magnitude
     assert isinstance(magnitude, number)
     assert magnitude == i
 
     da = xr.DataArray(scalar)  # Converted to 0-D array here
     quantity = kn.quantity(da).data
-    assert isinstance(quantity, pint.Quantity)
-    magnitude = cast("npt.NDArray[np.number]", quantity.magnitude)
+    assert _is_quantity(quantity)
+    magnitude = quantity.magnitude
     assert isinstance(magnitude, np.ndarray)  # Different from the case above
     assert magnitude.ndim == 0
     assert magnitude.dtype.type == number
@@ -192,7 +194,7 @@ def test_numpy_number(i: int, dtype: str) -> None:
 @hypothesis.given(st.sampled_from(_TYPE_CODES))
 def test_numpy_ndarray(dtype: str) -> None:
     """Test `kn.quantity(np.ndarray)` and its pint/xarray variants."""
-    number = cast("type[np.number]", np.dtype(dtype).type)
+    number = cast("type[np.number[Any]]", np.dtype(dtype).type)
     assert issubclass(number, np.number)
     array = np.empty(100, number)
 
@@ -210,8 +212,8 @@ def test_numpy_ndarray(dtype: str) -> None:
 
     for da in xr.DataArray(quantity), xr.DataArray(array):
         quantity = kn.quantity(da).data
-        assert isinstance(quantity, pint.Quantity)
-        magnitude = cast("npt.NDArray[np.number]", quantity.magnitude)
+        assert _is_quantity(quantity)
+        magnitude = quantity.magnitude
         assert isinstance(magnitude, np.ndarray)
         assert magnitude.dtype.type == number
         np.testing.assert_array_equal(magnitude, array, strict=True)
@@ -241,7 +243,7 @@ def test_unit_conversions() -> None:
     da = xr.DataArray(quantity)
     for units, desired in [("km", 1), ("mm", 1e6)]:
         quantity = kn.quantity(da, units).data
-        assert isinstance(quantity, pint.Quantity)
+        assert _is_quantity(quantity)
         assert math.isclose(quantity.magnitude, desired)
     for units in "", "m2":
         with pytest.raises(pint.DimensionalityError):
@@ -249,19 +251,25 @@ def test_unit_conversions() -> None:
     with pytest.raises(pint.DimensionalityError):
         kn.quantity(kn.quantity(xr.DataArray(1000)), "m")
 
-    da = xr.Dataset({"dim": np.arange(3)}).coords["dim"]
+    da = xr.Dataset({"dim": np.arange(3)}).coords["dim"]  # pyright: ignore[reportUnknownMemberType]
     da.attrs["units"] = "m"
     assert isinstance(da.variable, xr.IndexVariable)
 
     da = kn.quantity(da, "mm")
     assert isinstance(da.variable, xr.Variable)
     quantity = da.data
-    assert isinstance(quantity, pint.Quantity)
+    assert _is_quantity(quantity)
     np.testing.assert_allclose(quantity.magnitude, [0, 1000, 2000])
 
     da = cast("xr.DataArray", da.coords["dim"])
     assert isinstance(da.variable, xr.IndexVariable)
-    array = cast("npt.NDArray[np.signedinteger]", da.data)
+    array = cast("npt.NDArray[np.signedinteger[Any]]", da.data)
     assert isinstance(array, np.ndarray)
     np.testing.assert_array_equal(array, [0, 1, 2])
     assert da.attrs.get("units") == "m"
+
+
+def _is_quantity(x: object) -> TypeGuard[
+    NumpyQuantity[np.number[Any] | npt.NDArray[np.number[Any]]]
+]:
+    return isinstance(x, pint.Quantity)  # pyright: ignore[reportUnknownMemberType]

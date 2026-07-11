@@ -23,6 +23,7 @@ from typing import TYPE_CHECKING, cast
 import metpy.units  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
 from typing_extensions import (
+    Any,
     NamedTuple,
     SupportsComplex,
     SupportsFloat,
@@ -33,6 +34,7 @@ from kimnara import _utils
 
 if TYPE_CHECKING:
     import pint
+    from pint.facets.plain import PlainQuantity
 
 if sys.version_info >= (3, 11):
     _Complex = SupportsComplex
@@ -65,7 +67,7 @@ def scalar(value: AnyComplex) -> complex:
 
 
 ureg = cast(
-    "pint.UnitRegistry",
+    "pint.registry.GenericUnitRegistry[PlainQuantity[Any], pint.Unit]",
     cast("pint.registry.ApplicationRegistry", metpy.units.units).get(),
 )
 _suppress = contextlib.suppress(Exception)
