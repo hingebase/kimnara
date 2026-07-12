@@ -31,13 +31,11 @@ _ScalarType: TypeAlias = """
     | np.int16
     | np.int32
     | np.int64
-    | np.intc
     | np.intp
     | np.uint8
     | np.uint16
     | np.uint32
     | np.uint64
-    | np.uintc
     | np.uintp
     | np.float32
     | np.float64
