@@ -24,6 +24,7 @@ import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import numpy.typing as npt
 import pint
+from numpy_typing_compat import NUMPY_GE_2_0
 from typing_extensions import Any, override
 from typing_inspection import introspection, typing_objects
 
@@ -32,6 +33,8 @@ from kimnara import _spec, _utils
 from kimnara._spec import _generic
 
 from . import _base
+
+_NPY_MAXDIMS = 64 if NUMPY_GE_2_0 else 32
 
 
 class TypingContext(_generic.TypingContext):
@@ -133,9 +136,12 @@ class TypingContext(_generic.TypingContext):
                 # https://github.com/python/cpython/issues/91137
                 ndim = 0
             case args:
+                ndim = len(args)
+                if ndim > _NPY_MAXDIMS:
+                    message = "Too many dimensions"
+                    raise kn.TypeInferenceError(message)
                 for i, arg in enumerate(args):
                     self._check_dim(i, self.parse(arg))
-                ndim = len(args)
         default = self.ndim
         if default is not None:
             if default != ndim:
