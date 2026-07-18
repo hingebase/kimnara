@@ -70,7 +70,7 @@ class TypingContext(_generic.TypingContext):
         message = f"Cannot infer the runtime type from {_utils.base_repr(tp)}"
         raise kn.TypeInferenceError(message)
 
-    def get_align(self, meta: list[Any]) -> "kn.Alignment":
+    def get_align(self, meta: list[Any], ndim: int) -> "kn.Alignment":
         if found := {x for x in meta if isinstance(x, kn.Alignment)}:
             if len(found) > 1:
                 flat = ", ".join(x._name_ for x in found)
@@ -82,7 +82,14 @@ class TypingContext(_generic.TypingContext):
                     f"Alignment {align._name_} is unsupported in this context"
                 )
                 raise kn.TypeInferenceError(message)
+            if ndim == 0 and align.value.multiple_of > 1:
+                message = (
+                    f"Alignment {align._name_} is unsupported for 0-D arrays"
+                )
+                raise kn.TypeInferenceError(message)
             return align
+        if ndim == 0 and self.align.value.multiple_of > 1:
+            return kn.A
         return self.align
 
     def get_dtype(
@@ -198,10 +205,10 @@ class _ArrayType(_base.Type):
                 )
                 raise kn.TypeInferenceError(message)
         super().__init__(annotation, ctx)
-        meta = annotation.metadata
-        self._align = ctx.get_align(meta)
         self.dtype, self._readonly = ctx.get_dtype(dtype.type, self.unit)
-        self._ndim = ctx.get_ndim(shape.type)
+        self._ndim = ndim = ctx.get_ndim(shape.type)
+        meta = annotation.metadata
+        self._align = ctx.get_align(meta, ndim)
         self._pad_value = ctx.get_pad_value(meta)
 
     @override
