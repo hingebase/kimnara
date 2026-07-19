@@ -16,9 +16,12 @@ __all__ = ["Alignment", "Mutable", "Type", "scalar", "ureg"]
 
 import abc
 import contextlib
+import dataclasses
 import math
 import operator
 import sys
+import types
+import warnings
 from typing import TYPE_CHECKING, cast
 
 import metpy.units  # pyright: ignore[reportMissingTypeStubs]
@@ -32,6 +35,7 @@ from typing_extensions import (
     SupportsIndex,
     TypeForm,
     final,
+    override,
 )
 from typing_inspection import introspection
 
@@ -44,6 +48,8 @@ if TYPE_CHECKING:
 if sys.version_info >= (3, 11):
     _Complex = SupportsComplex
 else:
+    from exceptiongroup import ExceptionGroup
+
     _Complex = SupportsComplex | complex
 
 
@@ -80,21 +86,42 @@ class Type(abc.ABC):
 
 
 def scalar(value: AnyComplex) -> complex:
-    if isinstance(value, SupportsIndex):
-        with _suppress:
-            return operator.index(value)
-    if isinstance(value, SupportsFloat):
-        with _suppress:
-            return float(value)
-    if isinstance(value, _Complex):
-        with _suppress:
-            return complex(value)
+    catch = _Catch([])
+    with warnings.catch_warnings():
+        warnings.simplefilter("error", DeprecationWarning)
+        if isinstance(value, SupportsIndex):
+            with catch:
+                return operator.index(value)
+        if isinstance(value, SupportsFloat):
+            with catch:
+                return float(value)
+        if isinstance(value, _Complex):
+            with catch:
+                return complex(value)
     message = f"Cannot convert {_utils.base_repr(value)} to a numeric scalar"
+    if excs := catch.caught:
+        raise ExceptionGroup(message, excs)
     raise TypeError(message)
+
+
+@dataclasses.dataclass
+class _Catch(contextlib.AbstractContextManager["_Catch", bool]):
+    caught: list[Exception]
+
+    @override
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc_value: BaseException | None,
+        traceback: types.TracebackType | None,
+        /,
+    ) -> bool:
+        if suppress := isinstance(exc_value, Exception):
+            self.caught.append(exc_value)
+        return suppress
 
 
 ureg = cast(
     "pint.registry.GenericUnitRegistry[PlainQuantity[Any], pint.Unit]",
     cast("pint.registry.ApplicationRegistry", metpy.units.units).get(),
 )
-_suppress = contextlib.suppress(Exception)
