@@ -82,6 +82,9 @@ class ScalarType(Type):
         if not ctx.allow_scalar:
             message = "NumPy scalar is unsupported in this context"
             raise kn.TypeInferenceError(message)
+        if ndim := ctx.ndim:
+            message = f"ndim conflict: {ndim}, 0"
+            raise kn.TypeInferenceError(message)
         super().__init__(annotation, ctx)
         self.dtype = scalar_type(annotation.type, bool(self.unit))
 
