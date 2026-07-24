@@ -17,13 +17,14 @@ __all__ = [
 ]
 
 import itertools
-from typing import TypeAlias
+from typing import TypeAlias, cast
 
 import numpy as np
 import optype.numpy as onp
+from typing_extensions import Any
 
 import kimnara as kn
-from kimnara import _spec
+from kimnara import _spec, _utils
 
 _ScalarType: TypeAlias = """
     np.bool_
@@ -42,28 +43,50 @@ _ScalarType: TypeAlias = """
     | np.complex64
     | np.complex128"""
 
+_DTYPES = frozenset(map(np.dtype, (
+    "fdFD"  # Floating and complex types
+    "bBhHlLqQ"  # Integer types
+    "?"  # Boolean type
+)))
+
 
 def isaligned(
     value: np.ndarray[onp.AtLeast1D, np.dtype[_ScalarType]],
     align: "str | kn.Alignment",
 ) -> bool:
+    _check_array_dtype_and_ndim(value)
+    if not value.size:
+        return True
     match kn.Alignment(align):
         case kn.A:
-            return True
+            return value.flags.aligned
         case kn.C:
-            return value.flags.c_contiguous
+            flags = value.flags
+            return flags.aligned and flags.c_contiguous
         case kn.F:
-            return value.flags.f_contiguous
+            flags = value.flags
+            return flags.aligned and flags.f_contiguous
         case align:
             return _isaligned_simd(value, align.value)
+
+
+def _check_array_dtype_and_ndim(x: object) -> None:
+    if not isinstance(x, np.ndarray):
+        message = f"Expected np.ndarray, got {_utils.base_repr(x)}"
+        raise TypeError(message)
+    dtype = cast("np.dtype[Any]", x.dtype)
+    if dtype not in _DTYPES:  # Also compares byteorder
+        message = f"{dtype!r} is unsupported in Kimnara"
+        raise ValueError(message)
+    if x.ndim == 0:
+        message = "0-dimensional array is discouraged in Kimnara"
+        raise ValueError(message)
 
 
 def _isaligned_simd(
     value: np.ndarray[onp.AtLeast1D, np.dtype[_ScalarType]],
     spec: _spec.Alignment,
 ) -> bool:
-    if not value.size:
-        return True
     multiple_of = spec.multiple_of
     if value.ctypes.data % multiple_of:
         return False

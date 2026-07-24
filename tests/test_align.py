@@ -15,19 +15,19 @@
 """Test kimnara.align API."""
 
 import secrets
-from typing import TYPE_CHECKING, cast
+from typing import cast, no_type_check
 
 import hypothesis
 import hypothesis.strategies as st
+import numba  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
+import numpy.typing as npt
+import optype.numpy as onp
 import pytest
 from numpy_typing_compat import NUMPY_GE_2_0
-from typing_extensions import Any
+from typing_extensions import Any, overload
 
 import kimnara as kn
-
-if TYPE_CHECKING:
-    import optype.numpy as onp
 
 _SIMD = (kn.SSE, kn.AVX, kn.AVX512, kn.Alignment.MKL)
 _TYPE_CODES = (
@@ -111,9 +111,94 @@ def test_isaligned_empty(n: int, dtype: str) -> None:
         assert kn.isaligned(arr, align)
 
 
+def test_numba_guvectorize() -> None:
+    """`numba.guvectorize` should preserve aligned input arrays."""
+    with kn.align.AVXAllocator:
+        avx = np.empty((3, 3, 100))[:, :, :-3]
+    with kn.align.AVX512Allocator:
+        avx512 = np.empty((3, 3, 256), np.float32)[:, :, :-7]
+    assert _numba_guvectorize_1d(avx, 32).all()
+    assert not _numba_guvectorize_1d(avx, 64).all()
+    assert _numba_guvectorize_1d(avx512, 64).all()
+    assert _numba_guvectorize_2d(avx, 32).all()
+    assert not _numba_guvectorize_2d(avx, 64).all()
+    assert _numba_guvectorize_2d(avx512, 64).all()
+
+
+def test_misaligned() -> None:
+    """`kn.isaligned` should respect `np.ndarray.flags.aligned`.
+
+    This is unnecessary for SIMD alignment which is more strict.
+    """
+    buf = np.empty(25, np.int8)
+    arr = cast("onp.Array1D[np.int32]", buf[1:].view(np.int32))
+    for align in "ACF":
+        assert not kn.isaligned(arr, align)
+    arr = cast("onp.Array1D[np.int32]", buf[:-1].view(np.int32))
+    for align in "ACF":
+        assert kn.isaligned(arr, align)
+    arr = cast("onp.Array1D[np.int32]", np.ndarray(5, "i", buf, strides=5))
+    for align in "ACF":
+        assert not kn.isaligned(arr, align)
+
+
 def _exactly_aligned(nbytes: int) -> bool:
     arrs = (
         np.empty((2**i + j,), np.uint8) for i in range(22) for j in range(32)
     )
     twice = 2 * nbytes
     return {arr.ctypes.data % twice for arr in arrs} == {0, nbytes}
+
+
+@overload
+def _numba_guvectorize_1d(
+    x: npt.NDArray[np.float32],
+    align: int,
+) -> npt.NDArray[np.bool_]: ...
+
+@overload
+def _numba_guvectorize_1d(
+    x: npt.NDArray[np.float64],
+    align: int,
+) -> npt.NDArray[np.bool_]: ...
+
+@numba.guvectorize(  # pyright: ignore[reportUnknownMemberType]
+    ["(float32[:], intp, bool[:])", "(float64[:], intp, bool[:])"],
+    "(n),()->()",
+)
+@no_type_check
+def _numba_guvectorize_1d(
+    x: onp.Array1D[np.float32 | np.float64],
+    align: np.intp,
+    out: onp.Array1D[np.bool_],
+) -> None:
+    out[0] = x.ctypes.data % align == 0
+
+
+@overload
+def _numba_guvectorize_2d(
+    x: npt.NDArray[np.float32],
+    align: int,
+) -> npt.NDArray[np.bool_]: ...
+
+@overload
+def _numba_guvectorize_2d(
+    x: npt.NDArray[np.float64],
+    align: int,
+) -> npt.NDArray[np.bool_]: ...
+
+@numba.guvectorize(  # pyright: ignore[reportUnknownMemberType]
+    ["(float32[:, :], intp, bool[:])", "(float64[:, :], intp, bool[:])"],
+    "(m,n),()->()",
+)
+@no_type_check
+def _numba_guvectorize_2d(
+    x: onp.Array2D[np.float32 | np.float64],
+    align: np.intp,
+    out: onp.Array1D[np.bool_],
+) -> None:
+    for i in range(len(x)):
+        if x[i].ctypes.data % align:
+            out[0] = False
+            return
+    out[0] = True

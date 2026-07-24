@@ -105,7 +105,7 @@ def _(value: npt.NDArray[Any], units: str | None) -> PlainQuantity[Any]:
         return _convert_timedelta(value, dtype, units)
     if issubclass(sctype, np.number):
         return _Quantity(value, units)
-    message = f"{dtype} is unsupported"
+    message = f"{dtype!r} is unsupported"
     raise TypeError(message)
 
 
