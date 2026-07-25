@@ -49,6 +49,41 @@ def test_allocator(subtests: pytest.Subtests) -> None:
         assert _exactly_aligned(16)
 
 
+def test_constructors() -> None:
+    """Test `kn.array`, `kn.asarray` and `kn.empty`."""
+    with pytest.raises(ValueError, match="0-dimensional array"):
+        kn.empty([])
+
+    a = kn.empty((2, 511), align="mkl", pad_value=1)
+    assert not a.flags.c_contiguous
+    base = a.base
+    assert base is not None
+    assert base.flags.carray
+    assert base.shape == (2, 520)
+    np.testing.assert_equal(base[:, 511:], 1)
+    a[0] = range(1000, 1511)
+    a[1] = range(2000, 2511)
+    for align in _SIMD:
+        assert kn.asarray(a, np.float64, align=align) is a
+        b = kn.asarray(a, align=align, pad_value=1)
+        assert not np.shares_memory(a, b)
+        np.testing.assert_array_equal(a, b, strict=True)
+        base = b.base
+        assert base is not None
+        assert base.flags.carray
+        assert base.shape == (2, 520 if align == kn.Alignment.MKL else 512)
+
+    a = kn.empty(512, align=kn.Alignment.MKL)
+    assert a.base is None
+    assert a.shape == (512,)
+    for align in kn.Alignment:
+        assert kn.asarray(a, np.float64, align=align, pad_value=2) is a
+    a[:] = range(512)
+    b = kn.array(a, align="A", pad_value=1)
+    assert not np.shares_memory(a, b)
+    np.testing.assert_array_equal(a, b, strict=True)
+
+
 @hypothesis.given(
     st.integers(min_value=3, max_value=1048576),
     st.sampled_from(_TYPE_CODES),
