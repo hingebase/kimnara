@@ -12,7 +12,22 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Alignment", "Mutable", "Type", "TypingContext", "scalar", "ureg"]
+__all__ = [
+    "Alignment",
+    "Mutable",
+    "Type",
+    "TypingContext",
+    "dimensionless",
+    "scalar",
+    "ureg",
+]
 
-from ._definitions import Alignment, Mutable, Type, scalar, ureg
+from ._definitions import (
+    Alignment,
+    Mutable,
+    Type,
+    dimensionless,
+    scalar,
+    ureg,
+)
 from ._numpy import TypingContext

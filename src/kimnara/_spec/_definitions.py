@@ -12,7 +12,7 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Alignment", "Mutable", "Type", "scalar", "ureg"]
+__all__ = ["Alignment", "Mutable", "Type", "dimensionless", "scalar", "ureg"]
 
 import abc
 import contextlib
@@ -125,3 +125,4 @@ ureg = cast(
     "pint.registry.GenericUnitRegistry[PlainQuantity[Any], pint.Unit]",
     cast("pint.registry.ApplicationRegistry", metpy.units.units).get(),
 )
+dimensionless = ureg.dimensionless
