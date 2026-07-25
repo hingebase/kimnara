@@ -27,7 +27,10 @@ __all__ = [
     "Pad",
     "PerformanceWarning",
     "TypeInferenceError",
+    "array",
+    "asarray",
     "cfunc",
+    "empty",
     "func",
     "gufunc",
     "isaligned",
@@ -41,7 +44,7 @@ from . import threading as threading
 from ._functions import cfunc, func, gufunc, ufunc
 from ._quantity import quantity
 from ._types import AVX, AVX512, SSE, A, Alignment, C, F, Mut, Pad
-from .align import isaligned
+from .align import array, asarray, empty, isaligned
 from .exceptions import (
     Error,
     PerformanceWarning,

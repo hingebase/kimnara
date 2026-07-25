@@ -14,6 +14,7 @@
 
 __all__ = ["AVX", "AVX512", "SSE", "A", "Alignment", "C", "F", "Mut", "Pad"]
 
+import contextlib
 import enum
 import functools
 from typing import Annotated, cast
@@ -22,6 +23,8 @@ import llvmlite.binding  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 from optype.typing import AnyComplex
 from typing_extensions import TypeVar, final, override
+
+import kimnara as kn
 
 from . import _spec
 
@@ -59,6 +62,16 @@ class Alignment(enum.Enum):
 
     https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/current/coding-techniques.html
     """
+
+    @property
+    def allocator(self) -> contextlib.AbstractContextManager[object, None]:
+        match self.value.multiple_of:
+            case 32:
+                return kn.align.AVXAllocator
+            case 64:
+                return kn.align.AVX512Allocator
+            case _:
+                return _sse_allocator
 
     @classmethod
     @override
@@ -113,3 +126,6 @@ def _host_alignment() -> Alignment:
         if features.get("sse"):
             return SSE
     return C
+
+
+_sse_allocator = contextlib.nullcontext()
