@@ -16,38 +16,35 @@ __all__ = ["NaiveDequantifier", "UnitNaive"]
 
 from typing import TYPE_CHECKING
 
-import numpy as np
-import numpy.typing as npt
-from typing_extensions import Any, TypeVar, override
+from typing_extensions import override
 
 from kimnara._spec._numpy import _units
+from kimnara._typing import SCT, ArrayLike
 
 if TYPE_CHECKING:
     import kimnara as kn
 
-_SCT = TypeVar("_SCT", bound=np.number[Any] | np.bool_)
 
-
-class NaiveDequantifier(_units.BaseDequantifier[_SCT]):
+class NaiveDequantifier(_units.BaseDequantifier[SCT]):
     __slots__ = ()
 
     @override
-    def dequantify(self, value: object) -> _SCT | npt.NDArray[_SCT]:
+    def dequantify(self, value: object) -> ArrayLike[SCT]:
         raise NotImplementedError
 
 
-class UnitNaive(_units.BaseUnit[_SCT]):
+class UnitNaive(_units.BaseUnit[SCT]):
     @override
     def dequantifier(
         self,
         align: "kn.Alignment",
-        dtype: type[_SCT],
+        dtype: type[SCT],
         pad_value: complex | None = None,
         *,
         prefer_scalar: bool = False,
         readonly: bool = True,
         safe: bool = True,
-    ) -> NaiveDequantifier[_SCT]:
+    ) -> NaiveDequantifier[SCT]:
         raise NotImplementedError
 
     @override

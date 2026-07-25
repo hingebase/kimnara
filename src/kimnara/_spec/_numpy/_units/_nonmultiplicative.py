@@ -17,45 +17,41 @@ __all__ = ["NonMultiplicativeDequantifier", "NonMultiplicativeUnit"]
 import dataclasses
 from typing import TYPE_CHECKING
 
-import numpy as np
-import numpy.typing as npt
 import pint
-from typing_extensions import Any, override
+from typing_extensions import override
 
 from kimnara._spec._numpy import _units
+from kimnara._typing import ArrayLike, NumberT
 
 if TYPE_CHECKING:
     import kimnara as kn
 
 
 @dataclasses.dataclass(slots=True)
-class NonMultiplicativeDequantifier(_units.BaseDequantifier[np.number[Any]]):
-    inner: _units.NaiveDequantifier[np.number[Any]]
+class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
+    inner: _units.NaiveDequantifier[NumberT]
     unit: pint.Unit
 
     @override
-    def dequantify(
-        self,
-        value: object,
-    ) -> np.number[Any] | npt.NDArray[np.number[Any]]:
+    def dequantify(self, value: object) -> ArrayLike[NumberT]:
         raise NotImplementedError
 
 
 @dataclasses.dataclass
-class NonMultiplicativeUnit(_units.BaseUnit[np.number[Any]]):
+class NonMultiplicativeUnit(_units.BaseUnit[NumberT]):
     obj: pint.Unit
 
     @override
     def dequantifier(
         self,
         align: "kn.Alignment",
-        dtype: type[np.number[Any]],
+        dtype: type[NumberT],
         pad_value: complex | None = None,
         *,
         prefer_scalar: bool = False,
         readonly: bool = True,
-    ) -> NonMultiplicativeDequantifier:
-        unit: _units.UnitNaive[np.number[Any]] = _units.UnitNaive()
+    ) -> NonMultiplicativeDequantifier[NumberT]:
+        unit: _units.UnitNaive[NumberT] = _units.UnitNaive()
         dequantifier = unit.dequantifier(
             align,
             dtype,

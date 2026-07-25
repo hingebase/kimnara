@@ -23,37 +23,35 @@ import numpy as np
 import numpy.typing as npt
 import xarray as xr
 from pint.facets.numpy.quantity import NumpyQuantity
-from typing_extensions import Any, TypeVar
+from typing_extensions import Any
 
 import kimnara as kn
 from kimnara import _utils
-
-_SCT = TypeVar("_SCT", bound=np.number[Any] | np.bool_)
-_T = TypeVar("_T", bound=np.number[Any] | npt.NDArray[np.number[Any]])
+from kimnara._typing import SCT, ArrayLike, NumericT
 
 
-class BaseDequantifier(abc.ABC, Generic[_SCT]):
+class BaseDequantifier(abc.ABC, Generic[SCT]):
     __slots__ = ()
 
-    def __call__(self, value: object) -> _SCT | npt.NDArray[_SCT]:
+    def __call__(self, value: object) -> ArrayLike[SCT]:
         return self.dequantify(_quantify(value))
 
     @abc.abstractmethod
-    def dequantify(self, value: object) -> _SCT | npt.NDArray[_SCT]:
+    def dequantify(self, value: object) -> ArrayLike[SCT]:
         raise NotImplementedError
 
 
-class BaseUnit(abc.ABC, Generic[_SCT]):
+class BaseUnit(abc.ABC, Generic[SCT]):
     @abc.abstractmethod
     def dequantifier(
         self,
         align: "kn.Alignment",
-        dtype: type[_SCT],
+        dtype: type[SCT],
         pad_value: complex | None = None,
         *,
         prefer_scalar: bool = False,
         readonly: bool = True,
-    ) -> BaseDequantifier[_SCT]:
+    ) -> BaseDequantifier[SCT]:
         raise NotImplementedError
 
     def dtype(self, annotation: object) -> type[np.number[Any] | np.bool_]:
@@ -109,7 +107,7 @@ def _(value: npt.NDArray[Any]) -> object:
 
 
 @_quantify.register(NumpyQuantity)
-def _(value: NumpyQuantity[_T]) -> NumpyQuantity[_T]:
+def _(value: NumpyQuantity[NumericT]) -> NumpyQuantity[NumericT]:
     return kn.quantity(value)
 
 

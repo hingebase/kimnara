@@ -18,45 +18,47 @@ import dataclasses
 import math
 from typing import cast
 
-import numpy as np
-import numpy.typing as npt
 import pint
-from typing_extensions import Any, override
+from typing_extensions import override
 
 import kimnara as kn
 from kimnara import _spec
 from kimnara._spec._numpy import _units
+from kimnara._typing import ArrayLike, NumberT
 
 
-class _BaseMultiplicativeDequantifier(_units.BaseDequantifier[np.number[Any]]):
+class _BaseMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
     __slots__ = ("_inner",)
 
-    def __init__(self, inner: "_units.NonMultiplicativeDequantifier") -> None:
+    def __init__(
+        self,
+        inner: "_units.NonMultiplicativeDequantifier[NumberT]",
+    ) -> None:
         self._inner = inner
 
     @override
-    def dequantify(
-        self,
-        value: object,
-    ) -> np.number[Any] | npt.NDArray[np.number[Any]]:
+    def dequantify(self, value: object) -> ArrayLike[NumberT]:
         raise NotImplementedError
 
 
 @dataclasses.dataclass
-class MultiplicativeUnit(_units.BaseUnit[np.number[Any]]):
+class MultiplicativeUnit(_units.BaseUnit[NumberT]):
     obj: pint.Unit
 
     @override
     def dequantifier(
         self,
         align: "kn.Alignment",
-        dtype: type[np.number[Any]],
+        dtype: type[NumberT],
         pad_value: complex | None = None,
         *,
         prefer_scalar: bool = False,
         readonly: bool = True,
-    ) -> _BaseMultiplicativeDequantifier:
-        dequantifier = _units.NonMultiplicativeUnit(self.obj).dequantifier(
+    ) -> _BaseMultiplicativeDequantifier[NumberT]:
+        unit: _units.NonMultiplicativeUnit[NumberT] = (
+            _units.NonMultiplicativeUnit(self.obj)
+        )
+        dequantifier = unit.dequantifier(
             align,
             dtype,
             pad_value,
@@ -72,14 +74,11 @@ class MultiplicativeUnit(_units.BaseUnit[np.number[Any]]):
         return True
 
 
-class _MultiplicativeDequantifier(_BaseMultiplicativeDequantifier):
+class _MultiplicativeDequantifier(_BaseMultiplicativeDequantifier[NumberT]):
     __slots__ = ()
 
     @override
-    def dequantify(
-        self,
-        value: object,
-    ) -> np.number[Any] | npt.NDArray[np.number[Any]]:
+    def dequantify(self, value: object) -> ArrayLike[NumberT]:
         raise NotImplementedError
 
 

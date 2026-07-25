@@ -19,31 +19,13 @@ __all__ = ["Intrinsic", "Mut"]
 from collections.abc import Callable
 from typing import Annotated
 
-import numpy as np
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import cpu, typing  # pyright: ignore[reportMissingTypeStubs]
-from typing_extensions import TypeVar, TypeVarTuple, Unpack
+from typing_extensions import TypeVarTuple, Unpack
 
 from . import _spec
+from ._typing import SCT
 
-_T = TypeVar(
-    "_T",
-    np.bool_,
-    np.int8,
-    np.int16,
-    np.int32,
-    np.int64,
-    np.intp,
-    np.uint8,
-    np.uint16,
-    np.uint32,
-    np.uint64,
-    np.uintp,
-    np.float32,
-    np.float64,
-    np.complex64,
-    np.complex128,
-)
 _Ts = TypeVarTuple("_Ts")
 
 
@@ -55,4 +37,4 @@ Intrinsic = tuple[
     ],
 ]
 
-Mut = Annotated[_T, _spec.Mutable]
+Mut = Annotated[SCT, _spec.Mutable]

@@ -28,6 +28,7 @@ from pint.facets.plain import PlainQuantity
 from typing_extensions import Any, TypeVar, overload
 
 from kimnara import _spec, _utils
+from kimnara._typing import ArrayLike, NumericT
 
 if TYPE_CHECKING:
     from typing import type_check_only
@@ -41,7 +42,6 @@ if TYPE_CHECKING:
 
 _Quantity = _spec.ureg.Quantity
 _ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...])
-_T = TypeVar("_T", bound=np.number[Any] | npt.NDArray[np.number[Any]])
 
 
 @overload
@@ -49,9 +49,9 @@ def quantity(
     # Using PlainQuantity for input annotations and NumpyQuantity for
     # output annotations
     # Use pint.Quantity directly once we require pint >=0.25.1
-    value: _T | PlainQuantity[_T],
+    value: NumericT | PlainQuantity[NumericT],
     units: str | None = ...,
-) -> NumpyQuantity[_T]: ...
+) -> NumpyQuantity[NumericT]: ...
 @overload
 def quantity(
     # np.timedelta64 is a subclass of np.signedinteger at runtime,
@@ -161,7 +161,7 @@ def _(value: "_DataArray", units: str | None) -> xr.DataArray:
 
 
 def _convert_timedelta(
-    value: np.timedelta64 | npt.NDArray[np.timedelta64],
+    value: ArrayLike[np.timedelta64],
     dtype: onp.AnyTimeDelta64DType,
     units: str | None,
 ) -> PlainQuantity[Any]:
