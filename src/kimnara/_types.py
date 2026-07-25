@@ -12,41 +12,20 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["AVX", "AVX512", "SSE", "A", "Alignment", "C", "F", "Mut", "Pad"]
+__all__ = ["AVX", "AVX512", "SSE", "A", "Alignment", "C", "F", "Pad"]
 
 import contextlib
 import enum
 import functools
-from typing import Annotated, cast
+from typing import cast
 
 import llvmlite.binding  # pyright: ignore[reportMissingTypeStubs]
-import numpy as np
 from optype.typing import AnyComplex
-from typing_extensions import TypeVar, final, override
+from typing_extensions import final, override
 
 import kimnara as kn
 
 from . import _spec
-
-_T = TypeVar(
-    "_T",
-    np.bool_,
-    np.int8,
-    np.int16,
-    np.int32,
-    np.int64,
-    np.intp,
-    np.uint8,
-    np.uint16,
-    np.uint32,
-    np.uint64,
-    np.uintp,
-    np.float32,
-    np.float64,
-    np.complex64,
-    np.complex128,
-)
-Mut = Annotated[_T, _spec.Mutable]
 
 
 @final

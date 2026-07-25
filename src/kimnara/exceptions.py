@@ -18,6 +18,7 @@ __all__ = [
     "BackendUnavailableError",
     "Error",
     "PerformanceWarning",
+    "ValidationError",
 ]
 
 import os
@@ -39,6 +40,14 @@ class PerformanceWarning(UserWarning, Error):  # noqa: N818
 
 class TypeInferenceError(Error):
     """Fail to infer runtime type from annotations."""
+
+
+class ValidationError(FloatingPointError, Error):
+    """Error raised by `kn.ops.invalid`.
+
+    This class inherits from `FloatingPointError` to match the behavior
+    of `np.errstate(invalid="raise")`.
+    """
 
 
 if (
