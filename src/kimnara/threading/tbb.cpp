@@ -145,9 +145,7 @@ void TBBParallelFor(
 }
 }  // namespace
 
-// NOLINTBEGIN
-NB_MODULE(_tbb, m)
-// NOLINTEND
+NB_MODULE(_tbb, m)  // NOLINT
 {
     m.attr("get_num_threads") = reinterpret_cast<uintptr_t>(TBBGetNumThreads);
     m.attr("get_thread_id") = reinterpret_cast<uintptr_t>(TBBGetThreadID);

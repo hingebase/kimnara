@@ -70,9 +70,7 @@ KN_C_API void KimnaraCriticalW(void *logger, const wchar_t *msg, size_t size) {
 #endif  // defined _WIN32 && defined SPDLOG_WCHAR_TO_UTF8_SUPPORT
 }
 
-// NOLINTBEGIN
-NB_MODULE(_spdlog, m)
-// NOLINTEND
+NB_MODULE(_spdlog, m)  // NOLINT
 {
     m.def("get_pointer", [](const nanobind::handle &logger) {
         return reinterpret_cast<uintptr_t>(

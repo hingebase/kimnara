@@ -171,9 +171,7 @@ MAYBE_CONSTEXPR_2 bool OpenMPVerbose() {
 }
 }  // namespace
 
-// NOLINTBEGIN
-NB_MODULE(_openmp, m)
-// NOLINTEND
+NB_MODULE(_openmp, m)  // NOLINT
 {
     if MAYBE_CONSTEXPR_2 (OpenMPVerbose()) {
         if MAYBE_CONSTEXPR_1 (OpenMPHybridCores()) {

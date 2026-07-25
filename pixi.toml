@@ -182,6 +182,7 @@ CMAKE_GENERATOR_TOOLSET = ""  # tombi: lint.rules.string-min-length.disabled = t
 cmd = "cmake -Bbuild -DCMAKE_BUILD_TYPE=Release -GNinja"
 inputs = [
     "CMakeLists.txt",
+    "src/kimnara/_spec/_numpy/_units/CMakeLists.txt",
     "src/kimnara/align/CMakeLists.txt",
     "src/kimnara/cmake/kimnara-config.cmake.in",
     "src/kimnara/lib/CMakeLists.txt",
