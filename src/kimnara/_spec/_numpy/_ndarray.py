@@ -22,8 +22,6 @@ from typing import get_args, get_origin
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
-import numpy.typing as npt
-import pint
 from numpy_typing_compat import NUMPY_GE_2_0
 from typing_extensions import Any, override
 from typing_inspection import introspection, typing_objects
@@ -32,7 +30,7 @@ import kimnara as kn
 from kimnara import _spec, _utils
 from kimnara._spec import _generic
 
-from . import _base
+from . import _base, _units
 
 _NPY_MAXDIMS = 64 if NUMPY_GE_2_0 else 32
 
@@ -98,7 +96,7 @@ class TypingContext(_generic.TypingContext):
     def get_dtype(
         self,
         annotation: object,
-        unit: pint.Unit | None,
+        unit: _units.BaseUnit[Any],
     ) -> tuple[type[np.number[Any] | np.bool_], bool]:
         if get_origin(annotation) is not np.dtype:
             message = "The second argument of np.ndarray[] must be np.dtype[]"
@@ -116,7 +114,7 @@ class TypingContext(_generic.TypingContext):
         for x in arg.metadata:
             if x is _spec.Mutable:
                 readonly = False
-        return _base.scalar_type(arg.type, bool(unit)), readonly
+        return unit.dtype(arg.type), readonly
 
     def get_ndim(self, shape: object) -> int:
         if (
@@ -174,7 +172,7 @@ class TypingContext(_generic.TypingContext):
         if not typing_objects.is_literal(get_origin(arg)):
             message = f"shape[{i}] is not integral"
             raise kn.TypeInferenceError(message)
-        for x in get_args(arg):
+        for x in introspection.get_literal_values(arg):
             if type(x) is not int:
                 message = f"shape[{i}] is not integral"
                 raise kn.TypeInferenceError(message)
@@ -190,7 +188,7 @@ class TypingContext(_generic.TypingContext):
 
 
 class _ArrayType(_base.Type):
-    __slots__ = ("_align", "_ndim", "_pad_value", "_readonly")
+    __slots__ = ("_align", "_ndim", "_readonly")
 
     @override
     def __init__(
@@ -210,12 +208,19 @@ class _ArrayType(_base.Type):
                     f"{len(args)}"
                 )
                 raise kn.TypeInferenceError(message)
-        super().__init__(annotation, ctx)
-        self.dtype, self._readonly = ctx.get_dtype(dtype.type, self.unit)
+        unit = _base.parse_units(annotation, ctx)
+        dtype, readonly = ctx.get_dtype(dtype.type, unit)
+        self.dtype = dtype
+        self._readonly = readonly
         self._ndim = ndim = ctx.get_ndim(shape.type)
         meta = annotation.metadata
-        self._align = ctx.get_align(meta, ndim)
-        self._pad_value = ctx.get_pad_value(meta)
+        self._align = align = ctx.get_align(meta, ndim)
+        self.dequantifier = unit.dequantifier(
+            align,
+            dtype,
+            ctx.get_pad_value(meta),
+            readonly=readonly,
+        )
 
     @override
     def to_numba(self) -> numba.core.types.Array:
@@ -230,10 +235,3 @@ class _ArrayType(_base.Type):
             layout,
             self._readonly,
         )
-
-    @override
-    def validator(
-        self,
-        value: object,
-    ) -> npt.NDArray[np.number[Any] | np.bool_]:
-        raise NotImplementedError
