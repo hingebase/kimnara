@@ -59,7 +59,8 @@ class Alignment(enum.Enum):
             if value == "host":
                 return _host_alignment()
             value = value.upper()
-            if value.startswith(("AVX512", "AVX-512")):
+            # https://www.phoronix.com/news/Intel-AVX10-Drops-256-Bit
+            if value.startswith(("AVX512", "AVX-512", "AVX10")):
                 return AVX512
             if value.startswith("AVX"):
                 return AVX
