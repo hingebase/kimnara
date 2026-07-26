@@ -17,15 +17,31 @@ __all__ = ["NoneType", "TupleType", "TypingContext", "UnionType"]
 import abc
 import builtins
 import sys
-import types
-from typing import Literal, get_args, no_type_check
+from typing import (
+    TYPE_CHECKING,
+    ForwardRef,
+    Literal,
+    get_args,
+    get_origin,
+    no_type_check,
+)
 
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
-from typing_extensions import Any, NamedTuple, TypeForm, override
-from typing_inspection import introspection
+from typing_extensions import (
+    Any,
+    NamedTuple,
+    TypeAliasType,
+    TypeForm,
+    evaluate_forward_ref,
+    override,
+)
+from typing_inspection import introspection, typing_objects
 
 import kimnara as kn
 from kimnara import _spec
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsGetItem
 
 
 class TypingContext(NamedTuple):
@@ -45,22 +61,26 @@ class TypingContext(NamedTuple):
     def infer(self, annotation: object) -> _spec.Type:
         raise NotImplementedError
 
-    @staticmethod
-    def parse(annotation: object) -> introspection.InspectedAnnotation:
+    @classmethod
+    def parse(cls, annotation: object) -> introspection.InspectedAnnotation:
+        # Can annotation be a ForwardRef?
         inspected = introspection.inspect_annotation(
             annotation,
             annotation_source=introspection.AnnotationSource.BARE,
             unpack_type_aliases="eager",
         )
-        if expanded := _expand_generic_alias(inspected.type):
-            return inspected._replace(type=expanded)
+        if annotation := _expand_type_alias(inspected.type):
+            merged = cls.parse(annotation)
+            merged.metadata.extend(inspected.metadata)
+            return merged
         return inspected
 
+    @classmethod
     def parse_args(
-        self,
+        cls,
         annotation: object,
     ) -> tuple[introspection.InspectedAnnotation, ...]:
-        return tuple(map(self.parse, get_args(annotation)))
+        return tuple(map(cls.parse, get_args(annotation)))
 
 
 class NoneType(_spec.Type):
@@ -162,12 +182,24 @@ class UnionType(_spec.Type):
         return None | self._type.to_python()
 
 
-def _expand_generic_alias(annotation: object) -> types.GenericAlias | None:
-    if isinstance(annotation, types.GenericAlias):
-        try:
-            value = annotation.__value__
-        except AttributeError:
-            pass
-        else:
-            return value[get_args(annotation)]
-    return None
+def _expand_type_alias(annotation: object) -> object:
+    if typing_objects.is_typealiastype(annotation):
+        return _get_value(annotation)
+    origin = get_origin(annotation)
+    if not typing_objects.is_typealiastype(origin):
+        return None
+    value = _get_value(origin)
+    try:
+        return value[get_args(annotation)]
+    except TypeError:
+        return value
+
+
+def _get_value(tat: TypeAliasType) -> "SupportsGetItem[tuple[Any, ...], Any]":
+    value = tat.__value__
+    if isinstance(value, str):
+        value = evaluate_forward_ref(
+            ForwardRef(value, module=tat.__module__),
+            type_params=tat.__type_params__,
+        )
+    return value

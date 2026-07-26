@@ -15,9 +15,11 @@
 """Operators that can be called from either Python or Numba."""
 
 __all__ = [
+    "cast",
     "fma",
     "invalid",
 ]
 
+from ._cast import cast_ as cast
 from ._fma import fma
 from ._invalid import invalid

@@ -14,17 +14,25 @@
 
 __all__ = ["MultiplicativeUnit"]
 
+import ctypes
 import dataclasses
 import math
 from typing import cast
 
+import numpy as np
 import pint
-from typing_extensions import override
+from typing_extensions import Any, override
 
 import kimnara as kn
-from kimnara import _spec
+from kimnara import _spec, _utils
 from kimnara._spec._numpy import _units
 from kimnara._typing import ArrayLike, NumberT
+
+from . import _accel
+from ._converters import PyUFunc_FromFuncAndData
+
+_DOC = b"Scale in double precision."
+_POINTER_SIZE = ctypes.sizeof(ctypes.c_void_p)
 
 
 class _BaseMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
@@ -88,3 +96,54 @@ def _dimensionless(unit: pint.Unit) -> bool:
     except pint.DimensionalityError:
         return False
     return math.isclose(scale, 1.)
+
+
+def _init() -> None:
+    ntypes = 10
+    for i, code in enumerate("bhlqBHLQfd"):
+        dtype = np.dtype(code)
+        name = b"scale_to_" + dtype.name.encode("ascii")
+        types = bytes(
+            map(_utils.num, f"{f'd{code}'.join('bhlqBHLQfd')}d{code}"),
+        )
+        _func[dtype.type] = PyUFunc_FromFuncAndData(
+            _accel.scale_funcs + ntypes * i * _POINTER_SIZE,
+            None,
+            types,
+            ntypes,
+            2,
+            1,
+            -1,  # None
+            name,
+            _DOC,
+            0,
+        )
+        _name.append(name)
+        _types.append(types)
+    ntypes = 12
+    for i, code in enumerate("FD"):
+        dtype = np.dtype(code)
+        name = b"scale_to_" + dtype.name.encode("ascii")
+        types = bytes(
+            map(_utils.num, f"{f'd{code}'.join('bhlqBHLQfdFD')}d{code}"),
+        )
+        _func[dtype.type] = PyUFunc_FromFuncAndData(
+            _accel.scale_funcs + (100 + ntypes * i) * _POINTER_SIZE,
+            None,
+            types,
+            ntypes,
+            2,
+            1,
+            -1,  # None
+            name,
+            _DOC,
+            0,
+        )
+        _name.append(name)
+        _types.append(types)
+
+
+_func: dict[type[np.number[Any]], np.ufunc] = {}
+_name: list[bytes] = []
+_types: list[bytes] = []
+_init()
