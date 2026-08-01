@@ -17,7 +17,7 @@ __all__ = ["AVX", "AVX512", "SSE", "A", "Alignment", "C", "F", "Pad"]
 import contextlib
 import enum
 import functools
-from typing import cast
+from typing import Literal, cast
 
 import llvmlite.binding  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
@@ -51,6 +51,14 @@ class Alignment(enum.Enum):
                 return kn.align.AVX512Allocator
             case _:
                 return _sse_allocator
+
+    @property
+    def order(self) -> Literal["A", "C", "F"]:
+        match self:
+            case kn.C | kn.F:
+                return self._name_
+            case _:
+                return "A"
 
     @classmethod
     @override

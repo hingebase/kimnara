@@ -12,7 +12,7 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["BaseDequantifier", "BaseUnit"]
+__all__ = ["BaseDequantifier", "BaseUnit", "is_quantity"]
 
 import abc
 import datetime
@@ -21,13 +21,15 @@ from typing import Generic, TypeGuard
 
 import numpy as np
 import numpy.typing as npt
+import pint
 import xarray as xr
+from pint.facets.nonmultiplicative.objects import NonMultiplicativeQuantity
 from pint.facets.numpy.quantity import NumpyQuantity
 from typing_extensions import Any
 
 import kimnara as kn
 from kimnara import _utils
-from kimnara._typing import SCT, ArrayLike, NumericT
+from kimnara._typing import SCT, ArrayLike, Number, NumericT, Scalar
 
 
 class BaseDequantifier(abc.ABC, Generic[SCT]):
@@ -54,7 +56,7 @@ class BaseUnit(abc.ABC, Generic[SCT]):
     ) -> BaseDequantifier[SCT]:
         raise NotImplementedError
 
-    def dtype(self, annotation: object) -> type[np.number[Any] | np.bool_]:
+    def dtype(self, annotation: object) -> type[Scalar]:
         match annotation:
             case np.bool_:
                 if self.has_unit():
@@ -82,6 +84,14 @@ class BaseUnit(abc.ABC, Generic[SCT]):
     @abc.abstractmethod
     def has_unit(self) -> bool:
         raise NotImplementedError
+
+
+def is_quantity(
+    x: object,
+    /,
+) -> TypeGuard[NonMultiplicativeQuantity[ArrayLike[Number]]]:
+    # The type of the magnitude has been forced by `_quantify`
+    return isinstance(x, pint.Quantity)  # pyright: ignore[reportUnknownMemberType]
 
 
 def _is_timedelta_array(

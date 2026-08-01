@@ -29,6 +29,7 @@ from typing_inspection import introspection, typing_objects
 import kimnara as kn
 from kimnara import _spec, _utils
 from kimnara._spec import _generic
+from kimnara._typing import Scalar
 
 from . import _base, _units
 
@@ -97,7 +98,7 @@ class TypingContext(_generic.TypingContext):
         self,
         annotation: object,
         unit: _units.BaseUnit[Any],
-    ) -> tuple[type[np.number[Any] | np.bool_], bool]:
+    ) -> tuple[type[Scalar], bool]:
         if get_origin(annotation) is not np.dtype:
             message = "The second argument of np.ndarray[] must be np.dtype[]"
             raise kn.TypeInferenceError(message)
@@ -224,14 +225,9 @@ class _ArrayType(_base.Type):
 
     @override
     def to_numba(self) -> numba.core.types.Array:
-        match self._align:
-            case (kn.C | kn.F) as align:
-                layout = align._name_
-            case _:
-                layout = "A"
         return numba.core.types.Array(
             numba.np.numpy_support.from_dtype(self.dtype),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
             self._ndim,
-            layout,
+            self._align.order,
             self._readonly,
         )

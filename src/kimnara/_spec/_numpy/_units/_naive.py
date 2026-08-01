@@ -14,29 +14,142 @@
 
 __all__ = ["NaiveDequantifier", "UnitNaive"]
 
-import ctypes
+import functools
+import math
+from typing import TypeGuard, cast
 
 import numpy as np
-from typing_extensions import Any, override
+import numpy.typing as npt
+import optype as op
+import pint
+from pint.facets.nonmultiplicative.objects import NonMultiplicativeQuantity
+from typing_extensions import Any, TypeVar, override
 
 import kimnara as kn
-from kimnara import _utils
+from kimnara import _spec, _utils
 from kimnara._spec._numpy import _units
 from kimnara._typing import SCT, ArrayLike
 
-from . import _accel
-from ._converters import PyUFunc_FromFuncAndData
-
-_DOC = b"Round doubles to integers."
-_POINTER_SIZE = ctypes.sizeof(ctypes.c_void_p)
+_ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...])
 
 
 class NaiveDequantifier(_units.BaseDequantifier[SCT]):
-    __slots__ = ()
+    __slots__ = ("_prefer_scalar", "_readonly", "align", "dtype", "pad_value")
+
+    def __init__(
+        self,
+        align: "kn.Alignment",
+        dtype: type[SCT],
+        pad_value: complex | None = None,
+        *,
+        prefer_scalar: bool = False,
+        readonly: bool = False,
+    ) -> None:
+        self.align = align
+        self.dtype = dtype
+        self.pad_value = pad_value
+        self._prefer_scalar = prefer_scalar
+        self._readonly = readonly
 
     @override
     def dequantify(self, value: object) -> ArrayLike[SCT]:
-        raise NotImplementedError
+        if _units.is_quantity(value):
+            if _dimensional(value):
+                message = "Expect plain numbers rather than quantities"
+                raise TypeError(message)
+            value = value.magnitude
+        return self.postprocess(self._dequantify(value), value)
+
+    def control_output(
+        self,
+        value: ArrayLike[np.number[Any]],
+    ) -> dict[str, object]:
+        match align := self.align:
+            case kn.A | kn.C | kn.F:
+                return {"order": align._name_}
+            case _:
+                if not _utils.at_least_1d(value):
+                    return {}
+        out = kn.empty(
+            value.shape,
+            self.dtype,
+            align=align,
+            pad_value=self.pad_value,
+        )
+        return {"out": out}
+
+    def dtype_match(
+        self,
+        value: ArrayLike[np.number[Any] | np.bool_, _ShapeT],
+    ) -> TypeGuard[ArrayLike[SCT, _ShapeT]]:
+        return value.dtype.type is self.dtype
+
+    def postprocess(
+        self,
+        value: ArrayLike[SCT],
+        original: object = None,
+    ) -> ArrayLike[SCT]:
+        if isinstance(value, np.ndarray):
+            if self._prefer_scalar and value.ndim == 0:
+                return value[()]
+            if self._readonly:
+                if value is original and value.flags.writeable:
+                    value = value.view()
+                value.flags.writeable = False
+        return value
+
+    @functools.singledispatchmethod
+    def _dequantify(self, value: object) -> ArrayLike[SCT]:
+        del self
+        message = f"Cannot convert {_utils.base_repr(value)} to ndarray"
+        raise TypeError(message)
+
+    @_dequantify.register(bool)
+    @_dequantify.register(np.bool_)
+    def _(self, value: bool | np.bool_) -> SCT:  # ruff: ignore[boolean-type-hint-positional-argument]
+        return self.dtype(value)
+
+    @_dequantify.register(op.JustInt)
+    def _(self, value: int) -> SCT:
+        dtype = self.dtype
+        if dtype is np.bool_ and 0 != value != 1:
+            np.array(value).astype(dtype, casting="safe")
+        return dtype(value)
+
+    @_dequantify.register(op.JustFloat)
+    def _(self, value: float) -> SCT:
+        dtype = self.dtype
+        if np.float64 is not dtype is not np.complex128:
+            np.array(value).astype(dtype, casting="safe")
+        return dtype(value)
+
+    @_dequantify.register(op.JustComplex)
+    def _(self, value: complex) -> np.complex128:
+        if self.dtype is not np.complex128:
+            np.array(value).astype(self.dtype, casting="safe")
+        return np.complex128(value)
+
+    @_dequantify.register(np.number)
+    def _(self, value: np.number[Any]) -> SCT:
+        return value.astype(self.dtype, casting="safe")
+
+    @_dequantify.register(np.ndarray)
+    def _(self, value: npt.NDArray[Any]) -> npt.NDArray[SCT]:
+        dtype = self.dtype
+        if _utils.at_least_1d(value) and np.can_cast(value, dtype, "safe"):
+            return kn.asarray(
+                value,
+                dtype,
+                align=self.align,
+                pad_value=self.pad_value,
+            )
+        return value.astype(
+            dtype,
+            order=self.align.order,
+            casting="safe",
+            subok=False,
+            copy=not value.flags.aligned,
+        )
 
 
 class UnitNaive(_units.BaseUnit[SCT]):
@@ -49,55 +162,25 @@ class UnitNaive(_units.BaseUnit[SCT]):
         *,
         prefer_scalar: bool = False,
         readonly: bool = True,
-        safe: bool = True,
     ) -> NaiveDequantifier[SCT]:
-        raise NotImplementedError
+        return NaiveDequantifier(
+            align,
+            dtype,
+            pad_value,
+            prefer_scalar=prefer_scalar,
+            readonly=readonly,
+        )
 
     @override
     def has_unit(self) -> bool:
         return False
 
 
-def _init() -> None:
-    for i, code in enumerate("bhlqBHLQfd"):
-        dtype = np.dtype(code)
-        name = b"round_to_" + dtype.name.encode("ascii")
-        types = bytes(map(_utils.num, f"d{code}"))
-        _func[dtype.type] = PyUFunc_FromFuncAndData(
-            _accel.round_funcs + i * _POINTER_SIZE,
-            None,
-            types,
-            1,
-            1,
-            1,
-            -1,  # None
-            name,
-            _DOC,
-            0,
-        )
-        _name.append(name)
-        _types.append(types)
-    for i, code in enumerate("FD", 10):
-        dtype = np.dtype(code)
-        name = b"round_to_" + dtype.name.encode("ascii")
-        types = bytes(map(_utils.num, f"D{code}"))
-        _func[dtype.type] = PyUFunc_FromFuncAndData(
-            _accel.round_funcs + i * _POINTER_SIZE,
-            None,
-            types,
-            1,
-            1,
-            1,
-            -1,  # None
-            name,
-            _DOC,
-            0,
-        )
-        _name.append(name)
-        _types.append(types)
-
-
-_func: dict[type[np.number[Any]], np.ufunc] = {}
-_name: list[bytes] = []
-_types: list[bytes] = []
-_init()
+def _dimensional(value: NonMultiplicativeQuantity[Any]) -> bool:
+    if not value._is_multiplicative:  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+        return True
+    try:
+        scale = cast("float", value.units.m_from(_spec.dimensionless))  # pyright: ignore[reportUnknownMemberType]
+    except pint.DimensionalityError:
+        return True
+    return not math.isclose(scale, 1.)

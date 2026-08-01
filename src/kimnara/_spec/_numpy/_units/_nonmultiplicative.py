@@ -14,17 +14,27 @@
 
 __all__ = ["NonMultiplicativeDequantifier", "NonMultiplicativeUnit"]
 
+import ctypes
 import dataclasses
 from typing import TYPE_CHECKING
 
+import numpy as np
 import pint
-from typing_extensions import override
+from typing_extensions import Any, override
 
+import kimnara as kn
+from kimnara import _utils
 from kimnara._spec._numpy import _units
 from kimnara._typing import ArrayLike, NumberT
 
+from . import _accel
+from ._converters import PyUFunc_FromFuncAndData
+
 if TYPE_CHECKING:
-    import kimnara as kn
+    import numpy.typing as npt
+
+_DOC = b"Round doubles to integers."
+_POINTER_SIZE = ctypes.sizeof(ctypes.c_void_p)
 
 
 @dataclasses.dataclass(slots=True)
@@ -34,7 +44,36 @@ class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
 
     @override
     def dequantify(self, value: object) -> ArrayLike[NumberT]:
-        raise NotImplementedError
+        if not _units.is_quantity(value):
+            message = "Expect quantities rather than plain numbers"
+            raise TypeError(message)
+        magnitude = value.magnitude
+        dtype = np.result_type(magnitude, None).type
+        dequantifier = self.inner
+        if isinstance(magnitude, np.ndarray):
+            fast_path = dequantifier.dtype is dtype
+            if fast_path and _utils.at_least_1d(magnitude):
+                magnitude = kn.array(
+                    magnitude,
+                    dtype,
+                    align=dequantifier.align,
+                    pad_value=dequantifier.pad_value,
+                )
+            else:
+                magnitude = magnitude.astype(dtype, order="C", subok=False)
+            quantity = type(value)(magnitude, value.units)
+            quantity.ito(self.unit)  # pyright: ignore[reportUnknownMemberType]
+        else:
+            fast_path = False
+            quantity = type(value)(magnitude.astype(dtype), value.units)
+            magnitude = quantity.m_as(self.unit)  # pyright: ignore[reportUnknownMemberType]
+        func = _func[dtype]
+        if fast_path:
+            out: npt.NDArray[NumberT] = func(magnitude, magnitude)
+        else:
+            kwargs = dequantifier.control_output(magnitude)
+            out = func(magnitude, **kwargs)
+        return dequantifier.postprocess(out)
 
 
 @dataclasses.dataclass
@@ -58,10 +97,54 @@ class NonMultiplicativeUnit(_units.BaseUnit[NumberT]):
             pad_value,
             prefer_scalar=prefer_scalar,
             readonly=readonly,
-            safe=False,
         )
         return NonMultiplicativeDequantifier(dequantifier, self.obj)
 
     @override
     def has_unit(self) -> bool:
         return True
+
+
+def _init() -> None:
+    for i, code in enumerate("bhlqBHLQfd"):
+        dtype = np.dtype(code)
+        name = b"round_to_" + dtype.name.encode("ascii")
+        types = bytes(map(_utils.num, f"d{code}"))
+        _func[dtype.type] = PyUFunc_FromFuncAndData(
+            _accel.round_funcs + i * _POINTER_SIZE,
+            None,
+            types,
+            1,
+            1,
+            1,
+            -1,  # None
+            name,
+            _DOC,
+            0,
+        )
+        _name.append(name)
+        _types.append(types)
+    for i, code in enumerate("FD", 10):
+        dtype = np.dtype(code)
+        name = b"round_to_" + dtype.name.encode("ascii")
+        types = bytes(map(_utils.num, f"D{code}"))
+        _func[dtype.type] = PyUFunc_FromFuncAndData(
+            _accel.round_funcs + i * _POINTER_SIZE,
+            None,
+            types,
+            1,
+            1,
+            1,
+            -1,  # None
+            name,
+            _DOC,
+            0,
+        )
+        _name.append(name)
+        _types.append(types)
+
+
+_func: dict[type[np.number[Any]], np.ufunc] = {}
+_name: list[bytes] = []
+_types: list[bytes] = []
+_init()

@@ -12,9 +12,18 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["SCT", "ArrayLike", "NumberT", "NumericT"]
+__all__ = [
+    "SCT",
+    "ArrayLike",
+    "Inexact",
+    "Number",
+    "NumberT",
+    "NumericT",
+    "Scalar",
+]
 
 import sys
+from typing import TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -25,6 +34,11 @@ if sys.version_info >= (3, 14):
 else:
     _Number = np.number[Any]
 
+Inexact = np.float32 | np.float64 | np.complex64 | np.complex128
+Number: TypeAlias = """
+    np.int8 | np.int16 | np.int32 | np.int64 | np.intp
+    | np.uint8 | np.uint16 | np.uint32 | np.uint64 | np.uintp
+    | Inexact"""
 NumberT = TypeVar(
     "NumberT",
     np.int8, np.int16, np.int32, np.int64, np.intp,
@@ -32,6 +46,7 @@ NumberT = TypeVar(
     np.float32, np.float64, np.complex64, np.complex128,
 )
 NumericT = TypeVar("NumericT", bound=_Number | npt.NDArray[_Number])
+Scalar: TypeAlias = "np.bool_ | Number"
 SCT = TypeVar(
     "SCT",
     np.bool_,

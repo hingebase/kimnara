@@ -12,15 +12,21 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["base_repr", "is_editable", "isclass", "num"]
+__all__ = ["at_least_1d", "base_repr", "is_editable", "isclass", "num"]
 
 import functools
 import importlib.metadata
 import json
+import operator
 import sys
 import types
+from typing import TypeGuard
 
 import numpy as np
+import optype.numpy as onp
+from typing_extensions import Protocol, TypeVar
+
+from kimnara._typing import ArrayLike
 
 if sys.version_info >= (3, 11):
     from inspect import isclass
@@ -32,6 +38,18 @@ else:
         # https://github.com/python/cpython/issues/89828
         return not isinstance(x, types.GenericAlias) and isinstance(x, type)
 
+_T = TypeVar("_T", bound=np.generic)
+
+
+class _AtLeast1D(Protocol):
+    def __call__(
+        self,
+        obj: ArrayLike[_T],
+        /,
+    ) -> TypeGuard[np.ndarray[onp.AtLeast1D, np.dtype[_T]]]: ...
+
+
+at_least_1d: _AtLeast1D = operator.attrgetter("ndim")
 num = {code: np.dtype(code).num for code in (
     "fdFD"  # Floating and complex types
     "bBhHlLqQ"  # Integer types

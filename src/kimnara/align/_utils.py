@@ -22,7 +22,7 @@ __all__ = [
 import itertools
 import warnings
 from collections.abc import Sequence
-from typing import TypeAlias, cast
+from typing import cast
 
 import numpy as np
 import numpy.typing as npt
@@ -32,24 +32,8 @@ from typing_extensions import Any, TypeVar, overload
 
 import kimnara as kn
 from kimnara import _spec, _utils
-from kimnara._typing import SCT
+from kimnara._typing import SCT, Scalar
 
-_ScalarType: TypeAlias = """
-    np.bool_
-    | np.int8
-    | np.int16
-    | np.int32
-    | np.int64
-    | np.intp
-    | np.uint8
-    | np.uint16
-    | np.uint32
-    | np.uint64
-    | np.uintp
-    | np.float32
-    | np.float64
-    | np.complex64
-    | np.complex128"""
 _ShapeT = TypeVar("_ShapeT", bound=onp.AtLeast1D)
 
 _DTYPES = frozenset(map(np.dtype, (
@@ -61,7 +45,7 @@ _DTYPES = frozenset(map(np.dtype, (
 
 @overload
 def array(
-    a: np.ndarray[_ShapeT, np.dtype[_ScalarType]],
+    a: np.ndarray[_ShapeT, np.dtype[Scalar]],
     dtype: type[SCT],
     *,
     copy: bool | None = ...,
@@ -79,12 +63,12 @@ def array(
 ) -> np.ndarray[_ShapeT, np.dtype[SCT]]: ...
 def array(
     a: np.ndarray[onp.AtLeast1D, np.dtype[Any]],
-    dtype: type[_ScalarType] | None = None,
+    dtype: type[Scalar] | None = None,
     *,
     copy: bool | None = True,
     align: "str | kn.Alignment" = "host",
     pad_value: AnyComplex | None = None,
-) -> npt.NDArray[_ScalarType]:
+) -> npt.NDArray[Scalar]:
     _check_array_dtype_and_ndim(a)
     dtype = dtype or a.dtype.type
     match align := kn.Alignment(align):
@@ -128,7 +112,7 @@ def array(
 
 @overload
 def asarray(
-    a: np.ndarray[_ShapeT, np.dtype[_ScalarType]],
+    a: np.ndarray[_ShapeT, np.dtype[Scalar]],
     dtype: type[SCT],
     *,
     align: "str | kn.Alignment" = ...,
@@ -144,11 +128,11 @@ def asarray(
 ) -> np.ndarray[_ShapeT, np.dtype[SCT]]: ...
 def asarray(
     a: np.ndarray[_ShapeT, np.dtype[Any]],
-    dtype: type[_ScalarType] | None = None,
+    dtype: type[Scalar] | None = None,
     *,
     align: "str | kn.Alignment" = "host",
     pad_value: AnyComplex | None = None,
-) -> np.ndarray[_ShapeT, np.dtype[_ScalarType]]:
+) -> np.ndarray[_ShapeT, np.dtype[Scalar]]:
     return array(a, dtype, align=align, copy=None, pad_value=pad_value)
 
 
@@ -178,11 +162,11 @@ def empty(
 ) -> np.ndarray[onp.AtLeast1D, np.dtype[SCT]]: ...
 def empty(
     shape: int | Sequence[int],
-    dtype: type[_ScalarType] = np.float64,
+    dtype: type[Scalar] = np.float64,
     *,
     align: "str | kn.Alignment" = "host",
     pad_value: AnyComplex | None = None,
-) -> npt.NDArray[_ScalarType]:
+) -> npt.NDArray[Scalar]:
     if isinstance(shape, int):
         shape = (shape,)
     elif not shape:
@@ -200,7 +184,7 @@ def empty(
 
 
 def isaligned(
-    value: np.ndarray[onp.AtLeast1D, np.dtype[_ScalarType]],
+    value: np.ndarray[onp.AtLeast1D, np.dtype[Scalar]],
     align: "str | kn.Alignment",
 ) -> bool:
     _check_array_dtype_and_ndim(value)
@@ -221,7 +205,7 @@ def isaligned(
 
 def _calculate_padding(
     shape: Sequence[int],
-    dtype: type[_ScalarType],
+    dtype: type[Scalar],
     spec: _spec.Alignment,
 ) -> int:
     itemsize = np.dtype(dtype).itemsize
@@ -252,10 +236,10 @@ def _check_array_dtype_and_ndim(x: object) -> None:
 def _empty(
     shape: Sequence[int],
     padding: int,
-    dtype: type[_ScalarType],
+    dtype: type[Scalar],
     align: "kn.Alignment",
     pad_value: AnyComplex | None,
-) -> npt.NDArray[_ScalarType]:
+) -> npt.NDArray[Scalar]:
     shape = list(shape)
     n = shape[-1]
     shape[-1] = n + padding
@@ -267,7 +251,7 @@ def _empty(
 
 
 def _isaligned_simd(
-    value: np.ndarray[onp.AtLeast1D, np.dtype[_ScalarType]],
+    value: np.ndarray[onp.AtLeast1D, np.dtype[Scalar]],
     spec: _spec.Alignment,
 ) -> bool:
     multiple_of = spec.multiple_of

@@ -20,6 +20,7 @@ import math
 from typing import cast
 
 import numpy as np
+import optype as op
 import pint
 from typing_extensions import Any, override
 
@@ -35,18 +36,44 @@ _DOC = b"Scale in double precision."
 _POINTER_SIZE = ctypes.sizeof(ctypes.c_void_p)
 
 
-class _BaseMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
-    __slots__ = ("_inner",)
+class _MultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
+    __slots__ = ("_inner", "_types")
 
     def __init__(
         self,
         inner: "_units.NonMultiplicativeDequantifier[NumberT]",
+        *args: type[Any],
     ) -> None:
         self._inner = inner
+        self._types = args
 
     @override
     def dequantify(self, value: object) -> ArrayLike[NumberT]:
-        raise NotImplementedError
+        if isinstance(value, self._types):
+            return self._inner.inner.dequantify(value)
+        if not _units.is_quantity(value):
+            message = "Expect quantities rather than plain numbers"
+            raise TypeError(message)
+        if not value._is_multiplicative:  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+            return self._inner.dequantify(value)
+        dequantifier = self._inner.inner
+        base = value.magnitude
+        scale = cast("float", self._inner.unit.m_from(value.units))  # pyright: ignore[reportUnknownMemberType]
+        if not math.isclose(scale, 1.) or not dequantifier.dtype_match(base):
+            func = _func[dequantifier.dtype]
+            kwargs = dequantifier.control_output(base)
+            out = func(base, scale, **kwargs)
+        elif _utils.at_least_1d(base):
+            out = kn.asarray(
+                base,
+                align=dequantifier.align,
+                pad_value=dequantifier.pad_value,
+            )
+        elif isinstance(base, np.ndarray):
+            out = np.require(base, requirements=("A", "E"))  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        else:
+            out = base
+        return dequantifier.postprocess(out, base)  # pyright: ignore[reportUnknownArgumentType]
 
 
 @dataclasses.dataclass
@@ -62,7 +89,7 @@ class MultiplicativeUnit(_units.BaseUnit[NumberT]):
         *,
         prefer_scalar: bool = False,
         readonly: bool = True,
-    ) -> _BaseMultiplicativeDequantifier[NumberT]:
+    ) -> _MultiplicativeDequantifier[NumberT]:
         unit: _units.NonMultiplicativeUnit[NumberT] = (
             _units.NonMultiplicativeUnit(self.obj)
         )
@@ -74,20 +101,19 @@ class MultiplicativeUnit(_units.BaseUnit[NumberT]):
             readonly=readonly,
         )
         if _dimensionless(self.obj):
-            return _MultiplicativeDequantifier(dequantifier)
-        return _BaseMultiplicativeDequantifier(dequantifier)
+            return _MultiplicativeDequantifier(
+                dequantifier,
+                op.JustInt,
+                op.JustFloat,
+                op.JustComplex,
+                np.number,
+                np.ndarray,
+            )
+        return _MultiplicativeDequantifier(dequantifier)
 
     @override
     def has_unit(self) -> bool:
         return True
-
-
-class _MultiplicativeDequantifier(_BaseMultiplicativeDequantifier[NumberT]):
-    __slots__ = ()
-
-    @override
-    def dequantify(self, value: object) -> ArrayLike[NumberT]:
-        raise NotImplementedError
 
 
 def _dimensionless(unit: pint.Unit) -> bool:

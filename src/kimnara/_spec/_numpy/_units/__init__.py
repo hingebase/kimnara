@@ -20,9 +20,10 @@ __all__ = [
     "NonMultiplicativeDequantifier",
     "NonMultiplicativeUnit",
     "UnitNaive",
+    "is_quantity",
 ]
 
-from ._base import BaseDequantifier, BaseUnit
+from ._base import BaseDequantifier, BaseUnit, is_quantity
 from ._multiplicative import MultiplicativeUnit
 from ._naive import NaiveDequantifier, UnitNaive
 from ._nonmultiplicative import (
