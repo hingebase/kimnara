@@ -20,7 +20,10 @@ from typing import no_type_check
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
-from numba.core import types, typing  # pyright: ignore[reportMissingTypeStubs]
+from numba.core import types  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.typing.context import (  # pyright: ignore[reportMissingTypeStubs]
+    Context,
+)
 
 import kimnara as kn
 
@@ -34,9 +37,8 @@ def invalid() -> int:
 
 
 @numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
-@no_type_check
-def _intrinsic(_: typing.Context) -> "kn.typing.Intrinsic[()]":
-    return (
+def _intrinsic(_: Context) -> "kn.typing.Intrinsic[()]":
+    return (  # pyright: ignore[reportUnknownVariableType]
         types.intc(),
         lambda context, builder, _signature, _args: _lib.call(
             # In MSVC, `feraiseexcept` was implemented as a inline
@@ -44,24 +46,24 @@ def _intrinsic(_: typing.Context) -> "kn.typing.Intrinsic[()]":
             "fesetexceptflag",
             context,
             builder,
-            types.intc(types.CPointer(types.ulong), types.intc),
+            types.intc(types.CPointer(types.ulong), types.intc),  # pyright: ignore[reportUnknownArgumentType]
             [
-                context.insert_unique_const(
-                    builder.module,
+                context.insert_unique_const(  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+                    builder.module,  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
                     ".flagp",
                     ir.Constant(
-                        context.get_argument_type(types.ulong),
+                        context.get_argument_type(types.ulong),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
                         0x10000010,
                     ),
                 ),
-                ir.Constant(context.get_argument_type(types.intc), 0x10),
+                ir.Constant(context.get_argument_type(types.intc), 0x10),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
             ],
         ) if sys.platform == "win32" else _lib.call(
             "feraiseexcept",
             context,
             builder,
-            types.intc(types.intc),
-            [ir.Constant(context.get_argument_type(types.intc), 1)],
+            types.intc(types.intc),  # pyright: ignore[reportUnknownArgumentType]
+            [ir.Constant(context.get_argument_type(types.intc), 1)],  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
         ),
     )
 

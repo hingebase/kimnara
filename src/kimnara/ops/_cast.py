@@ -23,7 +23,9 @@ import numpy as np
 from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
     bytecode,
     types,
-    typing,
+)
+from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
+    context,
 )
 from typing_extensions import evaluate_forward_ref
 
@@ -39,6 +41,8 @@ if TYPE_CHECKING:
 else:
     def cast_(typ: str, val: object) -> object:
         raise NotImplementedError
+
+_DTYPES = np.bool_, np.integer, np.floating, np.complexfloating
 
 
 @numba.extending.overload(  # pyright: ignore[reportUnknownMemberType, reportUntypedFunctionDecorator]
@@ -58,14 +62,14 @@ def _(
 
     @numba.extending.intrinsic
     def intrinsic(
-        typingctx: typing.Context,
+        typingctx: context.Context,
         x: types.Type,
     ) -> "kn.typing.Intrinsic[ir.Value]":
         if x != types.intp:
             raise NotImplementedError
 
         # typingctx.callstack[0] is the wrapping lambda
-        frame = cast("typing.context.CallFrame", typingctx.callstack[1])
+        frame = cast("context.CallFrame", typingctx.callstack[1])
 
         func_id = cast("bytecode.FunctionIdentity", frame.func_id)
         annotation = evaluate_forward_ref(
@@ -77,7 +81,7 @@ def _(
             raise NotImplementedError
         [arg] = _spec.TypingContext.parse_args(inspected)
         dtype = arg.type
-        if not (_utils.isclass(dtype) and issubclass(dtype, np.generic)):
+        if not (_utils.isclass(dtype) and issubclass(dtype, _DTYPES)):
             raise NotImplementedError
         f = types.CPointer(numba.np.numpy_support.from_dtype(dtype))  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
         return (  # pyright: ignore[reportUnknownVariableType]

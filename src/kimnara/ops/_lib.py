@@ -19,10 +19,9 @@ import sys
 from collections.abc import Sequence
 
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    cgutils,
-    cpu,
-    typing,
+from numba.core import cgutils, cpu  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.typing.templates import (  # pyright: ignore[reportMissingTypeStubs]
+    Signature,
 )
 
 if sys.platform == "win32":
@@ -35,7 +34,7 @@ def call(
     name: str,
     context: cpu.CPUContext,
     builder: ir.IRBuilder,
-    signature: typing.Signature,
+    signature: Signature,
     args: Sequence[ir.Value],
 ) -> ir.Instruction:
     fnty = ir.FunctionType(

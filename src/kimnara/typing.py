@@ -21,7 +21,12 @@ from typing import TYPE_CHECKING, Annotated
 
 import optype.numpy as onp
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
-from numba.core import cpu, typing  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.cpu import (  # pyright: ignore[reportMissingTypeStubs]
+    CPUContext,
+)
+from numba.core.typing.templates import (  # pyright: ignore[reportMissingTypeStubs]
+    Signature,
+)
 from typing_extensions import Any, Protocol, TypeVar, TypeVarTuple, Unpack
 
 from . import _spec
@@ -63,9 +68,9 @@ class CPointer(Protocol[_T_co]):
 
 
 Intrinsic = tuple[
-    typing.Signature,
+    Signature,
     Callable[
-        [cpu.CPUContext, ir.IRBuilder, typing.Signature, tuple[Unpack[_Ts]]],
+        [CPUContext, ir.IRBuilder, Signature, tuple[Unpack[_Ts]]],
         ir.Value | None,
     ],
 ]

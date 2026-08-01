@@ -27,7 +27,7 @@ from typing import TypeAlias
 
 import numpy as np
 import numpy.typing as npt
-from typing_extensions import Any, TypeVar
+from typing_extensions import Any, TypeAliasType, TypeVar
 
 if sys.version_info >= (3, 14):
     _Number = np.number
@@ -55,6 +55,10 @@ SCT = TypeVar(
     np.float32, np.float64, np.complex64, np.complex128,
 )
 
-_SCT = TypeVar("_SCT", bound=np.generic, default=_Number | np.bool_)
+_SCT = TypeVar("_SCT", bound=np.generic)
 _ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...], default=tuple[int, ...])
-ArrayLike = _SCT | np.ndarray[_ShapeT, np.dtype[_SCT]]
+ArrayLike = TypeAliasType(
+    "ArrayLike",
+    _SCT | np.ndarray[_ShapeT, np.dtype[_SCT]],
+    type_params=(_SCT, _ShapeT),
+)

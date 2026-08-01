@@ -56,11 +56,11 @@ def test_constructors() -> None:
 
     a = kn.empty((2, 511), align="mkl", pad_value=1)
     assert not a.flags.c_contiguous
-    base = a.base
+    base = a.base  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
     assert base is not None
     assert base.flags.carray
     assert base.shape == (2, 520)
-    np.testing.assert_equal(base[:, 511:], 1)
+    np.testing.assert_equal(base[:, 511:], 1)  # pyright: ignore[reportUnknownArgumentType]
     a[0] = range(1000, 1511)
     a[1] = range(2000, 2511)
     for align in _SIMD:
@@ -68,13 +68,13 @@ def test_constructors() -> None:
         b = kn.asarray(a, align=align, pad_value=1)
         assert not np.shares_memory(a, b)
         np.testing.assert_array_equal(a, b, strict=True)
-        base = b.base
+        base = b.base  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
         assert base is not None
         assert base.flags.carray
         assert base.shape == (2, 520 if align == kn.Alignment.MKL else 512)
 
     a = kn.empty(512, align=kn.Alignment.MKL)
-    assert a.base is None
+    assert a.base is None  # pyright: ignore[reportUnknownMemberType]
     assert a.shape == (512,)
     for align in kn.Alignment:
         assert kn.asarray(a, np.float64, align=align, pad_value=2) is a
@@ -198,7 +198,7 @@ def _numba_guvectorize_1d(
 ) -> npt.NDArray[np.bool_]: ...
 
 @numba.guvectorize(  # pyright: ignore[reportUnknownMemberType]
-    ["(float32[:], intp, bool[:])", "(float64[:], intp, bool[:])"],
+    ["(float32[:], intp, bool_[:])", "(float64[:], intp, bool_[:])"],
     "(n),()->()",
 )
 @no_type_check
@@ -223,7 +223,7 @@ def _numba_guvectorize_2d(
 ) -> npt.NDArray[np.bool_]: ...
 
 @numba.guvectorize(  # pyright: ignore[reportUnknownMemberType]
-    ["(float32[:, :], intp, bool[:])", "(float64[:, :], intp, bool[:])"],
+    ["(float32[:, :], intp, bool_[:])", "(float64[:, :], intp, bool_[:])"],
     "(m,n),()->()",
 )
 @no_type_check

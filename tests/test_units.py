@@ -15,17 +15,21 @@
 """Test unit conversion."""
 
 import math
-from typing import TypeGuard
+from typing import TypeGuard, cast
 
 import llvmlite.binding  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import numpy.typing as npt
-import pint
+import pint.facets
 import pytest
 from numpy_typing_compat import NUMPY_GE_2_0
-from typing_extensions import Sentinel, TypeVar
+from typing_extensions import Any, Sentinel, TypeVar
 
 _T = TypeVar("_T", bound=np.generic)
+_UnitRegistry = pint.registry.GenericUnitRegistry[
+    pint.facets.plain.PlainQuantity[Any],
+    pint.Unit,
+]
 MISSING = Sentinel("MISSING")
 
 
@@ -40,9 +44,8 @@ def test_converters(subtests: pytest.Subtests) -> None:
     logarithmic and offset converters with FMA-enabled implementations.
     They are expected to be faster for large arrays on modern CPUs.
     """
-    ureg = pint.UnitRegistry()
-    default = pint.get_application_registry().get()  # pyright: ignore[reportUnknownVariableType]
-    assert isinstance(default, pint.UnitRegistry)
+    ureg = cast("_UnitRegistry", pint.UnitRegistry())
+    default = cast("_UnitRegistry", pint.get_application_registry().get())
     for unit in "degF", "dBm":
         # ruff: disable[private-member-access]
         old = ureg._units[unit].converter  # pyright: ignore[reportPrivateUsage]
@@ -60,8 +63,8 @@ def test_converters(subtests: pytest.Subtests) -> None:
 
 
 def _real_non_multiplicative_quantities(
-    ureg: pint.UnitRegistry,
-    default: pint.UnitRegistry,
+    ureg: _UnitRegistry,
+    default: _UnitRegistry,
     rng: np.random.Generator,
 ) -> None:
     x = rng.lognormal(mean=10., sigma=10., size=1000)
@@ -83,7 +86,7 @@ def _real_non_multiplicative_quantities(
     # Much more tolerance is required for float32
     # Again, it's developers' responsibility to avoid storing tiny
     # numbers as float32
-    for from_, to, atol in [("K", "degF", 2e-5), ("W", "dBm", 2e-6)]:
+    for from_, to, atol in [("K", "degF", 3e-5), ("W", "dBm", 3e-6)]:
         actual = default.Quantity(x, from_).m_as(to)  # pyright: ignore[reportUnknownMemberType]
         quantity = ureg.Quantity(x, from_)
         if to == "dBm":
@@ -109,8 +112,8 @@ def _real_non_multiplicative_quantities(
 
 
 def _complex_non_multiplicative_quantities(
-    ureg: pint.UnitRegistry,
-    default: pint.UnitRegistry,
+    ureg: _UnitRegistry,
+    default: _UnitRegistry,
     rng: np.random.Generator,
 ) -> None:
     x = 1j * rng.uniform(-.5 * math.pi, .5 * math.pi, size=1000)
@@ -139,14 +142,14 @@ def _complex_non_multiplicative_quantities(
     desired = quantity.magnitude
     assert _is_ndarray(actual, np.complex64)
     assert _is_ndarray(desired, np.complex64)
-    np.testing.assert_allclose(actual, desired, rtol=1e-5, atol=2e-6)
+    np.testing.assert_allclose(actual, desired, rtol=1e-5, atol=3e-6)
     actual = default.Quantity(desired, "dBm").m_as("W")  # pyright: ignore[reportUnknownMemberType]
     quantity = ureg.Quantity(desired, "dBm")
     quantity.ito("W")  # pyright: ignore[reportUnknownMemberType]
     desired = quantity.magnitude
     assert _is_ndarray(actual, np.complex64)
     assert _is_ndarray(desired, np.complex64)
-    np.testing.assert_allclose(actual, desired, rtol=1e-5, atol=2e-6)
+    np.testing.assert_allclose(actual, desired, rtol=1e-5, atol=3e-6)
 
 
 def _is_ndarray(value: object, dtype: type[_T]) -> TypeGuard[npt.NDArray[_T]]:

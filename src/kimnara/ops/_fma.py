@@ -25,7 +25,11 @@ from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
     cgutils,
     cpu,
     types,
-    typing,
+)
+from numba.core.types import scalars  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
+    context,
+    templates,
 )
 from numpy import complex64, float32
 from typing_extensions import TypeVar, overload
@@ -43,7 +47,7 @@ else:
     _fma = CFUNCTYPE(c_double, c_double, c_double, c_double)(("fma", _lib.c))
 
 _Op = complex | float32 | complex64
-_T = TypeVar("_T", float, float32)
+_T = TypeVar("_T", onp.ToJustFloat64, float32)
 
 
 @overload
@@ -55,11 +59,26 @@ def fma(a: complex64, b: float32, c: complex64 | float32, /) -> complex64: ...
 @overload
 def fma(a: float32, b: complex64, c: complex64 | float32, /) -> complex64: ...
 @overload
-def fma(a: float, b: float, c: onp.ToJustComplex128, /) -> complex: ...
+def fma(
+    a: onp.ToJustFloat64,
+    b: onp.ToJustFloat64,
+    c: onp.ToJustComplex128,
+    /,
+) -> complex: ...
 @overload
-def fma(a: onp.ToJustComplex128, b: float, c: complex, /) -> complex: ...
+def fma(
+    a: onp.ToJustComplex128,
+    b: onp.ToJustFloat64,
+    c: onp.ToJustComplex128 | onp.ToJustFloat64,
+    /,
+) -> complex: ...
 @overload
-def fma(a: float, b: onp.ToJustComplex128, c: complex, /) -> complex: ...
+def fma(
+    a: onp.ToJustFloat64,
+    b: onp.ToJustComplex128,
+    c: onp.ToJustComplex128 | onp.ToJustFloat64,
+    /,
+) -> complex: ...
 @no_type_check
 def fma(  # ruff: ignore[too-many-return-statements]
     a: object,
@@ -94,7 +113,7 @@ def fma(  # ruff: ignore[too-many-return-statements]
 def _codegen(
     context: cpu.CPUContext,
     builder: "ir.IRBuilder",
-    signature: typing.Signature,
+    signature: templates.Signature,
     args: "tuple[ir.Value, ir.Value]",
 ) -> "ir.Instruction":
     c = cast(
@@ -106,26 +125,24 @@ def _codegen(
 
 
 @numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
-@no_type_check
 def _complex64(
-    _: typing.Context,
-    real: types.Float,
-    imag: types.Float,
+    _: context.Context,
+    real: scalars.Float,
+    imag: scalars.Float,
 ) -> "kn.typing.Intrinsic[ir.Value, ir.Value]":
-    return types.complex64(real, imag), _codegen
+    return types.complex64(real, imag), _codegen  # pyright: ignore[reportUnknownVariableType]
 
 
 @numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
-@no_type_check
 def _intrinsic(
-    _: typing.Context,
-    a: types.Float,
-    b: types.Float,
-    c: types.Float,
+    _: context.Context,
+    a: scalars.Float,
+    b: scalars.Float,
+    c: scalars.Float,
 ) -> "kn.typing.Intrinsic[ir.Value, ir.Value, ir.Value]":
-    return (
+    return (  # pyright: ignore[reportUnknownVariableType]
         a(a, b, c),
-        lambda _context, builder, _signature, args: builder.fma(*args),
+        lambda _context, builder, _signature, args: builder.fma(*args),  # pyright: ignore[reportUnknownMemberType]
     )
 
 
@@ -136,9 +153,9 @@ def _intrinsic(
 )
 @no_type_check
 def _(  # ruff: ignore[too-many-return-statements]
-    a: types.Complex | types.Float,
-    b: types.Complex | types.Float,
-    c: types.Complex | types.Float,
+    a: scalars.Complex | scalars.Float,
+    b: scalars.Complex | scalars.Float,
+    c: scalars.Complex | scalars.Float,
     /,
 ) -> Callable[[_Op, _Op, _Op], object] | None:
     match a, b, c:

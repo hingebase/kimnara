@@ -135,11 +135,11 @@ class TupleType(_spec.Type):
 
     @override
     def to_numba(self) -> numba.core.types.Tuple | numba.core.types.UniTuple:
-        return numba.core.types.Tuple(self._args)
+        return numba.core.types.Tuple([arg.to_numba() for arg in self._args])
 
     @override
     def to_python(self) -> TypeForm[tuple[Any, ...]]:
-        return tuple[self._args]
+        return tuple[tuple(arg.to_python() for arg in self._args)]
 
 
 class UnionType(_spec.Type):
@@ -200,6 +200,6 @@ def _get_value(tat: TypeAliasType) -> "SupportsGetItem[tuple[Any, ...], Any]":
     if isinstance(value, str):
         value = evaluate_forward_ref(
             ForwardRef(value, module=tat.__module__),
-            type_params=tat.__type_params__,
+            type_params=tat.__type_params__,  # pyright: ignore[reportArgumentType]
         )
     return value

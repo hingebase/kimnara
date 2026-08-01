@@ -101,7 +101,10 @@ def array(
         if np.iscomplexobj(a) and not issubclass(dtype, np.complexfloating):
             warnings.warn(
                 "Casting complex values to real discards the imaginary part",
-                category=np.exceptions.ComplexWarning,
+                category=cast(
+                    "type[RuntimeWarning]",
+                    getattr(np, "exceptions", np).ComplexWarning,  # pyright: ignore[reportAttributeAccessIssue]
+                ),
                 stacklevel=2,
             )
         arr[:] = a
@@ -159,7 +162,9 @@ def empty(
     *,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[onp.AtLeast1D, np.dtype[SCT]]: ...
+    # Cannot use `onp.AtLeast1D` here since the shape was invariant in
+    # numpy <2.1.0
+) -> npt.NDArray[SCT]: ...
 def empty(
     shape: int | Sequence[int],
     dtype: type[Scalar] = np.float64,
