@@ -112,6 +112,9 @@ select = ["ALL"]
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 72
 
+[tool.ruff.lint.pylint]
+allow-dunder-method-names = ["_as_parameter_", "__name__", "_repr_svg_"]
+
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"
 logging.level = "INFO"

@@ -15,25 +15,41 @@
 __all__ = [
     "SCT",
     "ArrayLike",
+    "Casting",
+    "CustomInliningRule",
+    "FastMathOptions",
     "Inexact",
+    "Input",
     "Number",
     "NumberT",
     "NumericT",
+    "Output",
+    "Outputs",
     "Scalar",
+    "UFuncKwargs",
 ]
 
 import sys
-from typing import TypeAlias
+from collections.abc import Callable
+from typing import Literal, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
-from typing_extensions import Any, TypeAliasType, TypeVar
+import optype.numpy as onp
+from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
+    cpu_options,
+    ir,
+)
+from pint.facets.numpy.quantity import NumpyQuantity
+from pint.facets.plain import PlainQuantity
+from typing_extensions import Any, TypeAliasType, TypedDict, TypeVar
 
 if sys.version_info >= (3, 14):
     _Number = np.number
 else:
     _Number = np.number[Any]
 
+Casting = Literal["no", "equiv", "safe", "same_kind", "unsafe"]
 Inexact = np.float32 | np.float64 | np.complex64 | np.complex128
 Number: TypeAlias = """
     np.int8 | np.int16 | np.int32 | np.int64 | np.intp
@@ -62,3 +78,27 @@ ArrayLike = TypeAliasType(
     _SCT | np.ndarray[_ShapeT, np.dtype[_SCT]],
     type_params=(_SCT, _ShapeT),
 )
+Input = ArrayLike[Scalar] | PlainQuantity[ArrayLike[Number]]
+Output = ArrayLike[Scalar] | NumpyQuantity[ArrayLike[Number]]
+Outputs = Output | tuple["Outputs", ...]
+
+CustomInliningRule = Callable[[ir.Expr, Any, Any], bool]
+_FastMathFlags = Literal[
+    "fast",
+    "nnan", "ninf", "nsz", "arcp",
+    "contract", "afn", "reassoc",
+]
+FastMathOptions: TypeAlias = """
+    bool
+    | set[_FastMathFlags]
+    | dict[_FastMathFlags, bool]
+    | cpu_options.FastMathOptions"""
+
+
+class UFuncKwargs(TypedDict, total=False):
+    where: onp.AnyBoolArray | bool | None
+    casting: Casting
+    order: Literal["A", "C", "F", "K"]
+    dtype: npt.DTypeLike
+    subok: bool
+    signature: str | tuple[npt.DTypeLike, npt.DTypeLike, npt.DTypeLike]

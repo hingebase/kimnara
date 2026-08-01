@@ -17,28 +17,17 @@ __all__ = ["cfunc", "func", "gufunc", "ufunc"]
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Literal, TypeAlias
 
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    compiler,
-    cpu_options,
-    ir,
-)
+from numba.core import compiler  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
 from typing_extensions import Any, overload
+
+from kimnara._typing import CustomInliningRule, FastMathOptions
+
+from . import _cfunc, _func, _gufunc, _ufunc
 
 if TYPE_CHECKING:
     import kimnara as kn
 
-_CustomInliningRule = Callable[[ir.Expr, Any, Any], bool]
-_FastMathFlags = Literal[
-    "fast",
-    "nnan", "ninf", "nsz", "arcp",
-    "contract", "afn", "reassoc",
-]
-_FastMathOptions: TypeAlias = """
-    bool
-    | set[_FastMathFlags]
-    | dict[_FastMathFlags, bool]
-    | cpu_options.FastMathOptions"""
 _GUFuncAlignment: TypeAlias = """str | Literal[
     kn.Alignment.A,
     kn.Alignment.C,
@@ -51,9 +40,9 @@ _GUFuncAlignment: TypeAlias = """str | Literal[
 
 @overload
 def cfunc(
-    wrapped: Callable[..., Any],
+    wrapped: Callable[..., _cfunc.PythonT],
     /,
-) -> ...: ...
+) -> _cfunc.PyCFunc[_cfunc.PythonT]: ...
 
 @overload
 def cfunc(
@@ -67,7 +56,10 @@ def cfunc(
     nopython: Literal[False] = ...,
     parallel: Literal[False] = ...,
     pipeline_class: None = ...,
-) -> ...: ...
+) -> Callable[
+    [Callable[..., _cfunc.PythonT]],
+    _cfunc.PyCFunc[_cfunc.PythonT],
+]: ...
 
 @overload
 def cfunc(
@@ -75,14 +67,17 @@ def cfunc(
     boundscheck: bool | None = ...,
     cache: bool | None = ...,
     error_model: Literal["python", "numpy"] = ...,
-    fastmath: _FastMathOptions = ...,
+    fastmath: FastMathOptions = ...,
     forceinline: bool = ...,
-    inline: Literal["always", "never"] | _CustomInliningRule = ...,
+    inline: Literal["always", "never"] | CustomInliningRule = ...,
     nogil: bool = ...,
-    nopython: bool,
+    nopython: Literal[True],
     parallel: bool | str = ...,
     pipeline_class: type[compiler.CompilerBase] | None = None,
-) -> ...: ...
+) -> Callable[
+    [Callable[..., _cfunc.NumbaT]],
+    _cfunc.NumbaCFunc[_cfunc.NumbaT],
+]: ...
 
 
 def cfunc(  # noqa: PLR0913
@@ -91,23 +86,23 @@ def cfunc(  # noqa: PLR0913
     *,
     boundscheck: bool | None = None,
     cache: bool | None = None,
-    error_model: Literal["python", "numpy"] = "python",
-    fastmath: _FastMathOptions = False,
+    error_model: Literal["python", "numpy"] = "numpy",
+    fastmath: FastMathOptions = False,
     forceinline: bool = False,
-    inline: Literal["always", "never"] | _CustomInliningRule = "never",
+    inline: Literal["always", "never"] | CustomInliningRule = "never",
     nogil: bool = False,
     nopython: bool = False,
     parallel: bool | str = False,
     pipeline_class: type[compiler.CompilerBase] | None = None,
-) -> ...:
+) -> Callable[..., Any]:
     raise NotImplementedError
 
 
 @overload
 def func(
-    wrapped: Callable[..., Any],
+    wrapped: Callable[..., _func.PythonType],
     /,
-) -> ...: ...
+) -> _func.PyFunc: ...
 
 @overload
 def func(
@@ -123,7 +118,7 @@ def func(
     pad_value: AnyComplex | None = ...,
     parallel: Literal[False] = ...,
     pipeline_class: None = ...,
-) -> ...: ...
+) -> Callable[[Callable[..., _func.PythonType]], _func.PyFunc]: ...
 
 @overload
 def func(
@@ -132,15 +127,15 @@ def func(
     boundscheck: bool | None = ...,
     cache: bool | None = ...,
     error_model: Literal["python", "numpy"] = ...,
-    fastmath: _FastMathOptions = ...,
+    fastmath: FastMathOptions = ...,
     forceinline: bool = ...,
-    inline: Literal["always", "never"] | _CustomInliningRule = ...,
+    inline: Literal["always", "never"] | CustomInliningRule = ...,
     nogil: bool = ...,
-    nopython: bool,
+    nopython: Literal[True],
     pad_value: AnyComplex | None = ...,
     parallel: bool | str = ...,
     pipeline_class: type[compiler.CompilerBase] | None = ...,
-) -> ...: ...
+) -> Callable[[Callable[..., _func.NumbaType]], _func.NumbaFunc]: ...
 
 
 def func(  # noqa: PLR0913
@@ -150,16 +145,16 @@ def func(  # noqa: PLR0913
     align: "str | kn.Alignment" = "A",
     boundscheck: bool | None = None,
     cache: bool | None = None,
-    error_model: Literal["python", "numpy"] = "python",
-    fastmath: _FastMathOptions = False,
+    error_model: Literal["python", "numpy"] = "numpy",
+    fastmath: FastMathOptions = False,
     forceinline: bool = False,
-    inline: Literal["always", "never"] | _CustomInliningRule = "never",
+    inline: Literal["always", "never"] | CustomInliningRule = "never",
     nogil: bool = False,
     nopython: bool = False,
     pad_value: AnyComplex | None = None,
     parallel: bool | str = False,
     pipeline_class: type[compiler.CompilerBase] | None = None,
-) -> ...:
+) -> Callable[..., Any]:
     raise NotImplementedError
 
 
@@ -174,7 +169,7 @@ def gufunc(
     nopython: Literal[False] = ...,
     pad_value: AnyComplex | None = ...,
     parallel: bool | str = ...,
-) -> ...: ...
+) -> Callable[[Callable[..., _gufunc.PythonType]], _gufunc.PyGUFunc]: ...
 
 @overload
 def gufunc(
@@ -183,11 +178,30 @@ def gufunc(
     align: _GUFuncAlignment = ...,
     boundscheck: bool | None = ...,
     cache: bool | None = ...,
-    fastmath: _FastMathOptions = ...,
-    nopython: bool,
+    fastmath: FastMathOptions = ...,
+    nopython: Literal[True],
     pad_value: AnyComplex | None = ...,
-    parallel: bool | str = ...,
-) -> ...: ...
+    parallel: Literal[False] = ...,
+) -> Callable[
+    [Callable[..., _gufunc.NumbaType]],
+    _gufunc.NumbaGUFunc,
+]: ...
+
+@overload
+def gufunc(
+    signature: str,
+    *,
+    align: _GUFuncAlignment = ...,
+    boundscheck: bool | None = ...,
+    cache: bool | None = ...,
+    fastmath: FastMathOptions = ...,
+    nopython: Literal[True],
+    pad_value: AnyComplex | None = ...,
+    parallel: Literal[True] | str,
+) -> Callable[
+    [Callable[..., _gufunc.NumbaType]],
+    _gufunc.NumbaParallelGUFunc,
+]: ...
 
 
 def gufunc(  # noqa: PLR0913
@@ -196,19 +210,19 @@ def gufunc(  # noqa: PLR0913
     align: _GUFuncAlignment = "A",
     boundscheck: bool | None = None,
     cache: bool | None = None,
-    fastmath: _FastMathOptions = False,
+    fastmath: FastMathOptions = False,
     nopython: bool = False,
     pad_value: AnyComplex | None = None,
     parallel: bool | str = False,
-) -> ...:
+) -> Callable[..., Any]:
     raise NotImplementedError
 
 
 @overload
 def ufunc(
-    wrapped: Callable[..., Any],
+    wrapped: Callable[..., _ufunc.PythonType],
     /,
-) -> ...: ...
+) -> _ufunc.PyUFunc: ...
 
 @overload
 def ufunc(
@@ -216,22 +230,38 @@ def ufunc(
     boundscheck: Literal[True] | None = ...,
     cache: Literal[False] | None = ...,
     fastmath: Literal[False] = ...,
-    # np.vectorize calls np.frompyfunc without the `identity` argument
-    identity: None = ...,
+    identity: Literal["reorderable"] | None = ...,
     nopython: Literal[False] = ...,
     parallel: bool | str = ...,
-) -> ...: ...
+) -> Callable[[Callable[..., _ufunc.PythonType]], _ufunc.PyUFunc]: ...
 
 @overload
 def ufunc(
     *,
     boundscheck: bool | None = ...,
     cache: bool | None = ...,
-    fastmath: _FastMathOptions = ...,
+    fastmath: FastMathOptions = ...,
     identity: Literal[0, 1, "reorderable"] | None = ...,
-    nopython: bool,
-    parallel: bool | str = ...,
-) -> ...: ...
+    nopython: Literal[True],
+    parallel: Literal[False] = ...,
+) -> Callable[
+    [Callable[..., _ufunc.NumbaType]],
+    _ufunc.NumbaUFunc,
+]: ...
+
+@overload
+def ufunc(
+    *,
+    boundscheck: bool | None = ...,
+    cache: bool | None = ...,
+    fastmath: FastMathOptions = ...,
+    identity: Literal[0, 1, "reorderable"] | None = ...,
+    nopython: Literal[True],
+    parallel: Literal[True] | str,
+) -> Callable[
+    [Callable[..., _ufunc.NumbaType]],
+    _ufunc.NumbaParallelUFunc,
+]: ...
 
 
 def ufunc(  # noqa: PLR0913
@@ -240,9 +270,9 @@ def ufunc(  # noqa: PLR0913
     *,
     boundscheck: bool | None = None,
     cache: bool | None = None,
-    fastmath: _FastMathOptions = False,
+    fastmath: FastMathOptions = False,
     identity: Literal[0, 1, "reorderable"] | None = None,
     nopython: bool = False,
     parallel: bool | str = False,
-) -> ...:
+) -> Callable[..., Any]:
     raise NotImplementedError
