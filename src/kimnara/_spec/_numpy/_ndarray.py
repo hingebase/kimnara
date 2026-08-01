@@ -72,7 +72,7 @@ class TypingContext(_generic.TypingContext):
         message = f"Cannot infer the runtime type from {_utils.base_repr(tp)}"
         raise kn.TypeInferenceError(message)
 
-    def get_align(self, meta: list[Any], ndim: int) -> "kn.Alignment":
+    def get_align(self, meta: list[Any], ndim: int | None) -> "kn.Alignment":
         if found := {x for x in meta if isinstance(x, kn.Alignment)}:
             if len(found) > 1:
                 flat = ", ".join(x._name_ for x in found)
@@ -117,7 +117,7 @@ class TypingContext(_generic.TypingContext):
                 readonly = False
         return unit.dtype(arg.type), readonly
 
-    def get_ndim(self, shape: object) -> int:
+    def get_ndim(self, shape: object) -> int | None:
         if (
             typing_objects.is_any(shape)
             or shape is tuple
@@ -142,7 +142,7 @@ class TypingContext(_generic.TypingContext):
                 for i, arg in enumerate(args):
                     self._check_dim(i, self.parse(arg))
         default = self.ndim
-        if default is not None:
+        if isinstance(default, int):
             if default != ndim:
                 message = f"ndim conflict: {default}, {ndim}"
                 raise kn.TypeInferenceError(message)
@@ -181,11 +181,13 @@ class TypingContext(_generic.TypingContext):
                 message = f"shape[{i}] can be negative"
                 raise kn.TypeInferenceError(message)
 
-    def _default_ndim(self) -> int:
-        if self.ndim is None:
-            message = "ndim is unknown"
-            raise kn.TypeInferenceError(message)
-        return self.ndim
+    def _default_ndim(self) -> int | None:
+        match self.ndim:
+            case int() | None as ndim:
+                return ndim
+            case _:
+                message = "ndim is unknown"
+                raise kn.TypeInferenceError(message)
 
 
 class _ArrayType(_base.Type):
@@ -225,9 +227,12 @@ class _ArrayType(_base.Type):
 
     @override
     def to_numba(self) -> numba.core.types.Array:
+        ndim = self._ndim
+        if ndim is None:
+            _utils.unreachable()
         return numba.core.types.Array(
             numba.np.numpy_support.from_dtype(self.dtype),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-            self._ndim,
+            ndim,
             self._align.order,
             self._readonly,
         )

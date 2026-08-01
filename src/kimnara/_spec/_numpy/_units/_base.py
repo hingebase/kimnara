@@ -32,7 +32,7 @@ from kimnara import _utils
 from kimnara._typing import SCT, ArrayLike, Number, NumericT, Scalar
 
 
-class BaseDequantifier(abc.ABC, Generic[SCT]):
+class BaseDequantifier(_utils.EqMixIn, abc.ABC, Generic[SCT]):
     __slots__ = ()
 
     def __call__(self, value: object) -> ArrayLike[SCT]:
@@ -40,6 +40,10 @@ class BaseDequantifier(abc.ABC, Generic[SCT]):
 
     @abc.abstractmethod
     def dequantify(self, value: object) -> ArrayLike[SCT]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_unit(self) -> pint.Unit | None:
         raise NotImplementedError
 
 

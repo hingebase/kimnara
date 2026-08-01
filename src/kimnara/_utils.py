@@ -12,7 +12,15 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["at_least_1d", "base_repr", "is_editable", "isclass", "num"]
+__all__ = [
+    "EqMixIn",
+    "at_least_1d",
+    "base_repr",
+    "is_editable",
+    "isclass",
+    "num",
+    "unreachable",
+]
 
 import functools
 import importlib.metadata
@@ -20,7 +28,7 @@ import json
 import operator
 import sys
 import types
-from typing import TypeGuard
+from typing import NoReturn, TypeGuard
 
 import numpy as np
 import optype.numpy as onp
@@ -39,6 +47,18 @@ else:
         return not isinstance(x, types.GenericAlias) and isinstance(x, type)
 
 _T = TypeVar("_T", bound=np.generic)
+
+
+class EqMixIn:  # ruff: ignore[eq-without-hash]
+    __slots__ = ()
+
+    def __eq__(self, other: object) -> bool:
+        if type(self) is not type(other):
+            return False
+        for name in self.__slots__:
+            if getattr(self, name) != getattr(other, name):
+                return False
+        return True
 
 
 class _AtLeast1D(Protocol):
@@ -80,3 +100,8 @@ def is_editable() -> bool:
                 case _:
                     return False
     return NotImplemented
+
+
+def unreachable() -> NoReturn:
+    message = "Unreachable"
+    raise AssertionError(message)

@@ -75,6 +75,10 @@ class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
             out = func(magnitude, **kwargs)
         return dequantifier.postprocess(out)
 
+    @override
+    def get_unit(self) -> pint.Unit:
+        return self.unit
+
 
 @dataclasses.dataclass
 class NonMultiplicativeUnit(_units.BaseUnit[NumberT]):

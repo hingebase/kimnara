@@ -60,6 +60,10 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
             value = value.magnitude
         return self.postprocess(self._dequantify(value), value)
 
+    @override
+    def get_unit(self) -> None:
+        pass
+
     def control_output(
         self,
         value: ArrayLike[np.number[Any]],

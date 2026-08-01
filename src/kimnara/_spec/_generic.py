@@ -27,9 +27,11 @@ from typing import (
 )
 
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
+import pint
 from typing_extensions import (
     Any,
     NamedTuple,
+    Sentinel,
     TypeAliasType,
     TypeForm,
     evaluate_forward_ref,
@@ -53,7 +55,10 @@ class TypingContext(NamedTuple):
     allow_scalar: bool = False
     allow_tuple: bool | Literal["nested"] = False
     allow_units: bool = False
-    ndim: int | None = None
+
+    # https://github.com/microsoft/pyright/issues/11115
+    ndim: object = Sentinel("MISSING")
+
     pad_value: complex | None = None
     readonly: bool = False
 
@@ -95,6 +100,10 @@ class NoneType(_spec.Type):
         if not ctx.allow_none:
             message = "None is unsupported in this context"
             raise kn.TypeInferenceError(message)
+
+    @override
+    def to_ctypes(self) -> None:
+        pass
 
     @override
     def to_numba(self) -> numba.core.types.NoneType:
@@ -141,6 +150,17 @@ class TupleType(_spec.Type):
     def to_python(self) -> TypeForm[tuple[Any, ...]]:
         return tuple[tuple(arg.to_python() for arg in self._args)]
 
+    @override
+    def to_units(self) -> tuple[pint.Unit | None, ...] | None:
+        units: list[pint.Unit | None] = []
+        for arg in self._args:
+            unit = arg.to_units()
+            if isinstance(unit, tuple):
+                message = "Nested tuples cannot have units"
+                raise kn.TypeInferenceError(message)
+            units.append(unit)
+        return tuple(units) if any(units) else None
+
 
 class UnionType(_spec.Type):
     __slots__ = ("_type",)
@@ -180,6 +200,12 @@ class UnionType(_spec.Type):
     @no_type_check
     def to_python(self) -> TypeForm[Any]:
         return None | self._type.to_python()
+
+    @override
+    def to_units(self) -> None:
+        if self._type.to_units() is not None:
+            message = "Optional types cannot have units"
+            raise kn.TypeInferenceError(message)
 
 
 def _expand_type_alias(annotation: object) -> object:

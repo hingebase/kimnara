@@ -26,6 +26,7 @@ from typing import TYPE_CHECKING, cast
 
 import metpy.units  # pyright: ignore[reportMissingTypeStubs]
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
+import pint
 from optype.typing import AnyComplex
 from typing_extensions import (
     Any,
@@ -42,7 +43,6 @@ from typing_inspection import introspection
 from kimnara import _spec, _utils
 
 if TYPE_CHECKING:
-    import pint
     from pint.facets.plain import PlainQuantity
 
 if sys.version_info >= (3, 11):
@@ -65,7 +65,7 @@ class Mutable:
     pass
 
 
-class Type(abc.ABC):
+class Type(_utils.EqMixIn, abc.ABC):
     __slots__ = ()
 
     @abc.abstractmethod
@@ -76,6 +76,11 @@ class Type(abc.ABC):
     ) -> None:
         raise NotImplementedError
 
+    # This is not an abstract method as most types can't be converted to
+    # ctypes
+    def to_ctypes(self) -> type[Any] | None:
+        raise NotImplementedError
+
     @abc.abstractmethod
     def to_numba(self) -> numba.core.types.Type:
         raise NotImplementedError
@@ -83,6 +88,9 @@ class Type(abc.ABC):
     @abc.abstractmethod
     def to_python(self) -> TypeForm[Any]:
         raise NotImplementedError
+
+    def to_units(self) -> tuple[pint.Unit | None, ...] | pint.Unit | None:
+        pass
 
 
 def scalar(value: AnyComplex) -> complex:
