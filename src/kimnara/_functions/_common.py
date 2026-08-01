@@ -24,12 +24,14 @@ __all__ = [
 import abc
 import collections
 import inspect
+import itertools
 from collections.abc import Callable
-from typing import Generic, Literal, cast
+from typing import TYPE_CHECKING, Generic, Literal, cast
 
 import numpy as np
 import pint.registry_helpers
 import pydantic
+import pydantic_core
 from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
     ccallback,
     compiler,
@@ -48,11 +50,21 @@ from numba.np.ufunc import (  # pyright: ignore[reportMissingTypeStubs]
     ufuncbuilder,
 )
 from optype.typing import AnyComplex
-from typing_extensions import Any, Protocol, TypeVar, Unpack, override
+from typing_extensions import (
+    Any,
+    LiteralString,
+    Protocol,
+    TypeVar,
+    Unpack,
+    override,
+)
 
 import kimnara as kn
 from kimnara import _spec
 from kimnara._typing import Casting, Input, Outputs, UFuncKwargs
+
+if TYPE_CHECKING:
+    from _typeshed import Unused
 
 _T = TypeVar("_T")
 
@@ -193,7 +205,51 @@ class Validator(Inferable[_T]):
             k: v.annotation for k, v in sig.parameters.items()
         }
         annotations["return"] = sig.return_annotation
-        return pydantic.validate_call(wrapper)
+        return self._with_parameter_names(pydantic.validate_call(wrapper))
+
+    # ruff: disable[builtin-argument-shadowing]
+    def _init_error_details(
+        self,
+        type: str,
+        loc: tuple[int | str, ...],
+        msg: str,
+        input: object,
+        **_: "Unused",
+    ) -> pydantic_core.InitErrorDetails:
+        match loc:
+            case int() as i, *rest:
+                it = itertools.islice(self.sig.parameters, i, None)
+                loc = next(it), *rest
+            case _:
+                pass
+        return {
+            # https://github.com/pydantic/pydantic-core/issues/963
+            "type": pydantic_core.PydanticCustomError(
+                cast("LiteralString", type),
+                cast("LiteralString", msg),
+            ),
+            "loc": loc,
+            "input": input,
+        }
+    # ruff: enable[builtin-argument-shadowing]
+
+    def _with_parameter_names(
+        self,
+        wrapped: Callable[..., object],
+    ) -> Callable[..., object]:
+        # Temporary fix for https://github.com/pydantic/pydantic/issues/6791
+        def wrapper(*args: object) -> object:
+            try:
+                return wrapped(*args)
+            except pydantic.ValidationError as e:
+                raise e.from_exception_data(
+                    e.title,
+                    line_errors=[
+                        self._init_error_details(**detail)
+                        for detail in e.errors()
+                    ],
+                ) from None
+        return wrapper
 
 
 class UFuncCompiler(Validator[_T]):

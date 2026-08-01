@@ -20,6 +20,7 @@ from typing import TYPE_CHECKING
 
 import numpy as np
 import pint
+import pydantic_core
 from typing_extensions import Any, override
 
 import kimnara as kn
@@ -45,8 +46,9 @@ class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
     @override
     def dequantify(self, value: object) -> ArrayLike[NumberT]:
         if not _units.is_quantity(value):
+            error_type = "is_instance_of"
             message = "Expect quantities rather than plain numbers"
-            raise TypeError(message)
+            raise pydantic_core.PydanticCustomError(error_type, message)
         magnitude = value.magnitude
         dtype = np.result_type(magnitude, None).type
         dequantifier = self.inner

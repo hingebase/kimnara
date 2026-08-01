@@ -22,6 +22,7 @@ from typing import cast
 import numpy as np
 import optype as op
 import pint
+import pydantic_core
 from typing_extensions import Any, override
 
 import kimnara as kn
@@ -52,8 +53,9 @@ class _MultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
         if isinstance(value, self._types):
             return self._inner.inner.dequantify(value)
         if not _units.is_quantity(value):
+            error_type = "is_instance_of"
             message = "Expect quantities rather than plain numbers"
-            raise TypeError(message)
+            raise pydantic_core.PydanticCustomError(error_type, message)
         if not value._is_multiplicative:  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
             return self._inner.dequantify(value)
         dequantifier = self._inner.inner

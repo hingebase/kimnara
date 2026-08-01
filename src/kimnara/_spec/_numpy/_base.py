@@ -133,7 +133,7 @@ else:
     ) -> type["_SimpleCData[complex]"]:
         del dtype
         message = "Complex numbers require Python 3.14 or later"
-        raise TypeError(message)
+        raise kn.TypeInferenceError(message)
 
 
 _parse_units = _spec.ureg.parse_units

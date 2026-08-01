@@ -22,6 +22,7 @@ from typing import Generic, TypeGuard
 import numpy as np
 import numpy.typing as npt
 import pint
+import pydantic_core
 import xarray as xr
 from pint.facets.nonmultiplicative.objects import NonMultiplicativeQuantity
 from pint.facets.numpy.quantity import NumpyQuantity
@@ -36,7 +37,55 @@ class BaseDequantifier(_utils.EqMixIn, abc.ABC, Generic[SCT]):
     __slots__ = ()
 
     def __call__(self, value: object) -> ArrayLike[SCT]:
-        return self.dequantify(_quantify(value))
+        try:
+            return self.dequantify(_quantify(value))
+        except FloatingPointError as e:
+            match e.args:
+                case [str(msg)] if msg.startswith((
+                    "invalid value encountered in round_to_",
+                    "invalid value encountered in scale_to_",
+                )):
+                    pass
+                case _:
+                    raise
+            match np.dtype(msg[38:]).kind:
+                case "i":
+                    error_type = "int_type"
+                case "f":
+                    error_type = "float_type"
+                case "c":
+                    error_type = "complex_type"
+                case _:
+                    _utils.unreachable()
+            raise pydantic_core.PydanticCustomError(
+                error_type,
+                "{message}",
+                {"message": msg},
+            ) from None
+        except ValueError as e:
+            if isinstance(e, pydantic_core.PydanticCustomError):
+                raise
+            # Cleaner error message than raising ValueError directly
+            error_type = "value_error"
+            raise pydantic_core.PydanticCustomError(
+                error_type,
+                "{message}",
+                {"message": e},
+            ) from None
+        except pint.DimensionalityError as e:
+            error_type = "value_error"
+            raise pydantic_core.PydanticCustomError(
+                error_type,
+                "Cannot convert from '{units1}'{dim1} to "
+                    "'{units2}'{dim2}{extra_msg}",
+                {
+                    "units1": e.units1,
+                    "units2": e.units2,
+                    "dim1": f" ({e.dim1})" if e.dim1 else None,
+                    "dim2": f" ({e.dim2})" if e.dim2 else None,
+                    "extra_msg": e.extra_msg,
+                },
+            ) from None
 
     @abc.abstractmethod
     def dequantify(self, value: object) -> ArrayLike[SCT]:
@@ -128,8 +177,9 @@ def _(value: NumpyQuantity[NumericT]) -> NumpyQuantity[NumericT]:
 @_quantify.register
 def _(value: xr.DataArray) -> object:
     del value
+    error_type = "is_instance_of"
     message = (
         "Don't pass `xarray.DataArray` directly to Kimnara functions. "
         "Instead, use `xarray.apply_ufunc` to unwrap it."
     )
-    raise TypeError(message)
+    raise pydantic_core.PydanticCustomError(error_type, message)

@@ -16,12 +16,13 @@ __all__ = ["NaiveDequantifier", "UnitNaive"]
 
 import functools
 import math
-from typing import TypeGuard, cast
+from typing import Literal, NoReturn, TypeGuard, cast
 
 import numpy as np
 import numpy.typing as npt
 import optype as op
 import pint
+import pydantic_core
 from pint.facets.nonmultiplicative.objects import NonMultiplicativeQuantity
 from typing_extensions import Any, TypeVar, override
 
@@ -55,8 +56,9 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
     def dequantify(self, value: object) -> ArrayLike[SCT]:
         if _units.is_quantity(value):
             if _dimensional(value):
+                error_type = "is_instance_of"
                 message = "Expect plain numbers rather than quantities"
-                raise TypeError(message)
+                raise pydantic_core.PydanticCustomError(error_type, message)
             value = value.magnitude
         return self.postprocess(self._dequantify(value), value)
 
@@ -104,9 +106,10 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
 
     @functools.singledispatchmethod
     def _dequantify(self, value: object) -> ArrayLike[SCT]:
-        del self
-        message = f"Cannot convert {_utils.base_repr(value)} to ndarray"
-        raise TypeError(message)
+        del self, value
+        error_type = "is_instance_of"
+        message = "Unsupported"
+        raise pydantic_core.PydanticCustomError(error_type, message)
 
     @_dequantify.register(bool)
     @_dequantify.register(np.bool_)
@@ -117,43 +120,51 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
     def _(self, value: int) -> SCT:
         dtype = self.dtype
         if dtype is np.bool_ and 0 != value != 1:
-            np.array(value).astype(dtype, casting="safe")
+            _validation_error("scalar", int, dtype)
         return dtype(value)
 
     @_dequantify.register(op.JustFloat)
     def _(self, value: float) -> SCT:
         dtype = self.dtype
         if np.float64 is not dtype is not np.complex128:
-            np.array(value).astype(dtype, casting="safe")
+            _validation_error("scalar", float, dtype)
         return dtype(value)
 
     @_dequantify.register(op.JustComplex)
     def _(self, value: complex) -> np.complex128:
         if self.dtype is not np.complex128:
-            np.array(value).astype(self.dtype, casting="safe")
+            _validation_error("scalar", complex, self.dtype)
         return np.complex128(value)
 
     @_dequantify.register(np.number)
     def _(self, value: np.number[Any]) -> SCT:
-        return value.astype(self.dtype, casting="safe")
+        try:
+            return value.astype(self.dtype, casting="safe")
+        except TypeError:
+            _validation_error("scalar", value.dtype, self.dtype)
 
     @_dequantify.register(np.ndarray)
     def _(self, value: npt.NDArray[Any]) -> npt.NDArray[SCT]:
         dtype = self.dtype
-        if _utils.at_least_1d(value) and np.can_cast(value, dtype, "safe"):
+        if _utils.at_least_1d(value):
+            if not np.can_cast(value, dtype, casting="safe"):
+                _validation_error("array data", value.dtype, dtype)
             return kn.asarray(
                 value,
                 dtype,
                 align=self.align,
                 pad_value=self.pad_value,
             )
-        return value.astype(
-            dtype,
-            order=self.align.order,
-            casting="safe",
-            subok=False,
-            copy=not value.flags.aligned,
-        )
+        try:
+            return value.astype(
+                dtype,
+                order=self.align.order,
+                casting="safe",
+                subok=False,
+                copy=not value.flags.aligned,
+            )
+        except TypeError:
+            _validation_error("array data", value.dtype, dtype)
 
 
 class UnitNaive(_units.BaseUnit[SCT]):
@@ -188,3 +199,28 @@ def _dimensional(value: NonMultiplicativeQuantity[Any]) -> bool:
     except pint.DimensionalityError:
         return True
     return not math.isclose(scale, 1.)
+
+
+def _validation_error(
+    obj: Literal["scalar", "array data"],
+    from_: npt.DTypeLike,
+    to: npt.DTypeLike,
+) -> NoReturn:
+    to = np.dtype(to)
+    match to.kind:
+        case "b":
+            error_type = "bool_type"
+        case "i":
+            error_type = "int_type"
+        case "f":
+            error_type = "float_type"
+        case "c":
+            error_type = "complex_type"
+        case _:
+            _utils.unreachable()
+    raise pydantic_core.PydanticCustomError(
+        error_type,
+        "Cannot cast {obj} from dtype('{from}') to dtype('{to}') according to "
+            "the rule 'safe'",
+        {"obj": obj, "from": np.dtype(from_), "to": to},
+    )
