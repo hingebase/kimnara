@@ -49,7 +49,7 @@ class _GUFunc(_common.UFuncCompiler[_T]):
     ) -> _spec.TypingContext:
         return _spec.TypingContext(
             align=align,
-            allow_align=frozenset(kn.Alignment),
+            allow_align=frozenset(a for a in kn.Alignment if a is not kn.F),
             allow_array=True,
             allow_scalar=True,
             allow_units=True,
@@ -79,7 +79,7 @@ class _NumbaGUFuncBase(_GUFunc[NumbaType], _common.UFuncWrapper[NumbaType]):
     ) -> _spec.TypingContext:
         return _spec.TypingContext(
             align=align,
-            allow_align=frozenset(kn.Alignment),
+            allow_align=frozenset(a for a in kn.Alignment if a is not kn.F),
             allow_array=True,
             allow_units=True,
             pad_value=pad_value,
