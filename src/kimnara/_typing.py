@@ -18,7 +18,6 @@ __all__ = [
     "Casting",
     "CustomInliningRule",
     "FastMathOptions",
-    "Inexact",
     "Input",
     "Number",
     "NumberT",
@@ -50,11 +49,10 @@ else:
     _Number = np.number[Any]
 
 Casting = Literal["no", "equiv", "safe", "same_kind", "unsafe"]
-Inexact = np.float32 | np.float64 | np.complex64 | np.complex128
 Number: TypeAlias = """
     np.int8 | np.int16 | np.int32 | np.int64 | np.intp
     | np.uint8 | np.uint16 | np.uint32 | np.uint64 | np.uintp
-    | Inexact"""
+    | np.float32 | np.float64 | np.complex64 | np.complex128"""
 NumberT = TypeVar(
     "NumberT",
     np.int8, np.int16, np.int32, np.int64, np.intp,
