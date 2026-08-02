@@ -12,7 +12,7 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Alignment", "Mutable", "Type", "dimensionless", "scalar", "ureg"]
+__all__ = ["MUTABLE", "Alignment", "Type", "dimensionless", "scalar", "ureg"]
 
 import abc
 import contextlib
@@ -31,6 +31,7 @@ from optype.typing import AnyComplex
 from typing_extensions import (
     Any,
     NamedTuple,
+    Sentinel,
     SupportsComplex,
     SupportsFloat,
     SupportsIndex,
@@ -52,17 +53,14 @@ else:
 
     _Complex = SupportsComplex | complex
 
+MUTABLE = Sentinel("MUTABLE")
+
 
 @final
 class Alignment(NamedTuple):
     name: str
     multiple_of: int = 1
     not_multiple_of: float = math.nan
-
-
-@final
-class Mutable:
-    pass
 
 
 class Type(_utils.EqMixIn, abc.ABC):

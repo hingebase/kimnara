@@ -113,7 +113,7 @@ class TypingContext(_generic.TypingContext):
                 raise kn.TypeInferenceError(message)
         readonly = self.readonly
         for x in arg.metadata:
-            if x is _spec.Mutable:
+            if x is _spec.MUTABLE:
                 readonly = False
         return unit.dtype(arg.type), readonly
 

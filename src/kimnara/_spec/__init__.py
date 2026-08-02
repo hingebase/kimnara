@@ -13,8 +13,8 @@
 # permissions and limitations under the License.
 
 __all__ = [
+    "MUTABLE",
     "Alignment",
-    "Mutable",
     "Type",
     "TypingContext",
     "dimensionless",
@@ -23,8 +23,8 @@ __all__ = [
 ]
 
 from ._definitions import (
+    MUTABLE,
     Alignment,
-    Mutable,
     Type,
     dimensionless,
     scalar,

@@ -75,5 +75,5 @@ Intrinsic = tuple[
     ],
 ]
 
-Mut = Annotated[SCT, _spec.Mutable]
+Mut = Annotated[SCT, _spec.MUTABLE]
 Pointer = CPointer[SCT] | ArrayCTypes
