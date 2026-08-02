@@ -185,22 +185,19 @@ class Validator(Inferable[_T]):
         wrapped: Callable[..., object],
         sig: inspect.Signature | None = None,
     ) -> Callable[..., Any]:
+        params = (sig or self.sig).parameters.values()
         wrapper = cast(
             "Callable[..., object]",
             pint.registry_helpers.wraps(  # pyright: ignore[reportUnknownMemberType]
                 _spec.ureg,  # pyright: ignore[reportArgumentType]
                 ret=self.restype.to_units(),
-                args=None,  # Handled by pydantic
+                args=(None,) * len(params),  # Handled by pydantic
             )(wrapped),
         )
         wrapper.__signature__ = sig = inspect.Signature(  # pyright: ignore[reportFunctionMemberAccess]
             parameters=[
                 param.replace(annotation=arg.to_python())
-                for arg, param in zip(
-                    self.argtypes,
-                    (sig or self.sig).parameters.values(),
-                    strict=True,
-                )
+                for arg, param in zip(self.argtypes, params, strict=True)
             ],
             return_annotation=self.restype.to_python(),
         )
