@@ -17,6 +17,8 @@ __all__ = ["PyUFunc_FromFuncAndData"]
 import collections
 import ctypes
 import dataclasses
+import decimal
+import fractions
 import math
 import operator
 import threading
@@ -34,6 +36,8 @@ from typing_extensions import Any, Never, override
 
 import kimnara as kn
 from kimnara import _spec, _utils
+
+_DecimalLike = decimal.Decimal | fractions.Fraction
 
 _DOC = b"Simplified FMA ufunc where `x2` and `x3` must be scalars."
 _NAME = b"fma"
@@ -77,6 +81,9 @@ class _LogarithmicConverter(definitions.LogarithmicConverter):
 class _OffsetConverter(definitions.OffsetConverter):
     @override
     def from_reference(self, value: object, inplace: bool = False) -> Any:
+        if isinstance(value, _DecimalLike):
+            # https://github.com/hgrecco/pint/pull/2318
+            return super().from_reference(value, inplace)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
         scale = 1. / self.scale
         offset = -self.offset / self.scale
         if inplace:
@@ -87,6 +94,8 @@ class _OffsetConverter(definitions.OffsetConverter):
 
     @override
     def to_reference(self, value: object, inplace: bool = False) -> Any:
+        if isinstance(value, _DecimalLike):
+            return super().to_reference(value, inplace)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
         if inplace:
             _fma(value, self.scale, self.offset, value)
         else:
