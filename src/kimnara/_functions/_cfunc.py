@@ -15,19 +15,26 @@
 __all__ = ["NumbaCFunc", "NumbaT", "PyCFunc", "PythonT"]
 
 import abc
+import ctypes
 import sys
 from collections.abc import Callable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal
 
+import numba  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
-from numba.core import types  # pyright: ignore[reportMissingTypeStubs]
+from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
+    compiler,
+    types,
+)
 from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
+    ctypes_utils,
     templates,
 )
 from typing_extensions import TypeVar, override
 
 import kimnara as kn
-from kimnara import _spec
+from kimnara import _spec, _utils
+from kimnara._typing import CustomInliningRule, FastMathOptions
 
 from . import _common
 
@@ -101,30 +108,78 @@ class _CFunc(types.WrapperAddressProtocol, _common.Inferable[_T]):
 
 
 class NumbaCFunc(_CFunc[NumbaT], _common.Dispatchable):
+    @override
+    def __init__(
+        self,
+        wrapped: Callable[..., NumbaT],
+        *,
+        boundscheck: bool | None = None,
+        cache: bool | None = None,
+        error_model: Literal["python", "numpy"] = "numpy",
+        fastmath: FastMathOptions = False,
+        forceinline: bool = False,
+        inline: Literal["always", "never"] | CustomInliningRule = "never",
+        nogil: bool = False,
+        parallel: bool | str = False,
+        pipeline_class: type[compiler.CompilerBase] | None = None,
+    ) -> None:
+        if isinstance(parallel, str):
+            raise NotImplementedError
+        super().__init__(wrapped)
+        argtypes = [arg.to_numba() for arg in self.argtypes]
+        restype = self.restype.to_numba()
+        self.dispatcher = self._numba = numba.cfunc(  # pyright: ignore[reportUnknownMemberType]
+            restype(*argtypes),
+            boundscheck=boundscheck,
+            cache=_common.can_cache(wrapped, cache=cache),
+            error_model=error_model,
+            fastmath=fastmath,
+            forceinline=forceinline,
+            inline=inline,
+            nogil=nogil,
+            parallel=parallel,
+            pipeline_class=pipeline_class,
+        )(wrapped)
+
     @property
     @override
     def _as_parameter_(self) -> "_CFunctionType":
-        raise NotImplementedError
+        return self._numba.ctypes
 
     @override
     def signature(self) -> templates.Signature:  # pyright: ignore[reportIncompatibleMethodOverride]
-        raise NotImplementedError
+        return self._numba._sig  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 
     @override
     def __wrapper_address__(self) -> int:  # pyright: ignore[reportIncompatibleMethodOverride]
-        raise NotImplementedError
+        return self._numba.address or _utils.unreachable()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+
+    @property
+    def native_name(self) -> str:
+        return self._numba.native_name or _utils.unreachable()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 
 
 class PyCFunc(_CFunc[PythonT]):
+    @override
+    def __init__(self, wrapped: Callable[..., PythonT]) -> None:
+        super().__init__(wrapped)
+        argtypes = [
+            arg.to_ctypes() or _utils.unreachable()
+            for arg in self.argtypes
+        ]
+        restype = self.restype.to_ctypes()
+        self._ctypes = ctypes.CFUNCTYPE(restype, *argtypes)(wrapped)
+
     @property
     @override
     def _as_parameter_(self) -> "_CFunctionType":
-        raise NotImplementedError
+        return self._ctypes
 
     @override
     def signature(self) -> templates.Signature:  # pyright: ignore[reportIncompatibleMethodOverride]
-        raise NotImplementedError
+        return ctypes_utils.make_function_type(self._ctypes).sig  # pyright: ignore[reportUnknownMemberType]
 
     @override
     def __wrapper_address__(self) -> int:  # pyright: ignore[reportIncompatibleMethodOverride]
-        raise NotImplementedError
+        ptr = ctypes.cast(self._ctypes, ctypes.c_void_p)
+        return ptr.value or _utils.unreachable()

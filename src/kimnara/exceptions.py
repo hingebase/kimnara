@@ -16,6 +16,7 @@
 
 __all__ = [
     "BackendUnavailableError",
+    "CacheWarning",
     "Error",
     "PerformanceWarning",
     "ValidationError",
@@ -34,8 +35,14 @@ class BackendUnavailableError(Error):
     """Threading backends cannot be loaded."""
 
 
-class PerformanceWarning(UserWarning, Error):  # noqa: N818
+# ruff: disable[error-suffix-on-exception-name]
+class CacheWarning(UserWarning, Error):
+    """Numba caching may not work as expected."""
+
+
+class PerformanceWarning(UserWarning, Error):
     """Performance-related issues that users should be aware of."""
+# ruff: enable[error-suffix-on-exception-name]
 
 
 class TypeInferenceError(Error):

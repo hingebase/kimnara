@@ -19,12 +19,15 @@ __all__ = [
     "UFuncCompiler",
     "UFuncWrapper",
     "Validator",
+    "can_cache",
 ]
 
 import abc
 import collections
 import inspect
 import itertools
+import linecache
+import warnings
 from collections.abc import Callable
 from typing import TYPE_CHECKING, Generic, Literal, cast
 
@@ -365,3 +368,30 @@ class UFuncWrapper(BaseUFuncWrapper[_T]):
             casting=casting,
             reduction=reduction,
         )
+
+
+def can_cache(
+    wrapped: Callable[..., Any],
+    *,
+    cache: bool | None = None,
+) -> bool:
+    if cache is False:
+        return False
+    filename = inspect.getfile(wrapped)
+    if wrapped.__closure__:
+        if not cache:
+            return False
+        warnings.warn(
+            "Non-local variables captured as constants",
+            kn.CacheWarning,
+            stacklevel=4,
+        )
+    if filename not in linecache.cache:
+        if not cache:
+            return False
+        warnings.warn(
+            f"Cannot locate the source of {wrapped}",
+            kn.CacheWarning,
+            stacklevel=4,
+        )
+    return True

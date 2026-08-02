@@ -21,6 +21,7 @@ __all__ = [
     "A",
     "Alignment",
     "C",
+    "CacheWarning",
     "Error",
     "F",
     "Mut",
@@ -49,6 +50,7 @@ from ._quantity import quantity
 from ._types import AVX, AVX512, SSE, A, Alignment, C, F, Pad
 from .align import array, asarray, empty, isaligned
 from .exceptions import (
+    CacheWarning,
     Error,
     PerformanceWarning,
     TypeInferenceError,

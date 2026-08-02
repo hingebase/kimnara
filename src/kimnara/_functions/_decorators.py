@@ -95,7 +95,28 @@ def cfunc(  # noqa: PLR0913
     parallel: bool | str = False,
     pipeline_class: type[compiler.CompilerBase] | None = None,
 ) -> Callable[..., Any]:
-    raise NotImplementedError
+    if wrapped:
+        return _cfunc.PyCFunc(wrapped)
+    if not nopython:
+        return _cfunc.PyCFunc
+
+    def wrapper(
+        wrapped: Callable[..., _cfunc.NumbaT],
+        /,
+    ) -> _cfunc.NumbaCFunc[_cfunc.NumbaT]:
+        return _cfunc.NumbaCFunc(
+            wrapped,
+            boundscheck=boundscheck,
+            cache=cache,
+            error_model=error_model,
+            fastmath=fastmath,
+            forceinline=forceinline,
+            inline=inline,
+            nogil=nogil,
+            parallel=parallel,
+            pipeline_class=pipeline_class,
+        )
+    return wrapper
 
 
 @overload
