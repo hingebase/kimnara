@@ -20,13 +20,12 @@ import functools
 from typing import Generic, TypeGuard
 
 import numpy as np
-import numpy.typing as npt
+import optype.numpy as onp
 import pint
 import pydantic_core
 import xarray as xr
 from pint.facets.nonmultiplicative.objects import NonMultiplicativeQuantity
 from pint.facets.numpy.quantity import NumpyQuantity
-from typing_extensions import Any
 
 import kimnara as kn
 from kimnara import _utils
@@ -147,14 +146,10 @@ def is_quantity(
     return isinstance(x, pint.Quantity)  # pyright: ignore[reportUnknownMemberType]
 
 
-def _is_timedelta_array(
-    value: npt.NDArray[Any],
-) -> TypeGuard[npt.NDArray[np.timedelta64]]:
-    return np.issubdtype(value.dtype, np.timedelta64)
-
-
 @functools.singledispatch
 def _quantify(value: object) -> object:
+    if onp.is_array_nd(value, np.timedelta64):
+        return kn.quantity(value)
     return value
 
 
@@ -162,11 +157,6 @@ def _quantify(value: object) -> object:
 @_quantify.register(np.timedelta64)
 def _(value: datetime.timedelta | np.timedelta64) -> NumpyQuantity[np.float64]:
     return kn.quantity(value)
-
-
-@_quantify.register(np.ndarray)
-def _(value: npt.NDArray[Any]) -> object:
-    return kn.quantity(value) if _is_timedelta_array(value) else value
 
 
 @_quantify.register(NumpyQuantity)

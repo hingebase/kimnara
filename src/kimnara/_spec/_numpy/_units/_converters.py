@@ -23,12 +23,11 @@ import math
 import operator
 import threading
 from collections.abc import Callable
-from typing import TypeGuard
 
 import llvmlite.binding  # pyright: ignore[reportMissingTypeStubs]
 import numba.core.ccallback  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
-import numpy.typing as npt
+import optype.numpy as onp
 from numpy_typing_compat import NUMPY_GE_2_0
 from pint.facets.nonmultiplicative import definitions
 from pint.facets.plain import UnitDefinition
@@ -56,7 +55,7 @@ class _LogarithmicConverter(definitions.LogarithmicConverter):
             _fma(value, scale, offset, value)
         else:
             value = np.log(value)
-            if _is_ndarray(value):
+            if onp.is_array_nd(value):
                 _fma(value, scale, offset, value)
             else:
                 value = _fma(value, scale, offset)
@@ -71,7 +70,7 @@ class _LogarithmicConverter(definitions.LogarithmicConverter):
             np.exp(value, value)
         else:
             value = _fma(value, scale, offset)
-            if _is_ndarray(value):
+            if onp.is_array_nd(value):
                 np.exp(value, value)
             else:
                 value = np.exp(value)
@@ -162,10 +161,6 @@ def _import_umath() -> Callable[
         ctypes.c_char_p,  # doc
         ctypes.c_int,  # unused
     )(PyUFunc_API[1])
-
-
-def _is_ndarray(value: object) -> TypeGuard[npt.NDArray[np.inexact[Any]]]:
-    return isinstance(value, np.ndarray)
 
 
 def _update(definition: UnitDefinition) -> UnitDefinition:
