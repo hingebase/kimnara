@@ -17,10 +17,12 @@ __all__ = ["NoneType", "TupleType", "TypingContext", "UnionType"]
 import abc
 import builtins
 import sys
+from collections.abc import Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
     ForwardRef,
     Literal,
+    cast,
     get_args,
     get_origin,
     no_type_check,
@@ -31,6 +33,7 @@ import pint
 from typing_extensions import (
     Any,
     NamedTuple,
+    Self,
     Sentinel,
     TypeAliasType,
     TypeForm,
@@ -65,6 +68,16 @@ class TypingContext(NamedTuple):
     @abc.abstractmethod
     def infer(self, annotation: object) -> _spec.Type:
         raise NotImplementedError
+
+    @staticmethod
+    def make_tuple(members: Iterable[_spec.Type]) -> "TupleType":
+        return TupleType.from_members(members)
+
+    def next_ndim(self) -> object:
+        ndim = self.ndim
+        if isinstance(ndim, Iterator):
+            return next(cast("Iterator[int]", ndim))
+        return ndim
 
     @classmethod
     def parse(cls, annotation: object) -> introspection.InspectedAnnotation:
@@ -141,6 +154,20 @@ class TupleType(_spec.Type):
                 self._args = ()
             case args:
                 self._args = tuple(map(ctx.infer, args))
+
+    @classmethod
+    def from_members(cls, members: Iterable[_spec.Type]) -> Self:
+        self = cls.__new__(cls)
+        self._args = tuple(members)
+        return self
+
+    @override
+    def __iter__(self) -> Iterator[_spec.Type]:
+        return iter(self._args)
+
+    @override
+    def __len__(self) -> int:
+        return len(self._args)
 
     @override
     def to_numba(self) -> numba.core.types.Tuple | numba.core.types.UniTuple:

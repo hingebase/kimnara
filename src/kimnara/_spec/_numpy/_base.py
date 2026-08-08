@@ -65,7 +65,7 @@ class ScalarType(Type):
         if not ctx.allow_scalar:
             message = "NumPy scalar is unsupported in this context"
             raise kn.TypeInferenceError(message)
-        match ctx.ndim:
+        match ctx.next_ndim():
             case int(ndim) if ndim:
                 message = f"ndim conflict: {ndim}, 0"
                 raise kn.TypeInferenceError(message)

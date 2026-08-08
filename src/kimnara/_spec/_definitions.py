@@ -22,6 +22,7 @@ import operator
 import sys
 import types
 import warnings
+from collections.abc import Iterable, Iterator, Sized
 from typing import TYPE_CHECKING, cast
 
 import metpy.units  # pyright: ignore[reportMissingTypeStubs]
@@ -63,7 +64,7 @@ class Alignment(NamedTuple):
     not_multiple_of: float = math.nan
 
 
-class Type(_utils.EqMixIn, abc.ABC):
+class Type(_utils.EqMixIn, Iterable["Type"], Sized, abc.ABC):
     __slots__ = ()
 
     @abc.abstractmethod
@@ -73,6 +74,14 @@ class Type(_utils.EqMixIn, abc.ABC):
         ctx: "_spec.TypingContext",
     ) -> None:
         raise NotImplementedError
+
+    @override
+    def __iter__(self) -> Iterator["Type"]:
+        yield self
+
+    @override
+    def __len__(self) -> int:
+        return 1
 
     # This is not an abstract method as most types can't be converted to
     # ctypes

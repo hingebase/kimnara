@@ -141,7 +141,7 @@ class TypingContext(_generic.TypingContext):
                     raise kn.TypeInferenceError(message)
                 for i, arg in enumerate(args):
                     self._check_dim(i, self.parse(arg))
-        default = self.ndim
+        default = self.next_ndim()
         if isinstance(default, int):
             if default != ndim:
                 message = f"ndim conflict: {default}, {ndim}"
@@ -182,7 +182,7 @@ class TypingContext(_generic.TypingContext):
                 raise kn.TypeInferenceError(message)
 
     def _default_ndim(self) -> int | None:
-        match self.ndim:
+        match self.next_ndim():
             case int() | None as ndim:
                 return ndim
             case _:
