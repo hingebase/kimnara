@@ -193,7 +193,11 @@ class Validator(Inferable[_T]):
         wrapped: Callable[..., object],
         sig: inspect.Signature | None = None,
     ) -> Callable[..., Any]:
-        params = (sig or self.sig).parameters.values()
+        if sig is None:
+            sig = self.sig
+        if wrapped is not self.__wrapped__:
+            wrapped.__signature__ = getattr(wrapped, "__signature__", sig)  # pyright: ignore[reportFunctionMemberAccess]
+        params = sig.parameters.values()
         wrapper = cast(
             "Callable[..., object]",
             pint.registry_helpers.wraps(  # pyright: ignore[reportUnknownMemberType]
