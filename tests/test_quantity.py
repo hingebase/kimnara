@@ -34,7 +34,7 @@ import kimnara as kn
 _IINFO = np.iinfo(np.int64)
 _TYPE_CODES = (
     "fdFD"  # Floating and complex types
-    "bBhHlLqQ"  # Integer types
+    "bBhHiIqQ"  # Integer types
 )
 
 

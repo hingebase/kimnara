@@ -38,7 +38,7 @@ _ShapeT = TypeVar("_ShapeT", bound=onp.AtLeast1D)
 
 _DTYPES = frozenset(map(np.dtype, (
     "fdFD"  # Floating and complex types
-    "bBhHlLqQ"  # Integer types
+    "bBhHiIqQ"  # Integer types
     "?"  # Boolean type
 )))
 

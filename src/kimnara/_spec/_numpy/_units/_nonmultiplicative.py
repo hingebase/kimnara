@@ -50,7 +50,7 @@ class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
             message = "Expect quantities rather than plain numbers"
             raise pydantic_core.PydanticCustomError(error_type, message)
         magnitude = value.magnitude
-        dtype = np.result_type(magnitude, None).type
+        dtype = np.complex128 if np.iscomplexobj(magnitude) else np.float64
         dequantifier = self.inner
         if isinstance(magnitude, np.ndarray):
             fast_path = dequantifier.dtype is dtype
@@ -112,7 +112,7 @@ class NonMultiplicativeUnit(_units.BaseUnit[NumberT]):
 
 
 def _init() -> None:
-    for i, code in enumerate("bhlqBHLQfd"):
+    for i, code in enumerate("bhiqBHIQfd"):
         dtype = np.dtype(code)
         name = b"round_to_" + dtype.name.encode("ascii")
         types = bytes(map(_utils.num, f"d{code}"))

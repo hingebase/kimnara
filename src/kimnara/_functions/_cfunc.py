@@ -18,11 +18,12 @@ import abc
 import ctypes
 import sys
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Literal
+from typing import TYPE_CHECKING, Literal, no_type_check
 
 import numba  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
+    ccallback,
     compiler,
     types,
 )
@@ -108,6 +109,8 @@ class _CFunc(types.WrapperAddressProtocol, _common.Inferable[_T]):
 
 
 class NumbaCFunc(_CFunc[NumbaT], _common.Dispatchable):
+    _numba: ccallback.CFunc
+
     @override
     def __init__(
         self,
@@ -130,7 +133,7 @@ class NumbaCFunc(_CFunc[NumbaT], _common.Dispatchable):
         restype = self.restype.to_numba()
         self.dispatcher = self._numba = numba.cfunc(  # pyright: ignore[reportUnknownMemberType]
             restype(*argtypes),
-            boundscheck=boundscheck,
+            boundscheck=boundscheck,  # pyright: ignore[reportCallIssue]
             cache=_common.can_cache(wrapped, cache=cache),
             error_model=error_model,
             fastmath=fastmath,
@@ -146,17 +149,20 @@ class NumbaCFunc(_CFunc[NumbaT], _common.Dispatchable):
     def _as_parameter_(self) -> "_CFunctionType":
         return self._numba.ctypes
 
+    @no_type_check
     @override
-    def signature(self) -> templates.Signature:  # pyright: ignore[reportIncompatibleMethodOverride]
-        return self._numba._sig  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+    def signature(self) -> templates.Signature:
+        return self._numba._sig  # ruff: ignore[private-member-access]
 
+    @no_type_check
     @override
-    def __wrapper_address__(self) -> int:  # pyright: ignore[reportIncompatibleMethodOverride]
-        return self._numba.address or _utils.unreachable()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    def __wrapper_address__(self) -> int:
+        return self._numba.address
 
     @property
+    @no_type_check
     def native_name(self) -> str:
-        return self._numba.native_name or _utils.unreachable()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        return self._numba.native_name
 
 
 class PyCFunc(_CFunc[PythonT]):

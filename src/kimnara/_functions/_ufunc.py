@@ -70,21 +70,19 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         array: _InputArray,
         /,
         axis: SupportsIndex = ...,
-        dtype: npt.DTypeLike | None = ...,
     ) -> _OutputArray:
         raise NotImplementedError
 
     @abc.abstractmethod
-    def reduce(  # ruff: ignore[too-many-arguments]
+    def reduce(
         self,
         array: Input,
         /,
         axis: SupportsIndex | Sequence[SupportsIndex] | None = ...,
-        dtype: npt.DTypeLike | None = ...,
         *,
         keepdims: bool = ...,
         initial: object = ...,
-        where: onp.AnyBoolArray | bool | None = ...,
+        where: onp.ToJustBool | onp.ToJustBoolND | None = ...,
     ) -> Output:
         raise NotImplementedError
 
@@ -93,9 +91,8 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         self,
         array: _InputArray,
         /,
-        indices: onp.AnyIntegerArray,
+        indices: onp.ToJustIntStrict1D,
         axis: SupportsIndex = ...,
-        dtype: npt.DTypeLike | None = ...,
     ) -> _OutputArray:
         raise NotImplementedError
 
@@ -142,7 +139,6 @@ class _NumbaUFuncBase(
         array: _InputArray,
         /,
         axis: SupportsIndex = 0,
-        dtype: npt.DTypeLike | None = None,
     ) -> _OutputArray:
         raise NotImplementedError
 
@@ -152,11 +148,10 @@ class _NumbaUFuncBase(
         array: Input,
         /,
         axis: SupportsIndex | Sequence[SupportsIndex] | None = 0,
-        dtype: npt.DTypeLike | None = None,
         *,
         keepdims: bool = False,
         initial: object = MISSING,
-        where: onp.AnyBoolArray | bool | None = True,
+        where: onp.ToJustBool | onp.ToJustBoolND | None = True,
     ) -> Output:
         raise NotImplementedError
 
@@ -165,9 +160,8 @@ class _NumbaUFuncBase(
         self,
         array: _InputArray,
         /,
-        indices: onp.AnyIntegerArray,
+        indices: onp.ToJustIntStrict1D,
         axis: SupportsIndex = 0,
-        dtype: npt.DTypeLike | None = None,
     ) -> _OutputArray:
         raise NotImplementedError
 
@@ -218,7 +212,6 @@ class PyUFunc(_UFunc[PythonType]):
         array: _InputArray,
         /,
         axis: SupportsIndex = 0,
-        dtype: npt.DTypeLike | None = None,
     ) -> _OutputArray:
         raise NotImplementedError
 
@@ -228,11 +221,10 @@ class PyUFunc(_UFunc[PythonType]):
         array: Input,
         /,
         axis: SupportsIndex | Sequence[SupportsIndex] | None = 0,
-        dtype: npt.DTypeLike | None = None,
         *,
         keepdims: bool = False,
         initial: object = MISSING,
-        where: onp.AnyBoolArray | bool | None = True,
+        where: onp.ToJustBool | onp.ToJustBoolND | None = True,
     ) -> Output:
         raise NotImplementedError
 
@@ -241,9 +233,8 @@ class PyUFunc(_UFunc[PythonType]):
         self,
         array: _InputArray,
         /,
-        indices: onp.AnyIntegerArray,
+        indices: onp.ToJustIntStrict1D,
         axis: SupportsIndex = 0,
-        dtype: npt.DTypeLike | None = None,
     ) -> _OutputArray:
         raise NotImplementedError
 

@@ -32,7 +32,7 @@ import kimnara as kn
 _SIMD = (kn.SSE, kn.AVX, kn.AVX512, kn.Alignment.MKL)
 _TYPE_CODES = (
     "fdFD"  # Floating and complex types
-    "bBhHlLqQ"  # Integer types
+    "bBhHiIqQ"  # Integer types
     "?"  # Boolean type
 )
 

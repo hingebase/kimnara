@@ -29,7 +29,7 @@ import itertools
 import linecache
 import warnings
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Generic, Literal, cast
+from typing import TYPE_CHECKING, Generic, Literal, cast, no_type_check
 
 import numpy as np
 import pint.registry_helpers
@@ -64,10 +64,11 @@ from typing_extensions import (
 
 import kimnara as kn
 from kimnara import _spec
-from kimnara._typing import Casting, Input, Outputs, UFuncKwargs
+from kimnara._typing import Input, Outputs, UFuncKwargs
 
 if TYPE_CHECKING:
     from _typeshed import Unused
+    from numpy import _CastingKind  # pyright: ignore[reportPrivateUsage]
 
 _T = TypeVar("_T")
 
@@ -95,38 +96,41 @@ class Dispatchable:
             new.py_func = value.py_func  # pyright: ignore[reportUnknownMemberType]
             return
         # ruff: disable[private-member-access]
-        key = value._sig  # pyright: ignore[reportPrivateUsage]
-        cres = value._cache.load_overload(  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType, reportUnknownVariableType]
+        key = value._sig  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownMemberType, reportUnknownVariableType]
+        cres = value._cache.load_overload(  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownMemberType, reportUnknownVariableType]
             key,
             registry.cpu_target.target_context,
         )
         if cres is None:
-            native_name = cast("str", value.native_name)
             fndesc = FunctionDescriptor.__new__(FunctionDescriptor)
-            fndesc.mangled_name = native_name.removeprefix("cfunc.")
+            fndesc.mangled_name = str(value.native_name).removeprefix("cfunc.")  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
             cres = compiler.compile_result(  # pyright: ignore[reportUnknownMemberType]
                 fndesc=fndesc,
-                library=value._library,  # pyright: ignore[reportPrivateUsage, reportUnknownArgumentType, reportUnknownMemberType]
+                library=value._library,  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownArgumentType, reportUnknownMemberType]
             )
         new.overloads = collections.OrderedDict([(key, cres)])  # pyright: ignore[reportUnknownArgumentType]
-        new.py_func = value._pyfunc  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
+        new.py_func = value._pyfunc  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownMemberType]
         # ruff: enable[private-member-access]
 
+    @no_type_check
     def inspect_asm(self) -> str:
-        [asm] = self._dispatcher.inspect_asm().values()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-        return cast("str", asm)
+        [asm] = self._dispatcher.inspect_asm().values()
+        return asm
 
+    @no_type_check
     def inspect_cfg(self, **kwargs: object) -> _CFG:
-        [cfg] = self._dispatcher.inspect_cfg(**kwargs).values()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-        return cast("_CFG", cfg)
+        [cfg] = self._dispatcher.inspect_cfg(**kwargs).values()
+        return cfg
 
+    @no_type_check
     def inspect_disasm_cfg(self) -> _DisasmCFG:
-        [disasm_cfg] = self._dispatcher.inspect_disasm_cfg().values()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-        return cast("_DisasmCFG", disasm_cfg)
+        [disasm_cfg] = self._dispatcher.inspect_disasm_cfg().values()
+        return disasm_cfg
 
+    @no_type_check
     def inspect_llvm(self) -> str:
-        [llvm] = self._dispatcher.inspect_llvm().values()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-        return cast("str", llvm)
+        [llvm] = self._dispatcher.inspect_llvm().values()
+        return llvm
 
 
 class Inferable(abc.ABC, Generic[_T]):
@@ -348,7 +352,7 @@ class UFuncWrapper(BaseUFuncWrapper[_T]):
     @property
     @override
     def types(self) -> list[str]:
-        return cast("list[str]", self._ufunc.types)
+        return self._ufunc.types  # pyright: ignore[reportReturnType]
 
     def resolve_dtypes(
         self,
@@ -356,10 +360,10 @@ class UFuncWrapper(BaseUFuncWrapper[_T]):
         dtypes: tuple[np.dtype[Any] | type[Any] | None, ...],
         *,
         signature: tuple[np.dtype[Any] | None, ...] | None = None,
-        casting: Casting | None = None,
+        casting: "_CastingKind | None" = None,
         reduction: bool = False,
     ) -> tuple[np.dtype[Any], ...]:
-        return self._ufunc.resolve_dtypes(
+        return self._ufunc.resolve_dtypes(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownVariableType]
             dtypes,
             signature=signature,
             casting=casting,

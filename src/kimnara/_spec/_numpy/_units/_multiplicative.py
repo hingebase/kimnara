@@ -132,11 +132,11 @@ def _dimensionless(unit: pint.Unit) -> bool:
 
 def _init() -> None:
     ntypes = 10
-    for i, code in enumerate("bhlqBHLQfd"):
+    for i, code in enumerate("bhiqBHIQfd"):
         dtype = np.dtype(code)
         name = b"scale_to_" + dtype.name.encode("ascii")
         types = bytes(
-            map(_utils.num, f"{f'd{code}'.join('bhlqBHLQfd')}d{code}"),
+            map(_utils.num, f"{f'd{code}'.join('bhiqBHIQfd')}d{code}"),
         )
         _func[dtype.type] = PyUFunc_FromFuncAndData(
             _accel.scale_funcs + ntypes * i * _POINTER_SIZE,
@@ -157,7 +157,7 @@ def _init() -> None:
         dtype = np.dtype(code)
         name = b"scale_to_" + dtype.name.encode("ascii")
         types = bytes(
-            map(_utils.num, f"{f'd{code}'.join('bhlqBHLQfdFD')}d{code}"),
+            map(_utils.num, f"{f'd{code}'.join('bhiqBHIQfdFD')}d{code}"),
         )
         _func[dtype.type] = PyUFunc_FromFuncAndData(
             _accel.scale_funcs + (100 + ntypes * i) * _POINTER_SIZE,

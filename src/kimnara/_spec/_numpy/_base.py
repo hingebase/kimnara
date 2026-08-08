@@ -129,7 +129,7 @@ if sys.version_info >= (3, 14):
                 return _utils.unreachable()
 else:
     def _as_ctypes_complex_type(
-        dtype: type[np.complexfloating],
+        dtype: type[np.complexfloating[Any, Any]],
     ) -> type["_SimpleCData[complex]"]:
         del dtype
         message = "Complex numbers require Python 3.14 or later"

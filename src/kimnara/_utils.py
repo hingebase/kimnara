@@ -72,7 +72,7 @@ class _AtLeast1D(Protocol):
 at_least_1d: _AtLeast1D = operator.attrgetter("ndim")
 num = {code: np.dtype(code).num for code in (
     "fdFD"  # Floating and complex types
-    "bBhHlLqQ"  # Integer types
+    "bBhHiIqQ"  # Integer types
 )}.__getitem__
 
 

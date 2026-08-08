@@ -15,7 +15,6 @@
 __all__ = [
     "SCT",
     "ArrayLike",
-    "Casting",
     "CustomInliningRule",
     "FastMathOptions",
     "Input",
@@ -48,11 +47,11 @@ if sys.version_info >= (3, 14):
 else:
     _Number = np.number[Any]
 
-Casting = Literal["no", "equiv", "safe", "same_kind", "unsafe"]
-Number: TypeAlias = """
+Number = (
     np.int8 | np.int16 | np.int32 | np.int64 | np.intp
     | np.uint8 | np.uint16 | np.uint32 | np.uint64 | np.uintp
-    | np.float32 | np.float64 | np.complex64 | np.complex128"""
+    | np.float32 | np.float64 | np.complex64 | np.complex128
+)
 NumberT = TypeVar(
     "NumberT",
     np.int8, np.int16, np.int32, np.int64, np.intp,
@@ -60,7 +59,7 @@ NumberT = TypeVar(
     np.float32, np.float64, np.complex64, np.complex128,
 )
 NumericT = TypeVar("NumericT", bound=_Number | npt.NDArray[_Number])
-Scalar: TypeAlias = "np.bool_ | Number"
+Scalar = np.bool_ | Number
 SCT = TypeVar(
     "SCT",
     np.bool_,
@@ -78,7 +77,7 @@ ArrayLike = TypeAliasType(
 )
 Input = ArrayLike[Scalar] | PlainQuantity[ArrayLike[Number]]
 Output = ArrayLike[Scalar] | NumpyQuantity[ArrayLike[Number]]
-Outputs = Output | tuple["Outputs", ...]
+Outputs = Output | tuple[Output, ...]
 
 CustomInliningRule = Callable[[ir.Expr, Any, Any], bool]
 _FastMathFlags = Literal[
@@ -94,9 +93,6 @@ FastMathOptions: TypeAlias = """
 
 
 class UFuncKwargs(TypedDict, total=False):
-    where: onp.AnyBoolArray | bool | None
-    casting: Casting
+    where: onp.ToJustBool | onp.ToJustBoolND | None
     order: Literal["A", "C", "F", "K"]
-    dtype: npt.DTypeLike
     subok: bool
-    signature: str | tuple[npt.DTypeLike, npt.DTypeLike, npt.DTypeLike]
