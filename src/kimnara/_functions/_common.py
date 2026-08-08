@@ -196,7 +196,7 @@ class Validator(Inferable[_T]):
         if sig is None:
             sig = self.sig
         if wrapped is not self.__wrapped__:
-            wrapped.__signature__ = getattr(wrapped, "__signature__", sig)  # pyright: ignore[reportFunctionMemberAccess]
+            wrapped.__signature__ = sig  # pyright: ignore[reportFunctionMemberAccess]
         params = sig.parameters.values()
         wrapper = cast(
             "Callable[..., object]",
@@ -217,51 +217,7 @@ class Validator(Inferable[_T]):
             k: v.annotation for k, v in sig.parameters.items()
         }
         annotations["return"] = sig.return_annotation
-        return self._with_parameter_names(pydantic.validate_call(wrapper))
-
-    # ruff: disable[builtin-argument-shadowing]
-    def _init_error_details(
-        self,
-        type: str,
-        loc: tuple[int | str, ...],
-        msg: str,
-        input: object,
-        **_: "Unused",
-    ) -> pydantic_core.InitErrorDetails:
-        match loc:
-            case int() as i, *rest:
-                it = itertools.islice(self.sig.parameters, i, None)
-                loc = next(it), *rest
-            case _:
-                pass
-        return {
-            # https://github.com/pydantic/pydantic-core/issues/963
-            "type": pydantic_core.PydanticCustomError(
-                cast("LiteralString", type),
-                cast("LiteralString", msg),
-            ),
-            "loc": loc,
-            "input": input,
-        }
-    # ruff: enable[builtin-argument-shadowing]
-
-    def _with_parameter_names(
-        self,
-        wrapped: Callable[..., object],
-    ) -> Callable[..., object]:
-        # Temporary fix for https://github.com/pydantic/pydantic/issues/6791
-        def wrapper(*args: object) -> object:
-            try:
-                return wrapped(*args)
-            except pydantic.ValidationError as e:
-                raise e.from_exception_data(
-                    e.title,
-                    line_errors=[
-                        self._init_error_details(**detail)
-                        for detail in e.errors()
-                    ],
-                ) from None
-        return wrapper
+        return _with_parameter_names(pydantic.validate_call(wrapper), sig)
 
 
 class UFuncCompiler(Validator[_T]):
@@ -404,3 +360,48 @@ def can_cache(
             stacklevel=4,
         )
     return True
+
+
+# ruff: disable[builtin-argument-shadowing]
+def _init_error_details(
+    sig: inspect.Signature,
+    type: str,
+    loc: tuple[int | str, ...],
+    msg: str,
+    input: object,
+    **_: "Unused",
+) -> pydantic_core.InitErrorDetails:
+    match loc:
+        case int() as i, *rest:
+            it = itertools.islice(sig.parameters, i, None)
+            loc = next(it), *rest
+        case _:
+            pass
+    return {
+        # https://github.com/pydantic/pydantic-core/issues/963
+        "type": pydantic_core.PydanticCustomError(
+            cast("LiteralString", type),
+            cast("LiteralString", msg),
+        ),
+        "loc": loc,
+        "input": input,
+    }
+# ruff: enable[builtin-argument-shadowing]
+
+
+def _with_parameter_names(
+    wrapped: Callable[..., object],
+    sig: inspect.Signature,
+) -> Callable[..., object]:
+    # Temporary fix for https://github.com/pydantic/pydantic/issues/6791
+    def wrapper(*args: object) -> object:
+        try:
+            return wrapped(*args)
+        except pydantic.ValidationError as e:
+            raise e.from_exception_data(
+                e.title,
+                line_errors=[
+                    _init_error_details(sig, **detail) for detail in e.errors()
+                ],
+            ) from None
+    return wrapper
