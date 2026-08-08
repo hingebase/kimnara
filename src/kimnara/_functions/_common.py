@@ -143,6 +143,7 @@ class Inferable(abc.ABC, Generic[_T]):
     ) -> None:
         self.sig = inspect.signature(wrapped, eval_str=True)
         self.__wrapped__ = wrapped
+        self.__module__ = wrapped.__module__
         align = kn.Alignment(align)
         if pad_value is not None:
             pad_value = _spec.scalar(pad_value)
@@ -181,6 +182,9 @@ class Inferable(abc.ABC, Generic[_T]):
         pad_value: complex | None,
     ) -> _spec.TypingContext:
         raise NotImplementedError
+
+    def __reduce__(self) -> str:
+        return self.__wrapped__.__name__
 
 
 class Validator(Inferable[_T]):
