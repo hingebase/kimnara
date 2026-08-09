@@ -17,11 +17,13 @@ __all__ = ["TypingContext"]
 import builtins
 import sys
 import typing
+from collections.abc import Sequence
 from typing import get_args, get_origin
 
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
+import numpy.typing as npt
 from numpy_typing_compat import NUMPY_GE_2_0
 from typing_extensions import Any, override
 from typing_inspection import introspection, typing_objects
@@ -191,7 +193,7 @@ class TypingContext(_generic.TypingContext):
 
 
 class _ArrayType(_base.Type):
-    __slots__ = ("_align", "_ndim", "_readonly")
+    __slots__ = ("_align", "_ndim", "_pad_value", "_readonly")
 
     @override
     def __init__(
@@ -218,12 +220,24 @@ class _ArrayType(_base.Type):
         self._ndim = ndim = ctx.get_ndim(shape.type)
         meta = annotation.metadata
         self._align = align = ctx.get_align(meta, ndim)
+        self._pad_value = pad_value = ctx.get_pad_value(meta)
         self.dequantifier = unit.dequantifier(
             align,
             dtype,
-            ctx.get_pad_value(meta),
+            pad_value,
             readonly=readonly,
         )
+
+    @override
+    def empty(self, shape: Sequence[int]) -> npt.NDArray[Scalar]:
+        if shape:
+            return kn.empty(
+                shape,
+                self.dtype,
+                align=self._align,
+                pad_value=self._pad_value,
+            )
+        return super().empty(shape)
 
     @override
     def to_numba(self) -> numba.core.types.Array:

@@ -89,14 +89,14 @@ def array(
                 pad_value is None
                 # Skip checking the content of padding bytes
                 # as it can be quite slow
-                or _calculate_padding(a.shape, dtype, align.value) == 0
+                or _utils.calculate_padding(a.shape, dtype, align.value) == 0
             )
         ):
             return np.asarray(a)
         if copy is False:
             raise ValueError(_messages["copy"])
     shape = a.shape
-    if padding := _calculate_padding(shape, dtype, align.value):
+    if padding := _utils.calculate_padding(shape, dtype, align.value):
         arr = _empty(shape, padding, dtype, align, pad_value)
         if np.iscomplexobj(a) and not issubclass(dtype, np.complexfloating):
             warnings.warn(
@@ -182,7 +182,7 @@ def empty(
         case kn.F:
             return np.empty(shape, dtype, order="F")
         case align:
-            if padding := _calculate_padding(shape, dtype, align.value):
+            if padding := _utils.calculate_padding(shape, dtype, align.value):
                 return _empty(shape, padding, dtype, align, pad_value)
             with align.allocator:
                 return np.empty(shape, dtype)
@@ -206,24 +206,6 @@ def isaligned(
             return flags.aligned and flags.f_contiguous
         case align:
             return _isaligned_simd(value, align.value)
-
-
-def _calculate_padding(
-    shape: Sequence[int],
-    dtype: type[Scalar],
-    spec: _spec.Alignment,
-) -> int:
-    itemsize = np.dtype(dtype).itemsize
-    nbytes = shape[-1] * itemsize
-    mask = spec.multiple_of - 1
-    aligned = (nbytes + mask) & ~mask
-    if len(shape) > 1 and aligned % spec.not_multiple_of == 0:
-        aligned += spec.multiple_of
-    quot, rem = divmod(aligned - nbytes, itemsize)
-    if rem:
-        message = f"{np.dtype(dtype)!r} is unsupported in Kimnara"
-        raise TypeError(message)
-    return quot
 
 
 def _check_array_dtype_and_ndim(x: object) -> None:

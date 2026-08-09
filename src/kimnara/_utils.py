@@ -28,13 +28,15 @@ import json
 import operator
 import sys
 import types
+from collections.abc import Sequence
 from typing import NoReturn, TypeGuard
 
 import numpy as np
 import optype.numpy as onp
 from typing_extensions import Protocol, TypeVar
 
-from kimnara._typing import ArrayLike
+from kimnara import _spec
+from kimnara._typing import ArrayLike, Scalar
 
 if sys.version_info >= (3, 11):
     from inspect import isclass
@@ -78,6 +80,24 @@ num = {code: np.dtype(code).num for code in (
 
 def base_repr(x: object, /) -> str:
     return type.__repr__(x) if isclass(x) else object.__repr__(x)  # noqa: PLC2801
+
+
+def calculate_padding(
+    shape: Sequence[int],
+    dtype: type[Scalar],
+    spec: _spec.Alignment,
+) -> int:
+    itemsize = np.dtype(dtype).itemsize
+    nbytes = shape[-1] * itemsize
+    mask = spec.multiple_of - 1
+    aligned = (nbytes + mask) & ~mask
+    if len(shape) > 1 and aligned % spec.not_multiple_of == 0:
+        aligned += spec.multiple_of
+    quot, rem = divmod(aligned - nbytes, itemsize)
+    if rem:
+        message = f"{np.dtype(dtype)!r} is unsupported in Kimnara"
+        raise TypeError(message)
+    return quot
 
 
 @functools.lru_cache(maxsize=1)

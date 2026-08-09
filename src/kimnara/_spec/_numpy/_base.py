@@ -16,12 +16,14 @@ __all__ = ["ScalarType", "Type", "parse_units"]
 
 import ctypes
 import sys
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Annotated, cast, no_type_check
 
 import annotated_types as at
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
+import numpy.typing as npt
 import pint
 import pydantic
 from typing_extensions import Any, TypeForm, override
@@ -30,6 +32,7 @@ from typing_inspection import introspection
 import kimnara as kn
 from kimnara import _spec, _utils
 from kimnara._spec import _generic
+from kimnara._typing import Scalar
 
 from . import _units
 
@@ -42,6 +45,10 @@ if TYPE_CHECKING:
 class Type(_spec.Type):
     __slots__ = ("dequantifier", "dtype")
     dequantifier: _units.BaseDequantifier[Any]
+    dtype: type[Scalar]
+
+    def empty(self, shape: Sequence[int]) -> npt.NDArray[Scalar]:
+        return np.empty(shape, self.dtype)
 
     @override
     @no_type_check
