@@ -103,7 +103,7 @@ class Dispatchable:
             key,
             registry.cpu_target.target_context,
         )
-        if cres is None:
+        if not cres:
             fndesc = FunctionDescriptor.__new__(FunctionDescriptor)
             fndesc.mangled_name = str(value.native_name).removeprefix("cfunc.")  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
             cres = compiler.compile_result(  # pyright: ignore[reportUnknownMemberType]
@@ -195,7 +195,7 @@ class Validator(Inferable[_T]):
         wrapped: Callable[..., object],
         sig: inspect.Signature | None = None,
     ) -> Callable[..., Any]:
-        if sig is None:
+        if not sig:
             sig = self.sig
         if wrapped is not self.__wrapped__:
             wrapped.__signature__ = sig  # pyright: ignore[reportFunctionMemberAccess]
