@@ -16,6 +16,7 @@ __all__ = [
     "EqMixIn",
     "at_least_1d",
     "base_repr",
+    "function_base",
     "is_editable",
     "isclass",
     "num",
@@ -29,14 +30,18 @@ import operator
 import sys
 import types
 from collections.abc import Sequence
-from typing import NoReturn, TypeGuard
+from typing import TYPE_CHECKING, NoReturn, TypeGuard
 
 import numpy as np
+import numpy.typing as npt
 import optype.numpy as onp
-from typing_extensions import Protocol, TypeVar
+from numpy_typing_compat import NUMPY_GE_2_0
+from typing_extensions import Any, Protocol, TypeVar
 
-from kimnara import _spec
 from kimnara._typing import ArrayLike, Scalar
+
+if TYPE_CHECKING:
+    from kimnara import _spec
 
 if sys.version_info >= (3, 11):
     from inspect import isclass
@@ -85,7 +90,7 @@ def base_repr(x: object, /) -> str:
 def calculate_padding(
     shape: Sequence[int],
     dtype: type[Scalar],
-    spec: _spec.Alignment,
+    spec: "_spec.Alignment",
 ) -> int:
     itemsize = np.dtype(dtype).itemsize
     nbytes = shape[-1] * itemsize
@@ -125,3 +130,40 @@ def is_editable() -> bool:
 def unreachable() -> NoReturn:
     message = "Unreachable"
     raise AssertionError(message)
+
+
+class _FunctionBase(Protocol):
+    def _calculate_shapes(
+        self,
+        broadcast_shape: tuple[int, ...],
+        dim_sizes: dict[str, int],
+        list_of_core_dims: list[tuple[str, ...]],
+    ) -> list[tuple[int, ...]]: ...
+
+    def _create_arrays(
+        self,
+        broadcast_shape: tuple[int, ...],
+        dim_sizes: dict[str, int],
+        list_of_core_dims: list[tuple[str, ...]],
+        dtypes: Sequence[npt.DTypeLike] | None,
+        results: tuple[ArrayLike[np.generic], ...] | None = ...,
+    ) -> tuple[npt.NDArray[Any], ...]: ...
+
+    def _parse_input_dimensions(
+        self,
+        args: tuple[ArrayLike[np.generic], ...],
+        input_core_dims: list[tuple[str, ...]],
+    ) -> tuple[tuple[int, ...], dict[str, int]]: ...
+
+    def _update_dim_sizes(
+        self,
+        dim_sizes: dict[str, int],
+        arg: ArrayLike[np.generic],
+        core_dims: tuple[str, ...],
+    ) -> None: ...
+
+
+function_base: _FunctionBase = getattr(
+    np.lib,
+    "_function_base_impl" if NUMPY_GE_2_0 else "function_base",
+)

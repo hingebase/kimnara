@@ -15,13 +15,26 @@
 __all__ = ["NumbaFunc", "OutputT", "OutputsT", "PyFunc"]
 
 from collections.abc import Callable
+from typing import Literal, cast
 
+import numba  # pyright: ignore[reportMissingTypeStubs]
+from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
+    compiler,
+    registry,
+)
 from optype.typing import AnyComplex
 from typing_extensions import TypeVar, overload, override
 
 import kimnara as kn
 from kimnara import _spec
-from kimnara._typing import ArrayLike, Input, Output, Scalar
+from kimnara._typing import (
+    ArrayLike,
+    CustomInliningRule,
+    FastMathOptions,
+    Input,
+    Output,
+    Scalar,
+)
 
 from . import _common
 
@@ -34,6 +47,8 @@ OutputsT = TypeVar("OutputsT", bound=tuple[_RawOutputs, ...])
 
 
 class _Func(_common.Validator[_T]):
+    _func: Callable[..., object]
+
     def __init__(
         self,
         wrapped: Callable[..., _T],
@@ -53,10 +68,49 @@ class _Func(_common.Validator[_T]):
     ) -> tuple[_WrappedOutputs, ...]: ...
 
     def __call__(self, *args: Input) -> object:
-        raise NotImplementedError
+        return self._func(*args)
 
 
 class NumbaFunc(_Func[_T], _common.Dispatchable):
+    @override
+    def __init__(
+        self,
+        wrapped: Callable[..., _T],
+        *,
+        align: "str | kn.Alignment" = "A",
+        boundscheck: bool | None = None,
+        cache: bool | None = None,
+        error_model: Literal["python", "numpy"] = "numpy",
+        fastmath: FastMathOptions = False,
+        forceinline: bool = False,
+        inline: Literal["always", "never"] | CustomInliningRule = "never",
+        nogil: bool = False,
+        pad_value: AnyComplex | None = None,
+        parallel: bool | str = False,
+        pipeline_class: type[compiler.CompilerBase] | None = None,
+    ) -> None:
+        if isinstance(parallel, str):
+            raise NotImplementedError
+        super().__init__(wrapped, align=align, pad_value=pad_value)
+        argtypes = [arg.to_numba() for arg in self.argtypes]
+        restype = self.restype.to_numba()
+        self.dispatcher = func = cast(
+            "registry.CPUDispatcher",
+            numba.njit(  # pyright: ignore[reportCallIssue, reportUnknownMemberType]
+                [restype(*argtypes)],
+                boundscheck=boundscheck,
+                cache=_common.can_cache(wrapped, cache=cache),
+                error_model=error_model,
+                fastmath=fastmath,  # pyright: ignore[reportArgumentType]
+                forceinline=forceinline,
+                inline=inline,
+                nogil=nogil,
+                parallel=parallel,
+                pipeline_class=pipeline_class,
+            )(wrapped),
+        )
+        self._func = self.validate_call(func)
+
     @override
     def input_context(
         self,
@@ -95,6 +149,17 @@ class NumbaFunc(_Func[_T], _common.Dispatchable):
 
 
 class PyFunc(_Func[_T]):
+    @override
+    def __init__(
+        self,
+        wrapped: Callable[..., _T],
+        *,
+        align: "str | kn.Alignment" = "A",
+        pad_value: AnyComplex | None = None,
+    ) -> None:
+        super().__init__(wrapped, align=align, pad_value=pad_value)
+        self._func = self.validate_call(wrapped)
+
     @override
     def input_context(
         self,

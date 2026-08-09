@@ -70,6 +70,8 @@ if TYPE_CHECKING:
     from _typeshed import Unused
     from numpy import _CastingKind  # pyright: ignore[reportPrivateUsage]
 
+    from kimnara._spec._numpy._base import ScalarType
+
 _T = TypeVar("_T")
 
 
@@ -241,14 +243,12 @@ class UFuncCompiler(Validator[_T]):
         return self.__wrapped__.__doc__
 
     @property
-    @abc.abstractmethod
     def nin(self) -> int:
-        raise NotImplementedError
+        return len(self.argtypes)
 
     @property
-    @abc.abstractmethod
     def nout(self) -> int:
-        raise NotImplementedError
+        return len(self.restype)
 
     @property
     def nargs(self) -> int:
@@ -259,9 +259,16 @@ class UFuncCompiler(Validator[_T]):
         return 1
 
     @property
-    @abc.abstractmethod
     def types(self) -> list[str]:
-        raise NotImplementedError
+        argtypes = "".join(
+            np.dtype(cast("ScalarType", arg).dtype).char
+            for arg in self.argtypes
+        )
+        restype = "".join(
+            np.dtype(cast("ScalarType", arg).dtype).char
+            for arg in self.restype
+        )
+        return [f"{argtypes}->{restype}"]
 
     @property
     @abc.abstractmethod

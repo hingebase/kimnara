@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from numba.core import compiler  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
-from typing_extensions import Any, Protocol, overload
+from typing_extensions import Any, Protocol, TypeVar, overload
 
 from kimnara._typing import CustomInliningRule, FastMathOptions
 
@@ -36,6 +36,7 @@ _GUFuncAlignment: TypeAlias = """str | Literal[
     kn.Alignment.AVX512,
     kn.Alignment.MKL,
 ]"""
+_T = TypeVar("_T")
 
 
 class _PyFuncDecorator(Protocol):
@@ -294,7 +295,35 @@ def func(  # noqa: PLR0913
     parallel: bool | str = False,
     pipeline_class: type[compiler.CompilerBase] | None = None,
 ) -> Callable[..., Any]:
-    raise NotImplementedError
+    if wrapped:
+        return _func.PyFunc(wrapped)
+    if not nopython:
+        def pyfunc(
+            wrapped: Callable[..., _T],
+            /,
+        ) -> _func.PyFunc[_T]:
+            return _func.PyFunc(wrapped, align=align, pad_value=pad_value)
+        return pyfunc
+
+    def wrapper(
+        wrapped: Callable[..., _T],
+        /,
+    ) -> _func.NumbaFunc[_T]:
+        return _func.NumbaFunc(
+            wrapped,
+            align=align,
+            boundscheck=boundscheck,
+            cache=cache,
+            error_model=error_model,
+            fastmath=fastmath,
+            forceinline=forceinline,
+            inline=inline,
+            nogil=nogil,
+            pad_value=pad_value,
+            parallel=parallel,
+            pipeline_class=pipeline_class,
+        )
+    return wrapper
 
 
 @overload
@@ -348,7 +377,51 @@ def gufunc(  # noqa: PLR0913
     pad_value: AnyComplex | None = None,
     parallel: bool | str = False,
 ) -> Callable[..., Any]:
-    raise NotImplementedError
+    if not nopython:
+        def pygufunc(
+            wrapped: Callable[..., _T],
+            /,
+        ) -> _gufunc.PyGUFunc[_T]:
+            return _gufunc.PyGUFunc(
+                wrapped,
+                signature,
+                align=align,
+                pad_value=pad_value,
+                parallel=parallel,
+            )
+        return pygufunc
+
+    if not parallel:
+        def numba_gufunc(
+            wrapped: Callable[..., None],
+            /,
+        ) -> _gufunc.NumbaGUFunc:
+            return _gufunc.NumbaGUFunc(
+                wrapped,
+                signature,
+                align=align,
+                boundscheck=boundscheck,
+                cache=cache,
+                fastmath=fastmath,
+                pad_value=pad_value,
+            )
+        return numba_gufunc
+
+    def wrapper(
+        wrapped: Callable[..., None],
+        /,
+    ) -> _gufunc.NumbaParallelGUFunc:
+        return _gufunc.NumbaParallelGUFunc(
+            wrapped,
+            signature,
+            align=align,
+            boundscheck=boundscheck,
+            cache=cache,
+            fastmath=fastmath,
+            pad_value=pad_value,
+            parallel=parallel,
+        )
+    return wrapper
 
 
 @overload
@@ -414,4 +487,45 @@ def ufunc(  # noqa: PLR0913
     nopython: bool = False,
     parallel: bool | str = False,
 ) -> Callable[..., Any]:
-    raise NotImplementedError
+    if wrapped:
+        return _ufunc.PyUFunc(wrapped)
+    if not nopython:
+        match identity:
+            case "reorderable" | None:
+                def pyufunc(
+                    wrapped: Callable[..., _T],
+                    /,
+                ) -> _ufunc.PyUFunc[_T]:
+                    return _ufunc.PyUFunc(wrapped, identity=identity)
+                return pyufunc
+            case _:
+                message = "identity must be None or 'reorderable'"
+                raise ValueError(message)
+
+    if not parallel:
+        def numba_ufunc(
+            wrapped: Callable[..., _T],
+            /,
+        ) -> _ufunc.NumbaUFunc[_T]:
+            return _ufunc.NumbaUFunc(
+                wrapped,
+                boundscheck=boundscheck,
+                cache=cache,
+                fastmath=fastmath,
+                identity=identity,
+            )
+        return numba_ufunc
+
+    def wrapper(
+        wrapped: Callable[..., _T],
+        /,
+    ) -> _ufunc.NumbaParallelUFunc[_T]:
+        return _ufunc.NumbaParallelUFunc(
+            wrapped,
+            boundscheck=boundscheck,
+            cache=cache,
+            fastmath=fastmath,
+            identity=identity,
+            parallel=parallel,
+        )
+    return wrapper
