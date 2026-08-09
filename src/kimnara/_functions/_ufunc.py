@@ -13,19 +13,20 @@
 # permissions and limitations under the License.
 
 __all__ = [
+    "BooleanOutputT",
     "NumbaParallelUFunc",
-    "NumbaType",
     "NumbaUFunc",
+    "OutputT",
+    "OutputsT",
     "PyUFunc",
-    "PythonType",
 ]
 
-import abc
 from collections.abc import Sequence
-from typing import Literal
+from typing import Literal, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
+import optype as op
 import optype.numpy as onp
 from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
@@ -34,14 +35,17 @@ from typing_extensions import (
     SupportsIndex,
     TypeVar,
     Unpack,
+    overload,
     override,
 )
 
 import kimnara as kn
 from kimnara import _spec
 from kimnara._typing import (
+    ArrayLike,
     Input,
     Number,
+    NumericT,
     Output,
     Outputs,
     Scalar,
@@ -50,11 +54,32 @@ from kimnara._typing import (
 
 from . import _common
 
-NumbaType = np.generic | complex
-PythonType = np.generic | complex | tuple[np.generic | complex, ...]
-_InputArray = npt.NDArray[Scalar] | PlainQuantity[npt.NDArray[Number]]
-_OutputArray = npt.NDArray[Scalar] | NumpyQuantity[npt.NDArray[Number]]
-_T = TypeVar("_T", NumbaType, PythonType)
+_AccumulateShapeT = TypeVar("_AccumulateShapeT", bound=onp.AtLeast1D)
+_Input = NumericT | PlainQuantity[NumericT]
+_InputAtLeast1D: TypeAlias = """
+    np.ndarray[onp.AtLeast1D, np.dtype[Scalar]]
+    | PlainQuantity[np.ndarray[onp.AtLeast1D, np.dtype[Number]]]"""
+_Output = NumericT | NumpyQuantity[NumericT]
+_ReduceAtShapeT = TypeVar(
+    "_ReduceAtShapeT",
+    tuple[int],
+    tuple[int, int],
+    tuple[int, int, int],
+    tuple[int, int, int, int],
+    tuple[int, int, int, int, Unpack[tuple[int, ...]]],
+    tuple[int, int, int, Unpack[tuple[int, ...]]],
+    tuple[int, int, Unpack[tuple[int, ...]]],
+    tuple[int, Unpack[tuple[int, ...]]],
+)
+_T = TypeVar("_T")
+
+BooleanOutputT = TypeVar("BooleanOutputT", bound=onp.ToJustBool)
+OutputT = TypeVar(
+    "OutputT",
+    bound=op.JustInt | op.JustFloat | op.JustComplex | Number,
+)
+OutputsT = TypeVar("OutputsT", bound=tuple[complex | Scalar, ...])
+
 MISSING = Sentinel("MISSING")
 
 
@@ -64,18 +89,70 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
     def signature(self) -> None:
         pass
 
-    @abc.abstractmethod
-    def accumulate(
-        self,
-        array: _InputArray,
-        /,
-        axis: SupportsIndex = ...,
-    ) -> _OutputArray:
+    @overload
+    def __call__(
+        self: "_UFunc[BooleanOutputT]",
+        *args: Input,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> ArrayLike[np.bool_]: ...
+
+    @overload
+    def __call__(
+        self: "_UFunc[OutputT]",
+        *args: Input,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> _Output[ArrayLike[Number]]: ...
+
+    @overload
+    def __call__(
+        self: "_UFunc[OutputsT]",
+        *args: Input,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> tuple[Output, ...]: ...
+
+    @override
+    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @overload
+    def accumulate(
+        self: "_UFunc[BooleanOutputT]",
+        array: np.ndarray[_AccumulateShapeT, np.dtype[np.bool_]],
+        /,
+        axis: SupportsIndex = ...,
+    ) -> np.ndarray[_AccumulateShapeT, np.dtype[np.bool_]]: ...
+
+    @overload
+    def accumulate(
+        self: "_UFunc[OutputT]",
+        array: _Input[np.ndarray[_AccumulateShapeT, np.dtype[Number]]],
+        /,
+        axis: SupportsIndex = ...,
+    ) -> _Output[np.ndarray[_AccumulateShapeT, np.dtype[Number]]]: ...
+
+    def accumulate(
+        self: "_UFunc[BooleanOutputT] | _UFunc[OutputT]",
+        array: _InputAtLeast1D,
+        /,
+        axis: SupportsIndex = 0,
+    ) -> object:
+        raise NotImplementedError
+
+    @overload
     def reduce(
-        self,
+        self: "_UFunc[BooleanOutputT]",
+        array: onp.ToJustBool | npt.NDArray[np.bool_],
+        /,
+        axis: SupportsIndex | Sequence[SupportsIndex] | None = ...,
+        *,
+        keepdims: bool = ...,
+        initial: object = ...,
+        where: onp.ToJustBool | onp.ToJustBoolND | None = ...,
+    ) -> ArrayLike[np.bool_]: ...
+
+    @overload
+    def reduce(
+        self: "_UFunc[OutputT]",
         array: Input,
         /,
         axis: SupportsIndex | Sequence[SupportsIndex] | None = ...,
@@ -83,27 +160,81 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         keepdims: bool = ...,
         initial: object = ...,
         where: onp.ToJustBool | onp.ToJustBoolND | None = ...,
-    ) -> Output:
+    ) -> _Output[ArrayLike[Number]]: ...
+
+    def reduce(
+        self,
+        array: Input,
+        /,
+        axis: SupportsIndex | Sequence[SupportsIndex] | None = 0,
+        *,
+        keepdims: bool = False,
+        initial: object = MISSING,
+        where: onp.ToJustBool | onp.ToJustBoolND | None = True,
+    ) -> object:
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @overload
     def reduceat(
-        self,
-        array: _InputArray,
+        self: "_UFunc[BooleanOutputT]",
+        array: np.ndarray[_ReduceAtShapeT, np.dtype[np.bool_]],
         /,
         indices: onp.ToJustIntStrict1D,
         axis: SupportsIndex = ...,
-    ) -> _OutputArray:
+    ) -> np.ndarray[_ReduceAtShapeT, np.dtype[np.bool_]]: ...
+
+    @overload
+    def reduceat(
+        self: "_UFunc[OutputT]",
+        array: _Input[np.ndarray[_ReduceAtShapeT, np.dtype[Number]]],
+        /,
+        indices: onp.ToJustIntStrict1D,
+        axis: SupportsIndex = ...,
+    ) -> _Output[np.ndarray[_ReduceAtShapeT, np.dtype[Number]]]: ...
+
+    def reduceat(
+        self,
+        array: _InputAtLeast1D,
+        /,
+        indices: onp.ToJustIntStrict1D,
+        axis: SupportsIndex = 0,
+    ) -> object:
         raise NotImplementedError
 
-    @abc.abstractmethod
+    @overload
+    def outer(
+        self: "_UFunc[BooleanOutputT]",
+        a: Input,
+        b: Input,
+        /,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> ArrayLike[np.bool_]: ...
+
+    @overload
+    def outer(
+        self: "_UFunc[OutputT]",
+        a: Input,
+        b: Input,
+        /,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> _Output[ArrayLike[Number]]: ...
+
+    @overload
+    def outer(
+        self: "_UFunc[OutputsT]",
+        a: Input,
+        b: Input,
+        /,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> tuple[Output, ...]: ...
+
     def outer(
         self,
         a: Input,
         b: Input,
         /,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> Output:
+    ) -> object:
         raise NotImplementedError
 
     @override
@@ -120,60 +251,11 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         )
 
 
-class _NumbaUFuncBase(
-    _UFunc[NumbaType],
-    _common.UFuncWrapper[NumbaType],
-):
+class _NumbaUFuncBase(_UFunc[_T], _common.UFuncWrapper[_T]):
     @property
     @override
     def nout(self) -> Literal[1]:
         return 1
-
-    @override
-    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
-        raise NotImplementedError
-
-    @override
-    def accumulate(
-        self,
-        array: _InputArray,
-        /,
-        axis: SupportsIndex = 0,
-    ) -> _OutputArray:
-        raise NotImplementedError
-
-    @override
-    def reduce(
-        self,
-        array: Input,
-        /,
-        axis: SupportsIndex | Sequence[SupportsIndex] | None = 0,
-        *,
-        keepdims: bool = False,
-        initial: object = MISSING,
-        where: onp.ToJustBool | onp.ToJustBoolND | None = True,
-    ) -> Output:
-        raise NotImplementedError
-
-    @override
-    def reduceat(
-        self,
-        array: _InputArray,
-        /,
-        indices: onp.ToJustIntStrict1D,
-        axis: SupportsIndex = 0,
-    ) -> _OutputArray:
-        raise NotImplementedError
-
-    @override
-    def outer(
-        self,
-        a: Input,
-        b: Input,
-        /,
-        **kwargs: Unpack[UFuncKwargs],
-    ) -> Output:
-        raise NotImplementedError
 
     @override
     def output_context(
@@ -188,64 +270,18 @@ class _NumbaUFuncBase(
         )
 
 
-class NumbaUFunc(_NumbaUFuncBase, _common.Dispatchable):
+class NumbaUFunc(_NumbaUFuncBase[_T], _common.Dispatchable):
     pass
 
 
-class NumbaParallelUFunc(_NumbaUFuncBase):
+class NumbaParallelUFunc(_NumbaUFuncBase[_T]):
     pass
 
 
-class PyUFunc(_UFunc[PythonType]):
+class PyUFunc(_UFunc[_T]):
     @property
     @override
     def types(self) -> list[str]:
-        raise NotImplementedError
-
-    @override
-    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
-        raise NotImplementedError
-
-    @override
-    def accumulate(
-        self,
-        array: _InputArray,
-        /,
-        axis: SupportsIndex = 0,
-    ) -> _OutputArray:
-        raise NotImplementedError
-
-    @override
-    def reduce(
-        self,
-        array: Input,
-        /,
-        axis: SupportsIndex | Sequence[SupportsIndex] | None = 0,
-        *,
-        keepdims: bool = False,
-        initial: object = MISSING,
-        where: onp.ToJustBool | onp.ToJustBoolND | None = True,
-    ) -> Output:
-        raise NotImplementedError
-
-    @override
-    def reduceat(
-        self,
-        array: _InputArray,
-        /,
-        indices: onp.ToJustIntStrict1D,
-        axis: SupportsIndex = 0,
-    ) -> _OutputArray:
-        raise NotImplementedError
-
-    @override
-    def outer(
-        self,
-        a: Input,
-        b: Input,
-        /,
-        **kwargs: Unpack[UFuncKwargs],
-    ) -> Output:
         raise NotImplementedError
 
     @override

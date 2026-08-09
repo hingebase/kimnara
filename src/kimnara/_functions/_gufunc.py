@@ -13,26 +13,46 @@
 # permissions and limitations under the License.
 
 __all__ = [
+    "BooleanOutputT",
     "NumbaGUFunc",
     "NumbaParallelGUFunc",
-    "NumbaType",
+    "OutputT",
+    "OutputsT",
     "PyGUFunc",
-    "PythonType",
 ]
 
-from typing import TypeAlias
-
-from typing_extensions import TypeVar, Unpack, override
+import numpy as np
+import numpy.typing as npt
+import optype as op
+import optype.numpy as onp
+from pint.facets.numpy.quantity import NumpyQuantity
+from typing_extensions import TypeVar, Unpack, overload, override
 
 import kimnara as kn
 from kimnara import _spec
-from kimnara._typing import ArrayLike, Input, Outputs, Scalar, UFuncKwargs
+from kimnara._typing import (
+    ArrayLike,
+    Input,
+    Number,
+    Output,
+    Outputs,
+    Scalar,
+    UFuncKwargs,
+)
 
 from . import _common
 
-NumbaType: TypeAlias = None
-PythonType = ArrayLike[Scalar] | tuple[ArrayLike[Scalar], ...]
-_T = TypeVar("_T", NumbaType, PythonType)
+_T = TypeVar("_T")
+
+BooleanOutputT = TypeVar(
+    "BooleanOutputT",
+    bound=onp.ToJustBool | npt.NDArray[np.bool_],
+)
+OutputT = TypeVar(
+    "OutputT",
+    bound=op.JustInt | op.JustFloat | op.JustComplex | ArrayLike[Number],
+)
+OutputsT = TypeVar("OutputsT", bound=tuple[complex | ArrayLike[Scalar], ...])
 
 
 class _GUFunc(_common.UFuncCompiler[_T]):
@@ -40,6 +60,38 @@ class _GUFunc(_common.UFuncCompiler[_T]):
     @override
     def identity(self) -> None:
         pass
+
+    @overload
+    def __call__(
+        self: "_GUFunc[None]",
+        *args: Input,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> Outputs: ...
+
+    @overload
+    def __call__(
+        self: "_GUFunc[BooleanOutputT]",
+        *args: Input,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> ArrayLike[np.bool_]: ...
+
+    @overload
+    def __call__(
+        self: "_GUFunc[OutputT]",
+        *args: Input,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> ArrayLike[Number] | NumpyQuantity[ArrayLike[Number]]: ...
+
+    @overload
+    def __call__(
+        self: "_GUFunc[OutputsT]",
+        *args: Input,
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> tuple[Output, ...]: ...
+
+    @override
+    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
+        raise NotImplementedError
 
     @override
     def input_context(
@@ -58,11 +110,7 @@ class _GUFunc(_common.UFuncCompiler[_T]):
         )
 
 
-class _NumbaGUFuncBase(_GUFunc[NumbaType], _common.UFuncWrapper[NumbaType]):
-    @override
-    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
-        raise NotImplementedError
-
+class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None]):
     @override
     def infer_impl(
         self,
@@ -94,7 +142,7 @@ class NumbaParallelGUFunc(_NumbaGUFuncBase):
     pass
 
 
-class PyGUFunc(_GUFunc[PythonType]):
+class PyGUFunc(_GUFunc[_T]):
     @property
     @override
     def nin(self) -> int:
@@ -113,10 +161,6 @@ class PyGUFunc(_GUFunc[PythonType]):
     @property
     @override
     def signature(self) -> str:
-        raise NotImplementedError
-
-    @override
-    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
         raise NotImplementedError
 
     @override

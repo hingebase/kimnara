@@ -75,7 +75,7 @@ ArrayLike = TypeAliasType(
     _SCT | np.ndarray[_ShapeT, np.dtype[_SCT]],
     type_params=(_SCT, _ShapeT),
 )
-Input = ArrayLike[Scalar] | PlainQuantity[ArrayLike[Number]]
+Input = complex | ArrayLike[Scalar] | PlainQuantity[ArrayLike[Number]]
 Output = ArrayLike[Scalar] | NumpyQuantity[ArrayLike[Number]]
 Outputs = Output | tuple[Output, ...]
 

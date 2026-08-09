@@ -12,12 +12,12 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["NumbaFunc", "NumbaType", "PyFunc", "PythonType"]
+__all__ = ["NumbaFunc", "OutputT", "OutputsT", "PyFunc"]
 
 from collections.abc import Callable
 
 from optype.typing import AnyComplex
-from typing_extensions import TypeVar, override
+from typing_extensions import TypeVar, overload, override
 
 import kimnara as kn
 from kimnara import _spec
@@ -25,10 +25,12 @@ from kimnara._typing import ArrayLike, Input, Output, Scalar
 
 from . import _common
 
-NumbaType = ArrayLike[Scalar] | None | tuple["NumbaType", ...]
-PythonType = ArrayLike[Scalar] | None | tuple["PythonType", ...]
-_Outputs = Output | None | tuple["_Outputs", ...]
-_T = TypeVar("_T", NumbaType, PythonType)
+_RawOutputs = complex | ArrayLike[Scalar] | None | tuple["_RawOutputs", ...]
+_T = TypeVar("_T")
+_WrappedOutputs = Output | None | tuple["_WrappedOutputs", ...]
+
+OutputT = TypeVar("OutputT", bound=complex | ArrayLike[Scalar] | None)
+OutputsT = TypeVar("OutputsT", bound=tuple[_RawOutputs, ...])
 
 
 class _Func(_common.Validator[_T]):
@@ -41,11 +43,20 @@ class _Func(_common.Validator[_T]):
     ) -> None:
         self.infer(wrapped, align=align, pad_value=pad_value)
 
-    def __call__(self, *args: Input) -> _Outputs:
+    @overload
+    def __call__(self: "_Func[OutputT]", *args: Input) -> Output | None: ...
+
+    @overload
+    def __call__(
+        self: "_Func[OutputsT]",
+        *args: Input,
+    ) -> tuple[_WrappedOutputs, ...]: ...
+
+    def __call__(self, *args: Input) -> object:
         raise NotImplementedError
 
 
-class NumbaFunc(_Func[NumbaType], _common.Dispatchable):
+class NumbaFunc(_Func[_T], _common.Dispatchable):
     @override
     def input_context(
         self,
@@ -83,7 +94,7 @@ class NumbaFunc(_Func[NumbaType], _common.Dispatchable):
         )
 
 
-class PyFunc(_Func[PythonType]):
+class PyFunc(_Func[_T]):
     @override
     def input_context(
         self,

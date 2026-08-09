@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias
 
 from numba.core import compiler  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
-from typing_extensions import Any, overload
+from typing_extensions import Any, Protocol, overload
 
 from kimnara._typing import CustomInliningRule, FastMathOptions
 
@@ -36,6 +36,118 @@ _GUFuncAlignment: TypeAlias = """str | Literal[
     kn.Alignment.AVX512,
     kn.Alignment.MKL,
 ]"""
+
+
+class _PyFuncDecorator(Protocol):
+    # Split into two overloads so that `NonTuple | tuple[Any, ...]`
+    # won't be accepted
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _func.OutputT],
+        /,
+    ) -> _func.PyFunc[_func.OutputT]: ...
+
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _func.OutputsT],
+        /,
+    ) -> _func.PyFunc[_func.OutputsT]: ...
+
+
+class _NumbaFuncDecorator(Protocol):
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _func.OutputT],
+        /,
+    ) -> _func.NumbaFunc[_func.OutputT]: ...
+
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _func.OutputsT],
+        /,
+    ) -> _func.NumbaFunc[_func.OutputsT]: ...
+
+
+class _PyGUFuncDecorator(Protocol):
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _gufunc.BooleanOutputT],
+        /,
+    ) -> _gufunc.PyGUFunc[_gufunc.BooleanOutputT]: ...
+
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _gufunc.OutputT],
+        /,
+    ) -> _gufunc.PyGUFunc[_gufunc.OutputT]: ...
+
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _gufunc.OutputsT],
+        /,
+    ) -> _gufunc.PyGUFunc[_gufunc.OutputsT]: ...
+
+
+class _PyUFuncDecorator(Protocol):
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _ufunc.BooleanOutputT],
+        /,
+    ) -> _ufunc.PyUFunc[_ufunc.BooleanOutputT]: ...
+
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _ufunc.OutputT],
+        /,
+    ) -> _ufunc.PyUFunc[_ufunc.OutputT]: ...
+
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _ufunc.OutputsT],
+        /,
+    ) -> _ufunc.PyUFunc[_ufunc.OutputsT]: ...
+
+
+class _NumbaUFuncDecorator(Protocol):
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _ufunc.BooleanOutputT],
+        /,
+    ) -> _ufunc.NumbaUFunc[_ufunc.BooleanOutputT]: ...
+
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _ufunc.OutputT],
+        /,
+    ) -> _ufunc.NumbaUFunc[_ufunc.OutputT]: ...
+
+
+class _NumbaParallelUFuncDecorator(Protocol):
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _ufunc.BooleanOutputT],
+        /,
+    ) -> _ufunc.NumbaParallelUFunc[_ufunc.BooleanOutputT]: ...
+
+    @overload
+    def __call__(
+        self,
+        wrapped: Callable[..., _ufunc.OutputT],
+        /,
+    ) -> _ufunc.NumbaParallelUFunc[_ufunc.OutputT]: ...
 
 
 @overload
@@ -121,9 +233,15 @@ def cfunc(  # noqa: PLR0913
 
 @overload
 def func(
-    wrapped: Callable[..., _func.PythonType],
+    wrapped: Callable[..., _func.OutputT],
     /,
-) -> _func.PyFunc: ...
+) -> _func.PyFunc[_func.OutputT]: ...
+
+@overload
+def func(
+    wrapped: Callable[..., _func.OutputsT],
+    /,
+) -> _func.PyFunc[_func.OutputsT]: ...
 
 @overload
 def func(
@@ -139,7 +257,7 @@ def func(
     pad_value: AnyComplex | None = ...,
     parallel: Literal[False] = ...,
     pipeline_class: None = ...,
-) -> Callable[[Callable[..., _func.PythonType]], _func.PyFunc]: ...
+) -> _PyFuncDecorator: ...
 
 @overload
 def func(
@@ -156,7 +274,7 @@ def func(
     pad_value: AnyComplex | None = ...,
     parallel: bool | str = ...,
     pipeline_class: type[compiler.CompilerBase] | None = ...,
-) -> Callable[[Callable[..., _func.NumbaType]], _func.NumbaFunc]: ...
+) -> _NumbaFuncDecorator: ...
 
 
 def func(  # noqa: PLR0913
@@ -190,7 +308,7 @@ def gufunc(
     nopython: Literal[False] = ...,
     pad_value: AnyComplex | None = ...,
     parallel: bool | str = ...,
-) -> Callable[[Callable[..., _gufunc.PythonType]], _gufunc.PyGUFunc]: ...
+) -> _PyGUFuncDecorator: ...
 
 @overload
 def gufunc(
@@ -203,10 +321,7 @@ def gufunc(
     nopython: Literal[True],
     pad_value: AnyComplex | None = ...,
     parallel: Literal[False] = ...,
-) -> Callable[
-    [Callable[..., _gufunc.NumbaType]],
-    _gufunc.NumbaGUFunc,
-]: ...
+) -> Callable[[Callable[..., None]], _gufunc.NumbaGUFunc]: ...
 
 @overload
 def gufunc(
@@ -219,10 +334,7 @@ def gufunc(
     nopython: Literal[True],
     pad_value: AnyComplex | None = ...,
     parallel: Literal[True] | str,
-) -> Callable[
-    [Callable[..., _gufunc.NumbaType]],
-    _gufunc.NumbaParallelGUFunc,
-]: ...
+) -> Callable[[Callable[..., None]], _gufunc.NumbaParallelGUFunc]: ...
 
 
 def gufunc(  # noqa: PLR0913
@@ -241,9 +353,21 @@ def gufunc(  # noqa: PLR0913
 
 @overload
 def ufunc(
-    wrapped: Callable[..., _ufunc.PythonType],
+    wrapped: Callable[..., _ufunc.BooleanOutputT],
     /,
-) -> _ufunc.PyUFunc: ...
+) -> _ufunc.PyUFunc[_ufunc.BooleanOutputT]: ...
+
+@overload
+def ufunc(
+    wrapped: Callable[..., _ufunc.OutputT],
+    /,
+) -> _ufunc.PyUFunc[_ufunc.OutputT]: ...
+
+@overload
+def ufunc(
+    wrapped: Callable[..., _ufunc.OutputsT],
+    /,
+) -> _ufunc.PyUFunc[_ufunc.OutputsT]: ...
 
 @overload
 def ufunc(
@@ -254,7 +378,7 @@ def ufunc(
     identity: Literal["reorderable"] | None = ...,
     nopython: Literal[False] = ...,
     parallel: bool | str = ...,
-) -> Callable[[Callable[..., _ufunc.PythonType]], _ufunc.PyUFunc]: ...
+) -> _PyUFuncDecorator: ...
 
 @overload
 def ufunc(
@@ -265,10 +389,7 @@ def ufunc(
     identity: Literal[0, 1, "reorderable"] | None = ...,
     nopython: Literal[True],
     parallel: Literal[False] = ...,
-) -> Callable[
-    [Callable[..., _ufunc.NumbaType]],
-    _ufunc.NumbaUFunc,
-]: ...
+) -> _NumbaUFuncDecorator: ...
 
 @overload
 def ufunc(
@@ -279,10 +400,7 @@ def ufunc(
     identity: Literal[0, 1, "reorderable"] | None = ...,
     nopython: Literal[True],
     parallel: Literal[True] | str,
-) -> Callable[
-    [Callable[..., _ufunc.NumbaType]],
-    _ufunc.NumbaParallelUFunc,
-]: ...
+) -> _NumbaParallelUFuncDecorator: ...
 
 
 def ufunc(  # noqa: PLR0913
