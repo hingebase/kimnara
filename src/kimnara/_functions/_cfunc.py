@@ -126,12 +126,10 @@ class NumbaCFunc(_CFunc[NumbaT], _common.Dispatchable):
         parallel: bool | str = False,
         pipeline_class: type[compiler.CompilerBase] | None = None,
     ) -> None:
-        if isinstance(parallel, str):
-            raise NotImplementedError
         super().__init__(wrapped)
         argtypes = [arg.to_numba() for arg in self.argtypes]
         restype = self.restype.to_numba()
-        self.dispatcher = self._numba = numba.cfunc(  # pyright: ignore[reportUnknownMemberType]
+        decorator = numba.cfunc(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
             restype(*argtypes),
             boundscheck=boundscheck,  # pyright: ignore[reportCallIssue]
             cache=_common.can_cache(wrapped, cache=cache),
@@ -140,9 +138,14 @@ class NumbaCFunc(_CFunc[NumbaT], _common.Dispatchable):
             forceinline=forceinline,
             inline=inline,
             nogil=nogil,
-            parallel=parallel,
+            parallel=bool(parallel),
             pipeline_class=pipeline_class,
-        )(wrapped)
+        )
+        if parallel:
+            with kn.threading.using_backend(parallel):
+                self.dispatcher = self._numba = decorator(wrapped)
+        else:
+            self.dispatcher = self._numba = decorator(wrapped)
 
     @property
     @override

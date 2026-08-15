@@ -89,26 +89,27 @@ class NumbaFunc(_Func[_T], _common.Dispatchable):
         parallel: bool | str = False,
         pipeline_class: type[compiler.CompilerBase] | None = None,
     ) -> None:
-        if isinstance(parallel, str):
-            raise NotImplementedError
         super().__init__(wrapped, align=align, pad_value=pad_value)
         argtypes = [arg.to_numba() for arg in self.argtypes]
         restype = self.restype.to_numba()
-        self.dispatcher = func = cast(
-            "registry.CPUDispatcher",
-            numba.njit(  # pyright: ignore[reportCallIssue, reportUnknownMemberType]
-                [restype(*argtypes)],
-                boundscheck=boundscheck,
-                cache=_common.can_cache(wrapped, cache=cache),
-                error_model=error_model,
-                fastmath=fastmath,  # pyright: ignore[reportArgumentType]
-                forceinline=forceinline,
-                inline=inline,
-                nogil=nogil,
-                parallel=parallel,
-                pipeline_class=pipeline_class,
-            )(wrapped),
+        decorator = numba.njit(  # pyright: ignore[reportCallIssue, reportUnknownMemberType, reportUnknownVariableType]
+            [restype(*argtypes)],
+            boundscheck=boundscheck,
+            cache=_common.can_cache(wrapped, cache=cache),
+            error_model=error_model,
+            fastmath=fastmath,  # pyright: ignore[reportArgumentType]
+            forceinline=forceinline,
+            inline=inline,
+            nogil=nogil,
+            parallel=bool(parallel),
+            pipeline_class=pipeline_class,
         )
+        if parallel:
+            with kn.threading.using_backend(parallel):
+                func = cast("registry.CPUDispatcher", decorator(wrapped))
+        else:
+            func = cast("registry.CPUDispatcher", decorator(wrapped))
+        self.dispatcher = func
         self._func = self.validate_call(func)
 
     @override

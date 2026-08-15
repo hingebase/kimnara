@@ -24,21 +24,17 @@ __all__ = [
 import abc
 import inspect
 from collections.abc import Callable, Sequence
-from typing import (
-    TYPE_CHECKING,
-    Generic,
-    Literal,
-    TypeAlias,
-    cast,
-    no_type_check,
-)
+from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, cast
 
 import numba  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import numpy.typing as npt
 import optype as op
 import optype.numpy as onp
-from numba.np.ufunc import dufunc  # pyright: ignore[reportMissingTypeStubs]
+from numba.np.ufunc import (  # pyright: ignore[reportMissingTypeStubs]
+    dufunc,
+    ufuncbuilder,
+)
 from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
 from typing_extensions import (
@@ -75,6 +71,7 @@ _Input = NumericT | PlainQuantity[NumericT]
 _InputAtLeast1D: TypeAlias = """
     np.ndarray[onp.AtLeast1D, np.dtype[Scalar]]
     | PlainQuantity[np.ndarray[onp.AtLeast1D, np.dtype[Number]]]"""
+_N = TypeVar("_N")
 _Output = NumericT | NumpyQuantity[NumericT]
 _ReduceAtShapeT = TypeVar(
     "_ReduceAtShapeT",
@@ -88,7 +85,6 @@ _ReduceAtShapeT = TypeVar(
     tuple[int, Unpack[tuple[int, ...]]],
 )
 _T = TypeVar("_T")
-_U = TypeVar("_U", np.ufunc, dufunc.DUFunc)
 
 BooleanOutputT = TypeVar("BooleanOutputT", bound=onp.ToJustBool)
 OutputT = TypeVar(
@@ -355,7 +351,7 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         return inspect.Signature([arg], return_annotation=x1)
 
 
-class _NumbaUFuncBase(_UFunc[_T], _common.UFuncWrapper[_T], Generic[_T, _U]):
+class _NumbaUFuncBase(_UFunc[_T], _common.UFuncWrapper[_T], Generic[_T, _N]):
     def __init__(  # ruff: ignore[too-many-arguments]
         self,
         wrapped: Callable[..., _T],
@@ -364,25 +360,20 @@ class _NumbaUFuncBase(_UFunc[_T], _common.UFuncWrapper[_T], Generic[_T, _U]):
         cache: bool | None = None,
         fastmath: FastMathOptions = False,
         identity: Literal[0, 1, "reorderable"] | None = None,
-        parallel: bool | str = False,
+        parallel: _N = False,
     ) -> None:
-        if isinstance(parallel, str):
-            raise NotImplementedError
         self.infer(wrapped)
         argtypes = [arg.to_numba() for arg in self.argtypes]
         restype = self.restype.to_numba()
-        ufunc = cast(
-            "_U",
-            numba.vectorize(  # pyright: ignore[reportUnknownMemberType]
-                [restype(*argtypes)],
-                boundscheck=boundscheck,
-                cache=_common.can_cache(wrapped, cache=cache),
-                fastmath=fastmath,
-                identity=identity,
-                target="parallel" if parallel else "cpu",
-            )(wrapped),
+        decorator = numba.vectorize(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            [restype(*argtypes)],
+            boundscheck=boundscheck,
+            cache=_common.can_cache(wrapped, cache=cache),
+            fastmath=fastmath,
+            identity=identity,
+            target="parallel" if parallel else "cpu",
         )
-        self.postprocess(ufunc)
+        self.build(decorator, parallel)  # pyright: ignore[reportUnknownArgumentType]
 
     @property
     @override
@@ -455,22 +446,38 @@ class _NumbaUFuncBase(_UFunc[_T], _common.UFuncWrapper[_T], Generic[_T, _U]):
         )
 
     @abc.abstractmethod
-    def postprocess(self, ufunc: _U) -> None:
+    def build(
+        self,
+        decorator: Callable[[Callable[..., _T]], Any],
+        name: _N,
+    ) -> None:
         raise NotImplementedError
 
 
-class NumbaUFunc(_NumbaUFuncBase[_T, dufunc.DUFunc], _common.Dispatchable):
-    @no_type_check
+class NumbaUFunc(_NumbaUFuncBase[_T, Literal[False]], _common.Dispatchable):
     @override
-    def postprocess(self, ufunc: dufunc.DUFunc) -> None:
-        self.dispatcher = ufunc._dispatcher  # ruff: ignore[private-member-access]
-        self._ufunc = ufunc.ufunc
+    def build(
+        self,
+        decorator: Callable[[Callable[..., _T]], dufunc.DUFunc],
+        name: Literal[False],
+    ) -> None:
+        ufunc = decorator(self.__wrapped__)
+        self.dispatcher = cast(
+            "ufuncbuilder.UFuncDispatcher",
+            ufunc._dispatcher,  # pyright: ignore[reportAttributeAccessIssue]  # ruff: ignore[private-member-access]
+        )
+        self._ufunc = cast("np.ufunc", ufunc.ufunc)
 
 
-class NumbaParallelUFunc(_NumbaUFuncBase[_T, np.ufunc]):
+class NumbaParallelUFunc(_NumbaUFuncBase[_T, str | Literal[True]]):
     @override
-    def postprocess(self, ufunc: np.ufunc) -> None:
-        self._ufunc = ufunc
+    def build(
+        self,
+        decorator: Callable[[Callable[..., _T]], np.ufunc],
+        name: str | Literal[True],
+    ) -> None:
+        with kn.threading.using_backend(name):
+            self._ufunc = decorator(self.__wrapped__)
 
 
 class PyUFunc(_UFunc[_T]):

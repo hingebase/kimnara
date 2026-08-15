@@ -27,7 +27,7 @@ import functools
 import inspect
 import itertools
 from collections.abc import Callable, Iterator, Sequence
-from typing import TYPE_CHECKING, Generic, Literal, cast, no_type_check
+from typing import TYPE_CHECKING, Generic, Literal, cast
 
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
@@ -37,6 +37,7 @@ import optype.numpy as onp
 from numba.np.ufunc import (  # pyright: ignore[reportMissingTypeStubs]
     gufunc,
     sigparse,
+    ufuncbuilder,
 )
 from numpy_typing_compat import NUMPY_GE_2_0
 from pint.facets.numpy.quantity import NumpyQuantity
@@ -61,7 +62,6 @@ if TYPE_CHECKING:
     from kimnara._spec._numpy._base import ScalarType, Type
 
 _T = TypeVar("_T")
-_U = TypeVar("_U", np.ufunc, gufunc.GUFunc)
 
 BooleanOutputT = TypeVar(
     "BooleanOutputT",
@@ -209,7 +209,7 @@ class _GUFunc(_common.UFuncCompiler[_T]):
         raise NotImplementedError
 
 
-class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_U]):
+class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_T]):
     @override
     def __init__(
         self,
@@ -221,10 +221,8 @@ class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_U]):
         cache: bool | None = None,
         fastmath: FastMathOptions = False,
         pad_value: op.typing.AnyComplex | None = None,
-        parallel: bool | str = False,
+        parallel: _T = False,
     ) -> None:
-        if isinstance(parallel, str):
-            raise NotImplementedError
         super().__init__(
             wrapped,
             signature,
@@ -233,18 +231,15 @@ class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_U]):
         )
         argtypes = [arg.to_numba() for arg in self.argtypes]
         restype = [arg.to_numba() for arg in self.restype]
-        ufunc = cast(
-            "_U",
-            numba.guvectorize(  # pyright: ignore[reportUnknownMemberType]
-                [numba.core.types.void(*argtypes, *restype)],
-                signature,
-                boundscheck=boundscheck,
-                cache=_common.can_cache(wrapped, cache=cache),
-                fastmath=fastmath,
-                target="parallel" if parallel else "cpu",
-            )(wrapped),
+        decorator = numba.guvectorize(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            [numba.core.types.void(*argtypes, *restype)],
+            signature,
+            boundscheck=boundscheck,
+            cache=_common.can_cache(wrapped, cache=cache),
+            fastmath=fastmath,
+            target="parallel" if parallel else "cpu",
         )
-        self.postprocess(ufunc)
+        self.build(decorator, parallel)  # pyright: ignore[reportUnknownArgumentType]
 
         it = iter(self.sig.parameters.values())
         parameters = list(itertools.islice(it, len(argtypes)))
@@ -339,7 +334,11 @@ class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_U]):
         return self.validate_call(wrapper, self._sig)
 
     @abc.abstractmethod
-    def postprocess(self, ufunc: _U) -> None:
+    def build(
+        self,
+        decorator: Callable[[Callable[..., None]], Any],
+        name: _T,
+    ) -> None:
         raise NotImplementedError
 
     def _calculate_shapes(
@@ -390,18 +389,30 @@ class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_U]):
         return True
 
 
-class NumbaGUFunc(_NumbaGUFuncBase[gufunc.GUFunc], _common.Dispatchable):
-    @no_type_check
+class NumbaGUFunc(_NumbaGUFuncBase[Literal[False]], _common.Dispatchable):
     @override
-    def postprocess(self, ufunc: gufunc.GUFunc) -> None:
-        self.dispatcher = ufunc.gufunc_builder.nb_func
-        self._ufunc = ufunc.ufunc
+    def build(
+        self,
+        decorator: Callable[[Callable[..., None]], gufunc.GUFunc],
+        name: Literal[False],
+    ) -> None:
+        ufunc = decorator(self.__wrapped__)
+        self.dispatcher = cast(
+            "ufuncbuilder.UFuncDispatcher",
+            ufunc.gufunc_builder.nb_func,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType]
+        )
+        self._ufunc = cast("np.ufunc", ufunc.ufunc)
 
 
-class NumbaParallelGUFunc(_NumbaGUFuncBase[np.ufunc]):
+class NumbaParallelGUFunc(_NumbaGUFuncBase[str | Literal[True]]):
     @override
-    def postprocess(self, ufunc: np.ufunc) -> None:
-        self._ufunc = ufunc
+    def build(
+        self,
+        decorator: Callable[[Callable[..., None]], np.ufunc],
+        name: str | Literal[True],
+    ) -> None:
+        with kn.threading.using_backend(name):
+            self._ufunc = decorator(self.__wrapped__)
 
 
 class PyGUFunc(_GUFunc[_T]):
