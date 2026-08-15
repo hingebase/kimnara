@@ -14,17 +14,22 @@
 
 __all__ = ["register_custom_backend", "using_backend"]
 
+import ctypes
 import dataclasses
 import types
 import warnings
 from contextlib import AbstractContextManager
-from typing import Literal
+from typing import Literal, cast
 
 import numpy as np
 from llvmlite import binding, ir  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import cgutils  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.cgutils import (  # pyright: ignore[reportMissingTypeStubs]
     get_or_insert_function,  # pyright: ignore[reportUnknownVariableType]
+)
+from numba.np.ufunc import (  # pyright: ignore[reportMissingTypeStubs]
+    parallel,
+    workqueue,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
 )
 from typing_extensions import override
 
@@ -140,3 +145,15 @@ def _get_or_insert_function(
 cgutils.get_or_insert_function = _get_or_insert_function
 _active_backends: list[str] = []
 _registry = {"prefer_openmp": np.vectorize, "prefer_tbb": np.vectorize}
+
+ctypes.CFUNCTYPE(None, ctypes.c_int)(
+    cast("int", workqueue.launch_threads),
+)(parallel.NUM_THREADS)  # pyright: ignore[reportUnknownMemberType]
+
+register_custom_backend(
+    "workqueue",
+    cast("int", workqueue.get_num_threads),
+    cast("int", workqueue.get_thread_id),
+    cast("int", workqueue.parallel_for),
+    np.vectorize,
+)
