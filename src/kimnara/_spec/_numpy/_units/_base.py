@@ -90,8 +90,9 @@ class BaseDequantifier(_utils.EqMixIn, abc.ABC, Generic[SCT]):
     def dequantify(self, value: object) -> ArrayLike[SCT]:
         raise NotImplementedError
 
+    @property
     @abc.abstractmethod
-    def get_unit(self) -> pint.Unit | None:
+    def unit(self) -> pint.Unit | None:
         raise NotImplementedError
 
 

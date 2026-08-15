@@ -25,10 +25,10 @@ import optype.numpy as onp
 import xarray as xr
 from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
-from typing_extensions import Any, TypeVar, overload
+from typing_extensions import Any, overload
 
 from kimnara import _spec, _utils
-from kimnara._typing import ArrayLike, NumericT
+from kimnara._typing import ArrayLike, NumericT, ShapeT
 
 if TYPE_CHECKING:
     from typing import type_check_only
@@ -41,7 +41,6 @@ if TYPE_CHECKING:
         def metpy(self) -> metpy.MetPyDataArrayAccessor: ...
 
 _Quantity = _spec.ureg.Quantity
-_ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...])
 
 
 @overload
@@ -56,9 +55,9 @@ def quantity(
 def quantity(
     # np.timedelta64 is a subclass of np.signedinteger at runtime,
     # but not in the type stubs
-    value: np.ndarray[_ShapeT, np.dtype[np.timedelta64]],
+    value: np.ndarray[ShapeT, np.dtype[np.timedelta64]],
     units: str | None = ...,
-) -> NumpyQuantity[np.ndarray[_ShapeT, np.dtype[np.float64]]]: ...
+) -> NumpyQuantity[np.ndarray[ShapeT, np.dtype[np.float64]]]: ...
 @overload
 def quantity(
     value: op.JustInt,

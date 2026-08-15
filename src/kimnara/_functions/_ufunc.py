@@ -51,13 +51,16 @@ import kimnara as kn
 from kimnara import _spec
 from kimnara._typing import (
     ArrayLike,
+    AtLeast1DT,
     FastMathOptions,
     Input,
     Number,
+    NumberT,
     NumericT,
     Output,
     Outputs,
     Scalar,
+    ShapeT,
     UFuncKwargs,
 )
 
@@ -66,12 +69,16 @@ from . import _common
 if TYPE_CHECKING:
     from kimnara._spec._numpy._base import ScalarType
 
-_AccumulateShapeT = TypeVar("_AccumulateShapeT", bound=onp.AtLeast1D)
-_Input = NumericT | PlainQuantity[NumericT]
 _InputAtLeast1D: TypeAlias = """
     np.ndarray[onp.AtLeast1D, np.dtype[Scalar]]
     | PlainQuantity[np.ndarray[onp.AtLeast1D, np.dtype[Number]]]"""
 _N = TypeVar("_N")
+_NumberT = TypeVar(
+    "_NumberT",
+    np.int8, np.int16, np.int32, np.int64, np.intp,
+    np.uint8, np.uint16, np.uint32, np.uint64, np.uintp,
+    np.float32, np.float64, np.complex64, np.complex128,
+)
 _Output = NumericT | NumpyQuantity[NumericT]
 _ReduceAtShapeT = TypeVar(
     "_ReduceAtShapeT",
@@ -84,6 +91,7 @@ _ReduceAtShapeT = TypeVar(
     tuple[int, int, Unpack[tuple[int, ...]]],
     tuple[int, Unpack[tuple[int, ...]]],
 )
+_ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...])
 _T = TypeVar("_T")
 
 BooleanOutputT = TypeVar("BooleanOutputT", bound=onp.ToJustBool)
@@ -105,44 +113,49 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
     @overload
     def __call__(
         self: "_UFunc[BooleanOutputT]",
-        *args: Input,
+        *args: Input[Any, Any],
         **kwargs: Unpack[UFuncKwargs],
     ) -> ArrayLike[np.bool_]: ...
 
     @overload
     def __call__(
         self: "_UFunc[OutputT]",
-        *args: Input,
+        *args: Input[Any, Any],
         **kwargs: Unpack[UFuncKwargs],
     ) -> _Output[ArrayLike[Number]]: ...
 
     @overload
     def __call__(
         self: "_UFunc[OutputsT]",
-        *args: Input,
+        *args: Input[Any, Any],
         **kwargs: Unpack[UFuncKwargs],
     ) -> tuple[Output, ...]: ...
 
     @override
-    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
+    def __call__(
+        self,
+        *args: Input[Any, Any],
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> Outputs:
         wrapper = self.wrap_call(**kwargs)
         return self.validate_call(wrapper)(*args)
 
     @overload
     def accumulate(
         self: "_UFunc[BooleanOutputT]",
-        array: np.ndarray[_AccumulateShapeT, np.dtype[np.bool_]],
+        array: np.ndarray[AtLeast1DT, np.dtype[np.bool_]],
         /,
         axis: SupportsIndex = ...,
-    ) -> np.ndarray[_AccumulateShapeT, np.dtype[np.bool_]]: ...
+    ) -> np.ndarray[AtLeast1DT, np.dtype[np.bool_]]: ...
 
     @overload
     def accumulate(
         self: "_UFunc[OutputT]",
-        array: _Input[np.ndarray[_AccumulateShapeT, np.dtype[Number]]],
+        array: np.ndarray[AtLeast1DT, np.dtype[Number]]
+            | PlainQuantity[np.ndarray[AtLeast1DT, np.dtype[NumberT]]],
         /,
         axis: SupportsIndex = ...,
-    ) -> _Output[np.ndarray[_AccumulateShapeT, np.dtype[Number]]]: ...
+    ) -> _Output[np.ndarray[AtLeast1DT, np.dtype[Number]]]: ...
 
     def accumulate(
         self: "_UFunc[BooleanOutputT] | _UFunc[OutputT]",
@@ -150,9 +163,9 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         /,
         axis: SupportsIndex = 0,
     ) -> object:
-        sig = self._ufunc_method_signature("accumulate")
         wrapper = self.wrap_accumulate(axis)
-        return self.validate_call(wrapper, sig)(array)
+        self._calling_method = "accumulate"
+        return self.validate_call(wrapper, alternative=True)(array)
 
     @overload
     def reduce(
@@ -169,7 +182,7 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
     @overload
     def reduce(
         self: "_UFunc[OutputT]",
-        array: Input,
+        array: Input[NumberT, ShapeT],
         /,
         axis: SupportsIndex | Sequence[SupportsIndex] | None = ...,
         *,
@@ -180,7 +193,7 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
 
     def reduce(
         self,
-        array: Input,
+        array: Input[NumberT, ShapeT],
         /,
         axis: SupportsIndex | Sequence[SupportsIndex] | None = 0,
         *,
@@ -188,14 +201,14 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         initial: object = MISSING,
         where: onp.ToJustBool | onp.ToJustBoolND | None = True,
     ) -> object:
-        sig = self._ufunc_method_signature("reduce")
         wrapper = self.wrap_reduce(
             axis,
             initial,
             keepdims=keepdims,
             where=where,
         )
-        return self.validate_call(wrapper, sig)(array)
+        self._calling_method = "reduce"
+        return self.validate_call(wrapper, alternative=True)(array)
 
     @overload
     def reduceat(
@@ -209,7 +222,8 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
     @overload
     def reduceat(
         self: "_UFunc[OutputT]",
-        array: _Input[np.ndarray[_ReduceAtShapeT, np.dtype[Number]]],
+        array: np.ndarray[_ReduceAtShapeT, np.dtype[Number]]
+            | PlainQuantity[np.ndarray[_ReduceAtShapeT, np.dtype[NumberT]]],
         /,
         indices: onp.ToJustIntStrict1D,
         axis: SupportsIndex = ...,
@@ -222,15 +236,15 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         indices: onp.ToJustIntStrict1D,
         axis: SupportsIndex = 0,
     ) -> object:
-        sig = self._ufunc_method_signature("reduceat")
         wrapper = self.wrap_reduceat(indices, axis)
-        return self.validate_call(wrapper, sig)(array)
+        self._calling_method = "reduceat"
+        return self.validate_call(wrapper, alternative=True)(array)
 
     @overload
     def outer(
         self: "_UFunc[BooleanOutputT]",
-        a: Input,
-        b: Input,
+        a: Input[NumberT, ShapeT],
+        b: Input[_NumberT, _ShapeT],
         /,
         **kwargs: Unpack[UFuncKwargs],
     ) -> ArrayLike[np.bool_]: ...
@@ -238,8 +252,8 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
     @overload
     def outer(
         self: "_UFunc[OutputT]",
-        a: Input,
-        b: Input,
+        a: Input[NumberT, ShapeT],
+        b: Input[_NumberT, _ShapeT],
         /,
         **kwargs: Unpack[UFuncKwargs],
     ) -> _Output[ArrayLike[Number]]: ...
@@ -247,41 +261,24 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
     @overload
     def outer(
         self: "_UFunc[OutputsT]",
-        a: Input,
-        b: Input,
+        a: Input[NumberT, ShapeT],
+        b: Input[_NumberT, _ShapeT],
         /,
         **kwargs: Unpack[UFuncKwargs],
     ) -> tuple[Output, ...]: ...
 
     def outer(
         self,
-        a: Input,
-        b: Input,
+        a: Input[NumberT, ShapeT],
+        b: Input[_NumberT, _ShapeT],
         /,
         **kwargs: Unpack[UFuncKwargs],
     ) -> object:
-        try:
-            type1, type2 = self.argtypes
-        except ValueError:
+        if self._ufunc.nin != 2:  # ruff: ignore[magic-value-comparison]
             message = "outer product only supported for binary functions"
             raise ValueError(message) from None
-        arg1, arg2 = self.sig.parameters.values()
-        arg1 = inspect.Parameter(
-            arg1.name,
-            inspect.Parameter.POSITIONAL_ONLY,
-            annotation=type1,
-        )
-        arg2 = inspect.Parameter(
-            arg2.name,
-            inspect.Parameter.POSITIONAL_ONLY,
-            annotation=type2,
-        )
-        sig = inspect.Signature(
-            [arg1, arg2],
-            return_annotation=self.sig.return_annotation,
-        )
         wrapper = self.wrap_outer(**kwargs)
-        return self.validate_call(wrapper, sig)(a, b)
+        return self.validate_call(wrapper)(a, b)
 
     @override
     def input_context(
@@ -293,7 +290,6 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
             align=kn.A,
             allow_scalar=True,
             allow_units=True,
-            readonly=True,
         )
 
     @abc.abstractmethod
@@ -333,22 +329,24 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
     ) -> Callable[..., Any]:
         raise NotImplementedError
 
-    def _ufunc_method_signature(self, method: str) -> inspect.Signature:
+    @override
+    def alternative_signature(self) -> inspect.Signature:
         match self.argtypes:
             case [x1, x2] if x1 == x2 == self.restype:
                 pass
             case _:
                 message = (
-                    f"{method} only supported for binary functions returning a"
-                    " single value of the same kind"
+                    f"{self._calling_method} only supported for binary "
+                    "functions returning a single value of the same kind"
                 )
-                raise TypeError(message)
+                raise ValueError(message)
+        return_annotation = self.restype.to_python()
         arg = inspect.Parameter(
             "array",
             inspect.Parameter.POSITIONAL_ONLY,
-            annotation=x1,
+            annotation=return_annotation,
         )
-        return inspect.Signature([arg], return_annotation=x1)
+        return inspect.Signature([arg], return_annotation=return_annotation)
 
 
 class _NumbaUFuncBase(_UFunc[_T], _common.UFuncWrapper[_T], Generic[_T, _N]):

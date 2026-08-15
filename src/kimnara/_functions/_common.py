@@ -24,6 +24,7 @@ __all__ = [
 
 import abc
 import collections
+import functools
 import inspect
 import itertools
 import linecache
@@ -190,36 +191,67 @@ class Inferable(abc.ABC, Generic[_T]):
 
 
 class Validator(Inferable[_T]):
+    def alternative_signature(self) -> inspect.Signature:
+        raise NotImplementedError
+
     def validate_call(
         self,
         wrapped: Callable[..., object],
-        sig: inspect.Signature | None = None,
+        *,
+        alternative: bool = False,
     ) -> Callable[..., Any]:
-        if not sig:
-            sig = self.sig
+        if alternative:
+            sig, pint_decorator = self._alternative_signature
+        else:
+            sig, pint_decorator = self._call_signature
         if wrapped is not self.__wrapped__:
             wrapped.__signature__ = sig  # pyright: ignore[reportFunctionMemberAccess]
-        params = sig.parameters.values()
-        wrapper = cast(
-            "Callable[..., object]",
-            pint.registry_helpers.wraps(  # pyright: ignore[reportUnknownMemberType]
-                _spec.ureg,  # pyright: ignore[reportArgumentType]
-                ret=self.restype.to_units(),
-                args=(None,) * len(params),  # Handled by pydantic
-            )(wrapped),
-        )
-        wrapper.__signature__ = sig = inspect.Signature(  # pyright: ignore[reportFunctionMemberAccess]
-            parameters=[
-                param.replace(annotation=arg.to_python())
-                for arg, param in zip(self.argtypes, params, strict=True)
-            ],
-            return_annotation=self.restype.to_python(),
-        )
+        wrapper = pint_decorator(wrapped)
+        wrapper.__signature__ = sig  # pyright: ignore[reportFunctionMemberAccess]
         wrapper.__annotations__ = annotations = {
             k: v.annotation for k, v in sig.parameters.items()
         }
         annotations["return"] = sig.return_annotation
         return _with_parameter_names(pydantic.validate_call(wrapper), sig)
+
+    @functools.cached_property
+    def _alternative_signature(self) -> tuple[
+        inspect.Signature,
+        Callable[[Callable[..., object]], Callable[..., object]],
+    ]:
+        sig = self.alternative_signature()
+        return sig, self._pint_decorator(sig)
+
+    @functools.cached_property
+    def _call_signature(self) -> tuple[
+        inspect.Signature,
+        Callable[[Callable[..., object]], Callable[..., object]],
+    ]:
+        sig = inspect.Signature(
+            parameters=[
+                param.replace(
+                    kind=inspect.Parameter.POSITIONAL_ONLY,
+                    annotation=arg.to_python(),
+                )
+                for arg, param in zip(
+                    self.argtypes,
+                    self.sig.parameters.values(),
+                    strict=True,
+                )
+            ],
+            return_annotation=self.restype.to_python(),
+        )
+        return sig, self._pint_decorator(sig)
+
+    def _pint_decorator(
+        self,
+        sig: inspect.Signature,
+    ) -> Callable[[Callable[..., object]], Callable[..., object]]:
+        return pint.registry_helpers.wraps(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            _spec.ureg,  # pyright: ignore[reportArgumentType]
+            ret=self.restype.to_units(),
+            args=(None,) * len(sig.parameters),  # Handled by pydantic
+        )
 
 
 class UFuncCompiler(Validator[_T]):
@@ -281,7 +313,11 @@ class UFuncCompiler(Validator[_T]):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
+    def __call__(
+        self,
+        *args: Input[Any, Any],
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> Outputs:
         raise NotImplementedError
 
 

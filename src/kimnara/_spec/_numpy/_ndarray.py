@@ -16,6 +16,7 @@ __all__ = ["TypingContext"]
 
 import builtins
 import sys
+import types
 import typing
 from collections.abc import Sequence
 from typing import get_args, get_origin
@@ -45,7 +46,7 @@ class TypingContext(_generic.TypingContext):
     def infer(self, annotation: object) -> _spec.Type:  # noqa: C901
         inspected = self.parse(annotation)
         match inspected.type:
-            case None:
+            case types.NoneType | None:
                 return _generic.NoneType(inspected, self)
             case builtins.bool:
                 inspected = inspected._replace(type=np.bool_)
@@ -244,9 +245,19 @@ class _ArrayType(_base.Type):
         ndim = self._ndim
         if ndim is None:
             _utils.unreachable()
+
+        # This can be "C" for 1-D arrays with SIMD alignment
+        # Waiting for Numba's decision on
+        # https://github.com/numba/numba/issues/9423
+        layout = self._align.order
+        # For multi-dimensional SIMD arrays, layout="CS" has been
+        # reserved since
+        # https://github.com/numba/numba/commit/adf46fe8ea53c8a2c90df07fa434be325736bc53
+        # but never got implemented
+
         return numba.core.types.Array(
             numba.np.numpy_support.from_dtype(self.dtype),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
             ndim,
-            self._align.order,
+            layout,
             self._readonly,
         )

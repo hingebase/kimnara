@@ -23,7 +23,7 @@ from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
     registry,
 )
 from optype.typing import AnyComplex
-from typing_extensions import TypeVar, overload, override
+from typing_extensions import Any, TypeVar, overload, override
 
 import kimnara as kn
 from kimnara import _spec
@@ -40,7 +40,10 @@ from . import _common
 
 _RawOutputs = complex | ArrayLike[Scalar] | None | tuple["_RawOutputs", ...]
 _T = TypeVar("_T")
-_WrappedOutputs = Output | None | tuple["_WrappedOutputs", ...]
+
+# Numba will convert NumPy scalars to Python scalars on output
+# Python functions will forward the return value as-is
+_WrappedOutputs = complex | Output | None | tuple["_WrappedOutputs", ...]
 
 OutputT = TypeVar("OutputT", bound=complex | ArrayLike[Scalar] | None)
 OutputsT = TypeVar("OutputsT", bound=tuple[_RawOutputs, ...])
@@ -59,15 +62,18 @@ class _Func(_common.Validator[_T]):
         self.infer(wrapped, align=align, pad_value=pad_value)
 
     @overload
-    def __call__(self: "_Func[OutputT]", *args: Input) -> Output | None: ...
+    def __call__(
+        self: "_Func[OutputT]",
+        *args: Input[Any, Any] | None,
+    ) -> complex | Output | None: ...
 
     @overload
     def __call__(
         self: "_Func[OutputsT]",
-        *args: Input,
+        *args: Input[Any, Any] | None,
     ) -> tuple[_WrappedOutputs, ...]: ...
 
-    def __call__(self, *args: Input) -> object:
+    def __call__(self, *args: Input[Any, Any] | None) -> object:
         return self._func(*args)
 
 
@@ -122,7 +128,7 @@ class NumbaFunc(_Func[_T], _common.Dispatchable):
             align=align,
             allow_align=frozenset(kn.Alignment),
             allow_array=True,
-            allow_optional=True,
+            allow_optional="units",
             allow_scalar=True,
             allow_units=True,
             pad_value=pad_value,
@@ -171,7 +177,7 @@ class PyFunc(_Func[_T]):
             align=align,
             allow_align=frozenset(kn.Alignment),
             allow_array=True,
-            allow_optional=True,
+            allow_optional="units",
             allow_scalar=True,
             allow_units=True,
             ndim=None,

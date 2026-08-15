@@ -23,14 +23,15 @@ __all__ = [
     "unreachable",
 ]
 
+import copyreg
 import functools
 import importlib.metadata
 import json
 import operator
 import sys
 import types
-from collections.abc import Sequence
-from typing import TYPE_CHECKING, NoReturn, TypeGuard
+from collections.abc import Callable, Sequence
+from typing import TYPE_CHECKING, NoReturn, TypeGuard, cast
 
 import numpy as np
 import numpy.typing as npt
@@ -56,16 +57,31 @@ else:
 _T = TypeVar("_T", bound=np.generic)
 
 
-class EqMixIn:  # ruff: ignore[eq-without-hash]
+class EqMixIn:
     __slots__ = ()
+    _slotnames = classmethod(
+        cast(
+            "Callable[[type[EqMixIn]], list[str]]",
+            copyreg._slotnames,  # pyright: ignore[reportAttributeAccessIssue]  # ruff: ignore[private-member-access]
+        ),
+    )
 
     def __eq__(self, other: object) -> bool:
         if type(self) is not type(other):
             return False
-        for name in self.__slots__:
+        for name in self._slotnames():
             if getattr(self, name) != getattr(other, name):
                 return False
         return True
+
+    def __hash__(self) -> int:
+        return hash(tuple(getattr(self, name) for name in self._slotnames()))
+
+    def __init_subclass__(cls) -> None:
+        for base in cls.__mro__:
+            if "__dict__" in vars(base):
+                unreachable()
+        super().__init_subclass__()
 
 
 class _AtLeast1D(Protocol):

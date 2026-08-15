@@ -25,7 +25,6 @@ import abc
 import contextlib
 import functools
 import inspect
-import itertools
 from collections.abc import Callable, Iterator, Sequence
 from typing import TYPE_CHECKING, Generic, Literal, cast
 
@@ -61,6 +60,7 @@ from . import _common
 if TYPE_CHECKING:
     from kimnara._spec._numpy._base import ScalarType, Type
 
+_Output = complex | ArrayLike[Scalar]
 _T = TypeVar("_T")
 
 BooleanOutputT = TypeVar(
@@ -71,7 +71,10 @@ OutputT = TypeVar(
     "OutputT",
     bound=op.JustInt | op.JustFloat | op.JustComplex | ArrayLike[Number],
 )
-OutputsT = TypeVar("OutputsT", bound=tuple[complex | ArrayLike[Scalar], ...])
+OutputsT = TypeVar(
+    "OutputsT",
+    bound=tuple[_Output, _Output, Unpack[tuple[_Output, ...]]],
+)
 
 _COPY = cast("bool", None) if NUMPY_GE_2_0 else False
 
@@ -99,33 +102,37 @@ class _GUFunc(_common.UFuncCompiler[_T]):
     @overload
     def __call__(
         self: "_GUFunc[None]",
-        *args: Input,
+        *args: Input[Any, Any],
         **kwargs: Unpack[UFuncKwargs],
     ) -> Outputs: ...
 
     @overload
     def __call__(
         self: "_GUFunc[BooleanOutputT]",
-        *args: Input,
+        *args: Input[Any, Any],
         **kwargs: Unpack[UFuncKwargs],
     ) -> ArrayLike[np.bool_]: ...
 
     @overload
     def __call__(
         self: "_GUFunc[OutputT]",
-        *args: Input,
+        *args: Input[Any, Any],
         **kwargs: Unpack[UFuncKwargs],
     ) -> ArrayLike[Number] | NumpyQuantity[ArrayLike[Number]]: ...
 
     @overload
     def __call__(
         self: "_GUFunc[OutputsT]",
-        *args: Input,
+        *args: Input[Any, Any],
         **kwargs: Unpack[UFuncKwargs],
     ) -> tuple[Output, ...]: ...
 
     @override
-    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
+    def __call__(
+        self,
+        *args: Input[Any, Any],
+        **kwargs: Unpack[UFuncKwargs],
+    ) -> Outputs:
         if "where" in kwargs:
             message = (
                 f"{self.__name__}() got an unexpected keyword argument 'where'"
@@ -241,15 +248,22 @@ class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_T]):
         )
         self.build(decorator, parallel)  # pyright: ignore[reportUnknownArgumentType]
 
-        it = iter(self.sig.parameters.values())
-        parameters = list(itertools.islice(it, len(argtypes)))
-        if len(restype) == 1:
-            return_annotation = next(it).annotation
-        else:
-            return_annotation = tuple[tuple(arg.annotation for arg in it)]
-        self._sig = inspect.Signature(
-            parameters,
-            return_annotation=return_annotation,
+    @override
+    def alternative_signature(self) -> inspect.Signature:
+        # Same as self._call_signature except for strict=False
+        return inspect.Signature(
+            parameters=[
+                param.replace(
+                    kind=inspect.Parameter.POSITIONAL_ONLY,
+                    annotation=arg.to_python(),
+                )
+                for arg, param in zip(
+                    self.argtypes,
+                    self.sig.parameters.values(),
+                    strict=False,
+                )
+            ],
+            return_annotation=self.restype.to_python(),
         )
 
     @override
@@ -331,7 +345,7 @@ class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_T]):
                         )
                     ]
                     return self._ufunc(*args, *out)
-        return self.validate_call(wrapper, self._sig)
+        return self.validate_call(wrapper, alternative=True)
 
     @abc.abstractmethod
     def build(
@@ -458,6 +472,13 @@ class PyGUFunc(_GUFunc[_T]):
             raise kn.TypeInferenceError(message) from e
         for _ in cast("Iterator[int]", ctx.ndim):
             message = "nout less than signature"
+            raise kn.TypeInferenceError(message)
+        if len(restype) == 1 and hasattr(restype, "from_members"):
+            # https://github.com/numpy/numpy/blob/v2.5.2/numpy/lib/_function_base_impl.py#L2652-L2653
+            message = (
+                "Unary tuple is unsupported. Please flatten the tuple in your"
+                " return value and its typing annotation."
+            )
             raise kn.TypeInferenceError(message)
         return restype
 

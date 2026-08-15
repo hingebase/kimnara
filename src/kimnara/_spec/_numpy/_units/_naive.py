@@ -24,14 +24,12 @@ import optype as op
 import pint
 import pydantic_core
 from pint.facets.nonmultiplicative.objects import NonMultiplicativeQuantity
-from typing_extensions import Any, TypeVar, override
+from typing_extensions import Any, override
 
 import kimnara as kn
 from kimnara import _spec, _utils
 from kimnara._spec._numpy import _units
-from kimnara._typing import SCT, ArrayLike
-
-_ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...])
+from kimnara._typing import SCT, ArrayLike, ShapeT
 
 
 class NaiveDequantifier(_units.BaseDequantifier[SCT]):
@@ -62,8 +60,9 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
             value = value.magnitude
         return self.postprocess(self._dequantify(value), value)
 
+    @property
     @override
-    def get_unit(self) -> None:
+    def unit(self) -> None:
         pass
 
     def control_output(
@@ -86,8 +85,8 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
 
     def dtype_match(
         self,
-        value: ArrayLike[np.number[Any] | np.bool_, _ShapeT],
-    ) -> TypeGuard[ArrayLike[SCT, _ShapeT]]:
+        value: ArrayLike[np.number[Any] | np.bool_, ShapeT],
+    ) -> TypeGuard[ArrayLike[SCT, ShapeT]]:
         return value.dtype.type is self.dtype
 
     def postprocess(

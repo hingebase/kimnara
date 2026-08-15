@@ -15,6 +15,7 @@
 __all__ = [
     "SCT",
     "ArrayLike",
+    "AtLeast1DT",
     "CustomInliningRule",
     "FastMathOptions",
     "Input",
@@ -24,6 +25,7 @@ __all__ = [
     "Output",
     "Outputs",
     "Scalar",
+    "ShapeT",
     "UFuncKwargs",
 ]
 
@@ -47,6 +49,10 @@ if sys.version_info >= (3, 14):
 else:
     _Number = np.number[Any]
 
+# np.ndarray.shape was invariant in numpy<2.1,
+# where we must use `AtLeast1DT` instead of `onp.AtLeast1D`
+AtLeast1DT = TypeVar("AtLeast1DT", bound=onp.AtLeast1D)
+
 Number = (
     np.int8 | np.int16 | np.int32 | np.int64 | np.intp
     | np.uint8 | np.uint16 | np.uint32 | np.uint64 | np.uintp
@@ -67,6 +73,7 @@ SCT = TypeVar(
     np.uint8, np.uint16, np.uint32, np.uint64, np.uintp,
     np.float32, np.float64, np.complex64, np.complex128,
 )
+ShapeT = TypeVar("ShapeT", bound=tuple[int, ...])
 
 _SCT = TypeVar("_SCT", bound=np.generic)
 _ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...], default=tuple[int, ...])
@@ -75,7 +82,12 @@ ArrayLike = TypeAliasType(
     _SCT | np.ndarray[_ShapeT, np.dtype[_SCT]],
     type_params=(_SCT, _ShapeT),
 )
-Input = complex | ArrayLike[Scalar] | PlainQuantity[ArrayLike[Number]]
+Input = (
+    complex | ArrayLike[Scalar] | PlainQuantity[NumberT]
+        # The magnitude was invariant before
+        # https://github.com/hgrecco/pint/pull/2303
+        | PlainQuantity[np.ndarray[ShapeT, np.dtype[NumberT]]]
+)
 Output = ArrayLike[Scalar] | NumpyQuantity[ArrayLike[Number]]
 Outputs = Output | tuple[Output, ...]
 

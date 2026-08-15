@@ -57,7 +57,7 @@ class Type(_spec.Type):
 
     @override
     def to_units(self) -> pint.Unit | None:
-        return self.dequantifier.get_unit()
+        return self.dequantifier.unit
 
 
 class ScalarType(Type):

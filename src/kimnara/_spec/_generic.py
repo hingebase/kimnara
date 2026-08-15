@@ -54,7 +54,7 @@ class TypingContext(NamedTuple):
     allow_align: frozenset["kn.Alignment"] = frozenset()
     allow_array: bool = False
     allow_none: bool = False
-    allow_optional: bool = False
+    allow_optional: bool | Literal["units"] = False
     allow_scalar: bool = False
     allow_tuple: bool | Literal["nested"] = False
     allow_units: bool = False
@@ -198,15 +198,31 @@ class UnionType(_spec.Type):
         annotation: introspection.InspectedAnnotation,
         ctx: TypingContext,
     ) -> None:
-        if not ctx.allow_optional:
-            message = "Optional[T] is unsupported in this context"
-            raise kn.TypeInferenceError(message)
+        match ctx.allow_optional:
+            case True:
+                ctx = ctx._replace(
+                    allow_optional=False,
+                    allow_none=True,
+                    allow_units=False,
+
+                    # Allowing `tuple[...] | None` would make a mess in
+                    # Python typing, although the runtime behavior is
+                    # well-defined
+                    # The workaround is `tuple[T1 | None, T2 | None]`
+                    allow_tuple=False,
+                )
+            case False:
+                message = "Optional[T] is unsupported in this context"
+                raise kn.TypeInferenceError(message)
+            case _:
+                ctx = ctx._replace(
+                    allow_optional=False,
+                    allow_none=True,
+                    allow_tuple=False,
+                )
         t = None
         none = False
-        for arg in map(
-            ctx._replace(allow_optional=False, allow_none=True).infer,
-            get_args(annotation.type),
-        ):
+        for arg in map(ctx.infer, get_args(annotation.type)):
             if isinstance(arg, NoneType):
                 none = True
             elif t:
@@ -228,11 +244,8 @@ class UnionType(_spec.Type):
     def to_python(self) -> TypeForm[Any]:
         return None | self._type.to_python()
 
-    @override
-    def to_units(self) -> None:
-        if self._type.to_units() is not None:
-            message = "Optional types cannot have units"
-            raise kn.TypeInferenceError(message)
+    # `.to_units()` is only called for return types, where
+    # optional types cannot have units
 
 
 def _expand_type_alias(annotation: object) -> object:

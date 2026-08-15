@@ -28,13 +28,11 @@ import numpy as np
 import numpy.typing as npt
 import optype.numpy as onp
 from optype.typing import AnyComplex
-from typing_extensions import Any, TypeVar, overload
+from typing_extensions import Any, overload
 
 import kimnara as kn
 from kimnara import _spec, _utils
-from kimnara._typing import SCT, Scalar
-
-_ShapeT = TypeVar("_ShapeT", bound=onp.AtLeast1D)
+from kimnara._typing import SCT, AtLeast1DT, Scalar
 
 _DTYPES = frozenset(map(np.dtype, (
     "fdFD"  # Floating and complex types
@@ -45,22 +43,22 @@ _DTYPES = frozenset(map(np.dtype, (
 
 @overload
 def array(
-    a: np.ndarray[_ShapeT, np.dtype[Scalar]],
+    a: np.ndarray[AtLeast1DT, np.dtype[Scalar]],
     dtype: type[SCT],
     *,
     copy: bool | None = ...,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[_ShapeT, np.dtype[SCT]]: ...
+) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
 @overload
 def array(
-    a: np.ndarray[_ShapeT, np.dtype[SCT]],
+    a: np.ndarray[AtLeast1DT, np.dtype[SCT]],
     dtype: None = ...,
     *,
     copy: bool | None = ...,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[_ShapeT, np.dtype[SCT]]: ...
+) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
 def array(
     a: np.ndarray[onp.AtLeast1D, np.dtype[Any]],
     dtype: type[Scalar] | None = None,
@@ -115,38 +113,38 @@ def array(
 
 @overload
 def asarray(
-    a: np.ndarray[_ShapeT, np.dtype[Scalar]],
+    a: np.ndarray[AtLeast1DT, np.dtype[Scalar]],
     dtype: type[SCT],
     *,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[_ShapeT, np.dtype[SCT]]: ...
+) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
 @overload
 def asarray(
-    a: np.ndarray[_ShapeT, np.dtype[SCT]],
+    a: np.ndarray[AtLeast1DT, np.dtype[SCT]],
     dtype: None = ...,
     *,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[_ShapeT, np.dtype[SCT]]: ...
+) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
 def asarray(
-    a: np.ndarray[_ShapeT, np.dtype[Any]],
+    a: np.ndarray[AtLeast1DT, np.dtype[Any]],
     dtype: type[Scalar] | None = None,
     *,
     align: "str | kn.Alignment" = "host",
     pad_value: AnyComplex | None = None,
-) -> np.ndarray[_ShapeT, np.dtype[Scalar]]:
+) -> np.ndarray[AtLeast1DT, np.dtype[Scalar]]:
     return array(a, dtype, align=align, copy=None, pad_value=pad_value)
 
 
 @overload
 def empty(
-    shape: _ShapeT,
+    shape: AtLeast1DT,
     dtype: type[SCT] = np.float64,
     *,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[_ShapeT, np.dtype[SCT]]: ...
+) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
 @overload
 def empty(
     shape: int,
@@ -189,7 +187,7 @@ def empty(
 
 
 def isaligned(
-    value: np.ndarray[onp.AtLeast1D, np.dtype[Scalar]],
+    value: np.ndarray[AtLeast1DT, np.dtype[Scalar]],
     align: "str | kn.Alignment",
 ) -> bool:
     _check_array_dtype_and_ndim(value)
@@ -238,7 +236,7 @@ def _empty(
 
 
 def _isaligned_simd(
-    value: np.ndarray[onp.AtLeast1D, np.dtype[Scalar]],
+    value: np.ndarray[AtLeast1DT, np.dtype[Scalar]],
     spec: _spec.Alignment,
 ) -> bool:
     multiple_of = spec.multiple_of

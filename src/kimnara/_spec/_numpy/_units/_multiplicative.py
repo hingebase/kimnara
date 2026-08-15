@@ -77,8 +77,9 @@ class _MultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
             out = base
         return dequantifier.postprocess(out, base)  # pyright: ignore[reportUnknownArgumentType]
 
+    @property
     @override
-    def get_unit(self) -> pint.Unit:
+    def unit(self) -> pint.Unit:
         return self._inner.unit
 
 

@@ -38,10 +38,16 @@ _DOC = b"Round doubles to integers."
 _POINTER_SIZE = ctypes.sizeof(ctypes.c_void_p)
 
 
-@dataclasses.dataclass(slots=True)
 class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
-    inner: _units.NaiveDequantifier[NumberT]
-    unit: pint.Unit
+    __slots__ = ("_unit", "inner")
+
+    def __init__(
+        self,
+        inner: _units.NaiveDequantifier[NumberT],
+        unit: pint.Unit,
+    ) -> None:
+        self.inner = inner
+        self._unit = unit
 
     @override
     def dequantify(self, value: object) -> ArrayLike[NumberT]:
@@ -64,11 +70,11 @@ class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
             else:
                 magnitude = magnitude.astype(dtype, order="C", subok=False)
             quantity = type(value)(magnitude, value.units)
-            quantity.ito(self.unit)  # pyright: ignore[reportUnknownMemberType]
+            quantity.ito(self._unit)  # pyright: ignore[reportUnknownMemberType]
         else:
             fast_path = False
             quantity = type(value)(magnitude.astype(dtype), value.units)
-            magnitude = quantity.m_as(self.unit)  # pyright: ignore[reportUnknownMemberType]
+            magnitude = quantity.m_as(self._unit)  # pyright: ignore[reportUnknownMemberType]
         func = _func[dtype]
         if fast_path:
             out: npt.NDArray[NumberT] = func(magnitude, magnitude)
@@ -77,9 +83,10 @@ class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
             out = func(magnitude, **kwargs)
         return dequantifier.postprocess(out)
 
+    @property
     @override
-    def get_unit(self) -> pint.Unit:
-        return self.unit
+    def unit(self) -> pint.Unit:
+        return self._unit
 
 
 @dataclasses.dataclass
