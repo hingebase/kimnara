@@ -196,7 +196,7 @@ def test_numpy_ndarray(dtype: str) -> None:
     """Test `kn.quantity(np.ndarray)` and its pint/xarray variants."""
     number = cast("type[np.number[Any]]", np.dtype(dtype).type)
     assert issubclass(number, np.number)
-    array = np.empty(100, number)
+    array = np.arange(100, dtype=number)  # pyright: ignore[reportUnknownMemberType]
 
     quantity = kn.quantity(array)
     magnitude = quantity.magnitude
