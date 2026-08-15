@@ -69,6 +69,18 @@ class TypingContext(NamedTuple):
     def infer(self, annotation: object) -> _spec.Type:
         raise NotImplementedError
 
+    def infer_with_diagnostics(
+        self,
+        annotation: object,
+        template: str = "Failed to infer return type: {0}",
+        *args: object,
+    ) -> _spec.Type:
+        try:
+            return self.infer(annotation)
+        except kn.TypeInferenceError as e:
+            e.args = (template.format(*args, e),)
+            raise
+
     @staticmethod
     def make_tuple(members: Iterable[_spec.Type]) -> "TupleType":
         return TupleType.from_members(members)

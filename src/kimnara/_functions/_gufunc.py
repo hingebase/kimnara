@@ -174,7 +174,12 @@ class _GUFunc(_common.UFuncCompiler[_T]):
             if v.default is not v.empty:
                 message = "default parameter values are disallowed"
                 raise TypeError(message)
-            args.append(ctx._replace(ndim=ndim).infer(v.annotation))
+            arg = ctx._replace(ndim=ndim).infer_with_diagnostics(
+                v.annotation,
+                "Failed to infer the type of argument {0.name!r}: {1}",
+                v,
+            )
+            args.append(arg)
 
         ctx = self.output_context(align, pad_value)
         restype = self.infer_output(ctx, it)
@@ -280,11 +285,16 @@ class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_T]):
             if v.default is not v.empty:
                 message = "default parameter values are disallowed"
                 raise TypeError(message)
-            args.append(ctx._replace(ndim=max(ndim, 1)).infer(v.annotation))
+            arg = ctx._replace(ndim=max(ndim, 1)).infer_with_diagnostics(
+                v.annotation,
+                "Failed to infer the type of argument {0.name!r}: {1}",
+                v,
+            )
+            args.append(arg)
 
         # Numba gufunc must return None
         ctx = _spec.TypingContext(align=kn.A, allow_none=True)
-        ctx.infer(self.sig.return_annotation)
+        ctx.infer_with_diagnostics(self.sig.return_annotation)
 
         return ctx.make_tuple(args)
 
@@ -466,7 +476,7 @@ class PyGUFunc(_GUFunc[_T]):
         params: Iterator[inspect.Parameter],
     ) -> _spec.Type:
         try:
-            restype = ctx.infer(self.sig.return_annotation)
+            restype = ctx.infer_with_diagnostics(self.sig.return_annotation)
         except StopIteration as e:
             message = "nout more than signature"
             raise kn.TypeInferenceError(message) from e

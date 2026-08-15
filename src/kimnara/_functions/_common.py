@@ -166,9 +166,15 @@ class Inferable(abc.ABC, Generic[_T]):
             if v.default is not v.empty:
                 message = "default parameter values are unsupported yet"
                 raise NotImplementedError(message)
-            args.append(ctx.infer(v.annotation))
+            arg = ctx.infer_with_diagnostics(
+                v.annotation,
+                "Failed to infer the type of argument {0.name!r}: {1}",
+                v,
+            )
+            args.append(arg)
         ctx = self.output_context(align, pad_value)
-        return tuple(args), ctx.infer(self.sig.return_annotation)
+        res = ctx.infer_with_diagnostics(self.sig.return_annotation)
+        return tuple(args), res
 
     @abc.abstractmethod
     def input_context(
