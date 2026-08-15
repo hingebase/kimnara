@@ -88,7 +88,13 @@ class _UsingBackend(AbstractContextManager[type[np.vectorize], None]):
 def using_backend(name: str | Literal[True], /) -> _UsingBackend:
     match name:
         case True:
-            raise NotImplementedError
+            message = (
+                "parallel=True will be supported in "
+                "https://github.com/hingebase/kimnara/issues/14 . "
+                "Please specify a backend name (e.g. parallel='openmp') "
+                "at this moment."
+            )
+            raise NotImplementedError(message)
         case "prefer_openmp":
             name = "tbb" if (
                 kn.threading.tbb_available()
@@ -116,7 +122,7 @@ def using_backend(name: str | Literal[True], /) -> _UsingBackend:
                     cause=e,
                 )
             case _:
-                message = f"Unregistered custom threading backend: {name!r}"
+                message = f"Threading backend {name!r} is unavailable"
                 raise kn.threading.BackendUnavailableError(message) from e
     return _UsingBackend(name, vectorize)
 
