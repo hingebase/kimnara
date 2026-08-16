@@ -7,10 +7,7 @@ channels = ["https://prefix.dev/pixi-build-backends", "conda-forge"]
 
 [package.build.config]
 experimental = true
-recipe = "../test-package-cmake/recipe.yaml"
-
-[package.host-dependencies]
-kimnara = { path = "../kimnara-py311" }
+recipe = "../kimnara/recipe.yaml"
 
 [package.run-dependencies]
-kimnara = { path = "../kimnara-py311" }
+spydlog = { path = "../spydlog-py311" }

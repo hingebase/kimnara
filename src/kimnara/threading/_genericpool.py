@@ -12,11 +12,7 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = [
-    "NumPyVectorize",
-    "add_dll_directory",
-    "check_num_threads",
-]
+__all__ = ["NumPyVectorize", "add_dll_directory", "check_num_threads"]
 
 import abc
 import contextlib
@@ -35,12 +31,11 @@ from typing import TYPE_CHECKING, Any, Literal, NoReturn, Protocol
 
 import numpy as np
 import numpy.typing as npt
-from numpy_typing_compat import NUMPY_GE_2_0
 from typing_extensions import Unpack
 
 import kimnara as kn
-
-_ArrayOrScalar = npt.NDArray[Any] | np.generic
+from kimnara import _utils
+from kimnara._typing import ArrayLike
 
 
 class NumPyVectorize(np.vectorize, abc.ABC):
@@ -64,14 +59,20 @@ class NumPyVectorize(np.vectorize, abc.ABC):
     def backend_site_package_name(cls) -> str:
         raise NotImplementedError
 
-    def backend_unavailable(self, message: str) -> NoReturn:
+    @classmethod
+    def backend_unavailable(
+        cls,
+        message: str,
+        *,
+        cause: Exception | None = None,
+    ) -> NoReturn:
         if not (
             "AMD64" != platform.machine() != "x86_64"
             or pathlib.Path(sys.prefix, "conda-meta").is_dir()
-            or self.backend_site_package_available()
+            or cls.backend_site_package_available()
         ):
             message = "Install kimnara[nonfree] to enable threading"
-        raise kn.threading.BackendUnavailableError(message)
+        raise kn.threading.BackendUnavailableError(message) from cause
 
     @abc.abstractmethod
     def np_vectorize_impl(self, func: Callable[[int], None], n: int) -> None:
@@ -81,7 +82,7 @@ class NumPyVectorize(np.vectorize, abc.ABC):
         self,
         func: Callable[
             [Unpack[tuple[Any, ...]]],
-            _ArrayOrScalar | tuple[_ArrayOrScalar, ...],
+            ArrayLike[np.generic] | tuple[ArrayLike[np.generic], ...],
         ],
         args: Sequence[npt.ArrayLike],
     ) -> npt.NDArray[Any] | tuple[npt.NDArray[Any], ...]:
@@ -92,10 +93,13 @@ class NumPyVectorize(np.vectorize, abc.ABC):
             raise TypeError(msg % (len(input_core_dims), len(args)))
         args = tuple(np.asanyarray(arg) for arg in args)
 
-        broadcast_shape, dim_sizes = _function_base._parse_input_dimensions(  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
-            args, input_core_dims)
-        input_shapes = _function_base._calculate_shapes(  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+        # ruff: disable[private-member-access]
+        broadcast_shape, dim_sizes = (
+            _utils.function_base._parse_input_dimensions(args, input_core_dims)  # pyright: ignore[reportPrivateUsage]
+        )
+        input_shapes = _utils.function_base._calculate_shapes(  # pyright: ignore[reportPrivateUsage]
             broadcast_shape, dim_sizes, input_core_dims)
+        # ruff: enable[private-member-access]
         args = [np.broadcast_to(arg, shape, subok=True)
                 for arg, shape in zip(args, input_shapes, strict=True)]
 
@@ -121,17 +125,19 @@ class NumPyVectorize(np.vectorize, abc.ABC):
             nonlocal lock, outputs
             with lock:
                 if outputs is None:
+                    # ruff: disable[private-member-access]
                     for result, core_dims in zip(
                         results,
                         output_core_dims,
                         strict=True,
                     ):
-                        _function_base._update_dim_sizes(  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+                        _utils.function_base._update_dim_sizes(  # pyright: ignore[reportPrivateUsage]
                             dim_sizes, result, core_dims)
 
-                    outputs = _function_base._create_arrays(  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+                    outputs = _utils.function_base._create_arrays(  # pyright: ignore[reportPrivateUsage]
                         broadcast_shape, dim_sizes, output_core_dims, otypes,
                         results)
+                    # ruff: enable[private-member-access]
                     lock = null
 
             for output, result in zip(outputs, results, strict=True):
@@ -186,42 +192,5 @@ def _last_resort(
             "dimensions on size 0 inputs"
         )
         raise ValueError(msg)
-    return _function_base._create_arrays(  # noqa: SLF001  # pyright: ignore[reportPrivateUsage]
+    return _utils.function_base._create_arrays(  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
         broadcast_shape, dim_sizes, output_core_dims, otypes)
-
-
-class _FunctionBase(Protocol):
-    def _calculate_shapes(
-        self,
-        broadcast_shape: tuple[int, ...],
-        dim_sizes: dict[str, int],
-        list_of_core_dims: list[tuple[str, ...]],
-    ) -> list[tuple[int, ...]]: ...
-
-    def _create_arrays(
-        self,
-        broadcast_shape: tuple[int, ...],
-        dim_sizes: dict[str, int],
-        list_of_core_dims: list[tuple[str, ...]],
-        dtypes: Sequence[npt.DTypeLike] | None,
-        results: tuple[_ArrayOrScalar, ...] | None = ...,
-    ) -> tuple[npt.NDArray[Any], ...]: ...
-
-    def _parse_input_dimensions(
-        self,
-        args: tuple[npt.NDArray[Any], ...],
-        input_core_dims: list[tuple[str, ...]],
-    ) -> tuple[tuple[int, ...], dict[str, int]]: ...
-
-    def _update_dim_sizes(
-        self,
-        dim_sizes: dict[str, int],
-        arg: _ArrayOrScalar,
-        core_dims: tuple[str, ...],
-    ) -> None: ...
-
-
-_function_base: _FunctionBase = getattr(
-    np.lib,
-    "_function_base_impl" if NUMPY_GE_2_0 else "function_base",
-)

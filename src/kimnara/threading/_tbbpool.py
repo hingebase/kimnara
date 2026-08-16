@@ -12,22 +12,13 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = [
-    "TBBNumPyVectorize",
-    "tbb_available",
-]
+__all__ = ["TBBNumPyVectorize", "tbb_available"]
 
 from collections.abc import Callable
 
 from typing_extensions import override
 
-from . import _genericpool
-
-with _genericpool.add_dll_directory():
-    try:
-        from . import _tbb
-    except ImportError:
-        _tbb = None
+from . import _genericpool, register_custom_backend
 
 
 class TBBNumPyVectorize(_genericpool.NumPyVectorize):
@@ -42,6 +33,21 @@ class TBBNumPyVectorize(_genericpool.NumPyVectorize):
             self.backend_unavailable("oneTBB runtime is not installed")
         _genericpool.check_num_threads(_tbb)
         _tbb.np_vectorize(func, n)
+
+
+with _genericpool.add_dll_directory():
+    try:
+        from . import _tbb
+    except ImportError:
+        _tbb = None
+    else:
+        register_custom_backend(
+            "tbb",
+            _tbb.get_num_threads,
+            _tbb.get_thread_id,
+            _tbb.parallel_for,
+            TBBNumPyVectorize,
+        )
 
 
 def tbb_available() -> bool:

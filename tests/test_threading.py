@@ -14,21 +14,53 @@
 
 """Test kimnara.threading API."""
 
+import ctypes
 import math
 import os
 import sys
 import time
 import warnings
-from typing import NoReturn
+from collections.abc import Callable
+from typing import NoReturn, cast
 
+import numba.core.registry  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import numpy.typing as npt
 import pytest
+from typing_extensions import override
 
 import kimnara as kn
 
 if sys.version_info < (3, 11):
     from exceptiongroup import ExceptionGroup
+
+_DUMMY_THREAD_ID = 42
+
+
+def test_custom() -> None:
+    """Test custom threading backend."""
+    names = ["42", "prefer_openmp", "prefer_tbb"]
+    if kn.threading.openmp_available():
+        names.append("openmp")
+    if kn.threading.tbb_available():
+        names.append("tbb")
+
+    for name in names:
+        with pytest.raises(ValueError, match=f"backend name: {name!r}"):
+            kn.threading.register_custom_backend(name, 0, 0, 0, np.vectorize)
+
+    get_thread_id = ctypes.cast(_get_thread_id, ctypes.c_void_p).value
+    assert get_thread_id
+
+    numba_get_thread_id = cast(
+        "numba.core.registry.CPUDispatcher",
+        numba.njit(_numba_get_thread_id),  # pyright: ignore[reportUnknownMemberType]
+    )
+    kn.threading.register_custom_backend(
+        "pytest", 0, get_thread_id, 0, _NumPyVectorize)
+    with kn.threading.using_backend("pytest") as vectorize:
+        assert vectorize is _NumPyVectorize
+        assert numba_get_thread_id() == _DUMMY_THREAD_ID
 
 
 def test_np_vectorize(subtests: pytest.Subtests) -> None:
@@ -121,6 +153,21 @@ def test_np_vectorize(subtests: pytest.Subtests) -> None:
 
 class _ExpectedError(Exception):
     pass
+
+
+class _NumPyVectorize(kn.threading.TBBNumPyVectorize):
+    @override
+    def np_vectorize_impl(self, func: Callable[[int], None], n: int) -> None:
+        raise _ExpectedError
+
+
+@ctypes.CFUNCTYPE(ctypes.c_ssize_t)
+def _get_thread_id() -> int:
+    return _DUMMY_THREAD_ID
+
+
+def _numba_get_thread_id() -> int:
+    return numba.get_thread_id()  # pyright: ignore[reportPrivateImportUsage]
 
 
 def _raise(_: npt.NDArray[np.float64]) -> NoReturn:

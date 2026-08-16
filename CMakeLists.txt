@@ -83,6 +83,7 @@ endif()
 # Prefer the conda-forge version if available
 include(FetchContent)
 
+add_subdirectory(src/kimnara/_spec/_numpy/_units)
 add_subdirectory(src/kimnara/align)
 add_subdirectory(src/kimnara/lib)
 add_subdirectory(src/kimnara/logging)

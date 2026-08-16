@@ -16,8 +16,10 @@
 
 __all__ = [
     "BackendUnavailableError",
+    "CacheWarning",
     "Error",
     "PerformanceWarning",
+    "ValidationError",
 ]
 
 import os
@@ -33,8 +35,26 @@ class BackendUnavailableError(Error):
     """Threading backends cannot be loaded."""
 
 
-class PerformanceWarning(UserWarning, Error):  # noqa: N818
+# ruff: disable[error-suffix-on-exception-name]
+class CacheWarning(UserWarning, Error):
+    """Numba caching may not work as expected."""
+
+
+class PerformanceWarning(UserWarning, Error):
     """Performance-related issues that users should be aware of."""
+# ruff: enable[error-suffix-on-exception-name]
+
+
+class TypeInferenceError(Error):
+    """Fail to infer runtime type from annotations."""
+
+
+class ValidationError(FloatingPointError, Error):
+    """Error raised by `kn.ops.invalid`.
+
+    This class inherits from `FloatingPointError` to match the behavior
+    of `np.errstate(invalid="raise")`.
+    """
 
 
 if (

@@ -59,9 +59,7 @@ void Destructor(PyObject *handler) {
 }
 }  // namespace
 
-// NOLINTBEGIN
-NB_MODULE(_mimalloc, m)
-// NOLINTEND
+NB_MODULE(_mimalloc, m)  // NOLINT
 {
     m.attr("calloc_funcs") = reinterpret_cast<uintptr_t>(calloc_funcs);
     m.attr("free_funcs") = reinterpret_cast<uintptr_t>(free_funcs);
