@@ -38,11 +38,9 @@ import pydantic
 import pydantic_core
 from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
     ccallback,
+    codegen,
     compiler,
     registry,
-)
-from numba.core.codegen import (  # pyright: ignore[reportMissingTypeStubs]
-    _CFG,  # pyright: ignore[reportPrivateUsage]
 )
 from numba.core.dispatcher import (  # pyright: ignore[reportMissingTypeStubs]
     Dispatcher,
@@ -121,7 +119,7 @@ class Dispatchable:
         return asm
 
     @no_type_check
-    def inspect_cfg(self, **kwargs: object) -> _CFG:
+    def inspect_cfg(self, **kwargs: object) -> codegen._CFG:
         [cfg] = self._dispatcher.inspect_cfg(**kwargs).values()
         return cfg
 

@@ -201,12 +201,7 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         initial: object = MISSING,
         where: onp.ToJustBool | onp.ToJustBoolND | None = True,
     ) -> object:
-        wrapper = self.wrap_reduce(
-            axis,
-            initial,
-            keepdims=keepdims,
-            where=where,
-        )
+        wrapper = self.wrap_reduce(axis, initial, where, keepdims=keepdims)
         self._calling_method = "reduce"
         return self.validate_call(wrapper, alternative=True)(array)
 
@@ -297,10 +292,7 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def wrap_call(
-        self,
-        **kwargs: Unpack[UFuncKwargs],
-    ) -> Callable[..., Any]:
+    def wrap_call(self, **kwargs: Unpack[UFuncKwargs]) -> Callable[..., Any]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -308,9 +300,9 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         self,
         axis: SupportsIndex | Sequence[SupportsIndex] | None,
         initial: object,
+        where: onp.ToJustBool | onp.ToJustBoolND | None,
         *,
         keepdims: bool = False,
-        where: onp.ToJustBool | onp.ToJustBoolND | None = True,
     ) -> Callable[..., Any]:
         raise NotImplementedError
 
@@ -323,10 +315,7 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def wrap_outer(
-        self,
-        **kwargs: Unpack[UFuncKwargs],
-    ) -> Callable[..., Any]:
+    def wrap_outer(self, **kwargs: Unpack[UFuncKwargs]) -> Callable[..., Any]:
         raise NotImplementedError
 
     @override
@@ -397,9 +386,9 @@ class _NumbaUFuncBase(_UFunc[_T], _common.UFuncWrapper[_T], Generic[_T, _N]):
         self,
         axis: SupportsIndex | Sequence[SupportsIndex] | None,
         initial: object,
+        where: onp.ToJustBool | onp.ToJustBoolND | None,
         *,
         keepdims: bool = False,
-        where: onp.ToJustBool | onp.ToJustBoolND | None = True,
     ) -> Callable[[ArrayLike[Scalar]], ArrayLike[Scalar]]:
         if initial is MISSING:
             return lambda array: self._ufunc.reduce(
@@ -505,10 +494,7 @@ class PyUFunc(_UFunc[_T]):
         )
 
     @override
-    def wrap_call(
-        self,
-        **kwargs: Unpack[UFuncKwargs],
-    ) -> Callable[..., Any]:
+    def wrap_call(self, **kwargs: Unpack[UFuncKwargs]) -> Callable[..., Any]:
         order = "F" if kwargs.pop("order", "C") == "F" else "C"
 
         def wrapper(
@@ -527,9 +513,9 @@ class PyUFunc(_UFunc[_T]):
         self,
         axis: SupportsIndex | Sequence[SupportsIndex] | None,
         initial: object,
+        where: onp.ToJustBool | onp.ToJustBoolND | None,
         *,
         keepdims: bool = False,
-        where: onp.ToJustBool | onp.ToJustBoolND | None = True,
     ) -> Callable[..., Any]:
         index = slice(1) if keepdims else 0
 
@@ -588,10 +574,7 @@ class PyUFunc(_UFunc[_T]):
         )
 
     @override
-    def wrap_outer(
-        self,
-        **kwargs: Unpack[UFuncKwargs],
-    ) -> Callable[..., Any]:
+    def wrap_outer(self, **kwargs: Unpack[UFuncKwargs]) -> Callable[..., Any]:
         order = "F" if kwargs.pop("order", "C") == "F" else "C"
 
         def wrapper(
