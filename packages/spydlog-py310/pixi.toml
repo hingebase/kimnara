@@ -1,7 +1,0 @@
-[package.build.backend]
-name = "pixi-build-rattler-build"
-version = ">=0.4.0,<0.5.0"
-channels = ["https://prefix.dev/pixi-build-backends", "conda-forge"]
-
-[package.build.config]
-recipe = "../spydlog/recipe.yaml"
