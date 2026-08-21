@@ -1,3 +1,6 @@
+# This should match the minimum supported Pixi version
+#:schema https://pixi.prefix.dev/v0.71.0/schema/manifest/schema.json
+
 [workspace]
 channels = ["conda-forge"]
 platforms = [
@@ -176,8 +179,23 @@ inputs = [
 # We don't care about other outputs
 outputs = ["build/compile_commands.json"]
 
+[feature.tests]
+channels = ["conda-forge", "https://prefix.dev/github-releases"]
+
 [feature.tests.dependencies]
 ruff = ">=0.15.1"
+
+[feature.tests.target.linux.dependencies]
+tombi = ">=1.4.1"
+
+[feature.tests.target.osx-64.dependencies]
+tombi = { version = ">=1.4.0", channel = "https://prefix.dev/github-releases" }
+
+[feature.tests.target.osx-arm64.dependencies]
+tombi = ">=1.4.1"
+
+[feature.tests.target.win-64.dependencies]
+tombi = ">=1.4.1"
 
 [feature.tests.tasks]
 test = [

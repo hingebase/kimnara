@@ -82,6 +82,7 @@ dev = [
     "ruff >=0.15.17",
     "scipy-stubs >=1.14.1,<2.0.0",
     "test-package-cmake",
+    "tombi >=1.4.1",
 ]
 wheel = [
     "abi3audit",

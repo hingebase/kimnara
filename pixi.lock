@@ -334,6 +334,7 @@ environments:
     channels:
     - url: https://conda.anaconda.org/conda-forge/
     - url: https://conda.anaconda.org/numba/
+    - url: https://prefix.dev/github-releases/
     packages:
       linux-64:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-7_kmp_llvm.conda
@@ -424,6 +425,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-64/sqlite-3.53.4-h9ffa6c4_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tbb-2023.0.0-hab88423_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/tk-8.6.13-noxft_h1df4ec4_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-64/tombi-1.4.1-hf19af3b_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/unicodedata2-17.0.1-py310h7c4b9e2_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xorg-libxau-1.0.12-hb03c661_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-64/xorg-libxdmcp-1.1.5-hb03c661_2.conda
@@ -573,6 +575,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/sqlite-3.53.4-h6ce2f9a_1.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/tbb-2023.0.0-h57272ed_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/tk-8.6.13-noxft_hf03c496_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/tombi-1.4.1-h328a733_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/unicodedata2-17.0.1-py310h5b55623_0.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/xorg-libxau-1.0.12-he30d5cf_2.conda
       - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/xorg-libxdmcp-1.1.5-he30d5cf_2.conda
@@ -772,6 +775,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.6-h915ae27_0.conda
       - conda: https://conda.anaconda.org/numba/osx-64/llvmlite-0.45.1-py310hc6b433d_0.conda
       - conda: https://conda.anaconda.org/numba/osx-64/numba-0.62.1-np2.0py3.10haa2f57f_ge6a402793_0.conda
+      - conda: https://prefix.dev/github-releases/osx-64/tombi-1.4.0-h0dc7051_0.conda
       - conda_source: kimnara[f40e70ba] @ packages/kimnara-py310
       - conda_source: spydlog[50c4e77c] @ packages/spydlog-py310
       - conda_source: test-package-cmake[fb3312ce] @ packages/test-package-cmake-py310
@@ -904,6 +908,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/sqlite-3.53.4-ha9f7ffe_1.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tbb-2023.0.0-he0260a5_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tk-8.6.13-hbeba79b_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/osx-arm64/tombi-1.4.1-hc2d82ec_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/unicodedata2-17.0.1-py310h72544b6_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/xorg-libxau-1.0.12-h84a0fba_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-arm64/xorg-libxdmcp-1.1.5-h84a0fba_2.conda
@@ -1037,6 +1042,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/win-64/sqlite-3.53.4-hdb435a2_1.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/tbb-2023.0.0-hd3d4ead_2.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/tk-8.6.13-h967ab96_4.conda
+      - conda: https://conda.anaconda.org/conda-forge/win-64/tombi-1.4.1-h18a1a76_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/unicodedata2-17.0.1-py310h29418f3_0.conda
       - conda: https://conda.anaconda.org/conda-forge/win-64/vc-14.5-ha367084_41.conda
@@ -23287,6 +23293,19 @@ packages:
     - tk >=8.6.13,<8.7.0a0
   size: 3566806
   timestamp: 1787272857910
+- conda: https://conda.anaconda.org/conda-forge/linux-64/tombi-1.4.1-hf19af3b_0.conda
+  sha256: a4c74d5bbd5f1fa224e4a5d0664bd5cb345252323504dba4520916c0258ac641
+  md5: 03035899f640537ee5abba7b1829b2be
+  depends:
+  - libgcc >=15
+  - __glibc >=2.17,<3.0.a0
+  constrains:
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 7032393
+  timestamp: 1786882736129
 - conda: https://conda.anaconda.org/conda-forge/linux-64/unicodedata2-17.0.1-py310h7c4b9e2_0.conda
   sha256: 44ecba51c98c3fb2ce3d00295d423d3bb254cde1790eff9818ed328aa608ab28
   md5: 234e9858dd691d3f597147e22cbf16cf
@@ -27303,6 +27322,18 @@ packages:
     - tk >=8.6.13,<8.7.0a0
   size: 3664220
   timestamp: 1787272859143
+- conda: https://conda.anaconda.org/conda-forge/linux-aarch64/tombi-1.4.1-h328a733_0.conda
+  sha256: f97d169bb1e3df114e6997a037c20f5f54b9a6caa832e95cfc4ada9729ed7d34
+  md5: 21d5f76fa370746d18c7f7d1b1689ea8
+  depends:
+  - libgcc >=15
+  constrains:
+  - __glibc >=2.17
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 6654553
+  timestamp: 1786882742239
 - conda: https://conda.anaconda.org/conda-forge/linux-aarch64/unicodedata2-17.0.1-py310h5b55623_0.conda
   sha256: f49f8ef6bc2f23a0a0d186fd82ab44005fcf8ecf10556d77836bfbc61fefc431
   md5: 45dc3d0e49a9d54c2955494c6ae1aaf5
@@ -37269,6 +37300,18 @@ packages:
     - tk >=8.6.13,<8.7.0a0
   size: 3342183
   timestamp: 1787272852357
+- conda: https://conda.anaconda.org/conda-forge/osx-arm64/tombi-1.4.1-hc2d82ec_0.conda
+  sha256: 2f60abd7125faf5968aa12ad7e54d61a8550a743926c95d742f4b709a05c79d2
+  md5: 88308509d9e8c1f3a3538ce7063836dd
+  depends:
+  - __osx >=11.0
+  constrains:
+  - __osx >=11.0
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 6403626
+  timestamp: 1786882755984
 - conda: https://conda.anaconda.org/conda-forge/osx-arm64/unicodedata2-17.0.1-py310h72544b6_0.conda
   sha256: 48e56c2068cce4b2d09cceca65ca1c877ebf550e3ad67af3ed30db162bc89e0b
   md5: a35cf23aa03fb8d3a95158253918ed00
@@ -40982,6 +41025,18 @@ packages:
     - tk >=8.6.13,<8.7.0a0
   size: 3782376
   timestamp: 1787272860855
+- conda: https://conda.anaconda.org/conda-forge/win-64/tombi-1.4.1-h18a1a76_0.conda
+  sha256: 35ff1fd7644dc13af146ab714b24175c42d7f7277ce7f369968c5c8700d22e1d
+  md5: d6db7f0c0a50ead13f36f1ed919ddaa9
+  depends:
+  - vc >=14.3,<15
+  - vc14_runtime >=14.44.35208
+  - ucrt >=10.0.20348.0
+  license: MIT
+  license_family: MIT
+  run_exports: {}
+  size: 8006813
+  timestamp: 1786882748298
 - conda: https://conda.anaconda.org/conda-forge/win-64/ucrt-10.0.26100.0-h57928b3_0.conda
   sha256: 3005729dce6f3d3f5ec91dfc49fc75a0095f9cd23bab49efb899657297ac91a5
   md5: 71b24316859acd00bdb8b38f5e2ce328
@@ -42023,6 +42078,13 @@ packages:
   license: BSD
   size: 5859741
   timestamp: 1786466872995
+- conda: https://prefix.dev/github-releases/osx-64/tombi-1.4.0-h0dc7051_0.conda
+  sha256: 34491aa51763ef22eeebc1e95e4e41f27a400cc9fc8de9c68dd5a7281a5ccdab
+  md5: 2177c30840d4f303c7a937f27dfa866b
+  license: MIT
+  run_exports: {}
+  size: 6733581
+  timestamp: 1786648608755
 - conda_source: kimnara[039b946a] @ packages/kimnara-py311
   variants:
     c_stdlib: sysroot
