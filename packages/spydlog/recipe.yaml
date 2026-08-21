@@ -15,7 +15,11 @@ source:
 
 build:
   number: 0
-  script: uv pip install --no-deps --no-build-isolation -vv --system .
+  script:
+    content:
+      - uv pip install --no-deps --no-build-isolation -vv --system .
+    env:
+      USERPROFILE: ${{ env.get("USERPROFILE", default="") }}
   python:
     version_independent: ${{ match(python, ">=3.12.0") }}
 

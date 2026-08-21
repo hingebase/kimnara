@@ -1,8 +1,17 @@
+# This should match the minimum supported Pixi version
+#:schema https://pixi.prefix.dev/v0.71.0/schema/manifest/schema.json
+
 [workspace]
 channels = ["conda-forge"]
-platforms = ["linux-64", "linux-aarch64", "osx-64", "osx-arm64", "win-64"]
+platforms = [
+    "linux-64",
+    "linux-aarch64",
+    { platform = "osx-64", macos = "10.15" },
+    { platform = "osx-arm64", macos = "11.0" },
+    "win-64",
+]
 preview = ["pixi-build"]
-requires-pixi = ">=0.70.0,<0.71.0"
+requires-pixi = ">=0.71.0"
 
 [workspace.dependencies]
 kimnara = { path = "packages/kimnara" }
@@ -11,35 +20,21 @@ spydlog = { path = "packages/spydlog" }
 [workspace.target]
 linux-64 = { build-variants = { microarch_level = ["1"] } }
 linux-aarch64 = { build-variants = { microarch_level = ["0"] } }
+osx = { build-variants = { cxx_compiler = ["clangxx"] } }
 
 [workspace.target.linux.build-variants]
-c_compiler = ["gcc"]
-c_compiler_version = ["15.2"]
-c_stdlib = ["sysroot"]
-c_stdlib_version = ["2.28"]
 cxx_compiler = ["gxx"]
 cxx_compiler_version = ["15.2"]
 
-[workspace.target.osx.build-variants]
-c_compiler = ["clang"]
-c_stdlib = ["macosx_deployment_target"]
-cxx_compiler = ["clangxx"]
-
 [workspace.target.osx-64.build-variants]
-c_compiler_version = ["21.1"]
-c_stdlib_version = ["10.15"]
 cxx_compiler_version = ["21.1"]
 microarch_level = ["1"]
 
 [workspace.target.osx-arm64.build-variants]
-c_compiler_version = ["22.1"]
-c_stdlib_version = ["11.0"]
 cxx_compiler_version = ["22.1"]
 microarch_level = ["0"]
 
 [workspace.target.win.build-variants]
-c_compiler = ["vs"]
-c_compiler_version = ["2026.1"]
 c_stdlib = ["vs"]
 c_stdlib_version = ["2026.1"]
 cxx_compiler = ["vs"]
@@ -54,20 +49,20 @@ scipy-stubs = ">=1.14.1,<2.0.0"
 pytest = ">=9.0.3"
 
 [environments]
-default = ["py310", "np124", "nb", "ruff"]
+default = ["py310", "np124", "nb", "tests"]
 py310np125 = ["py310", "np125", "nb"]
 py310np126 = ["py310", "np126", "nb"]
 py310np20 = ["py310", "np20", "nb"]
 py310np21 = ["py310", "np21", "nb"]
 py310np22 = ["py310", "np22", "nb"]
-py311np124 = ["py311np124", "np124", "nb"]
-py311np125 = ["py311np125", "np125", "nb"]
-py311np126 = ["py311np125", "np126", "nb"]
-py311np20 = ["py311np125", "np20", "nb"]
-py311np21 = ["py311np125", "np21", "nb"]
-py311np22 = ["py311np125", "np22", "nb"]
-py311np23 = ["py311np125", "np23", "nb"]
-py311np24 = ["py311np125", "np24", "nb"]
+py311np124 = ["py311", "np124", "nb"]
+py311np125 = ["py311", "np125", "nb"]
+py311np126 = ["py311", "np126", "nb"]
+py311np20 = ["py311", "np20", "nb"]
+py311np21 = ["py311", "np21", "nb"]
+py311np22 = ["py311", "np22", "nb"]
+py311np23 = ["py311", "np23", "nb"]
+py311np24 = ["py311", "np24", "nb"]
 py312np126 = ["abi3", "py312", "np126", "nb"]
 py312np20 = ["abi3", "py312", "np20", "nb"]
 py312np21 = ["abi3", "py312", "np21", "nb"]
@@ -86,25 +81,23 @@ py314np24 = ["abi3", "py314", "np24", "nb"]
 # https://github.com/numpy/numpy/tree/v2.5.0/pixi-packages
 abi3 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake" } } }
 py310 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py310" } } }
-py311np124 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py311np124" } } }
-py311np125 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py311np125" } } }
+py311 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py311" } } }
 py312 = { dependencies = { python-gil = "3.12.*" } }
 py313 = { dependencies = { python-gil = "3.13.*" } }
-np124 = { dependencies = { numpy = "1.24.*", matplotlib-base = "<=3.10.9" } }
-np125 = { dependencies = { numpy = "1.25.*", scipy = "<=1.16.3" } }
+np124 = { dependencies = { numpy = "1.24.*" } }
+np125 = { dependencies = { numpy = "1.25.*" } }
 np126 = { dependencies = { numpy = "1.26.*" } }
 np20 = { dependencies = { numpy = "2.0.*" } }
 np21 = { dependencies = { numpy = "2.1.*" } }
 np22 = { dependencies = { numpy = "2.2.*" } }
 np23 = { dependencies = { numpy = "2.3.*" } }
-ruff = { dependencies = { ruff = ">=0.15.1" } }
 
 [feature.py314]
-platforms = ["linux-64", "linux-aarch64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
 dependencies = { python-gil = "3.14.*" }
 
 [feature.np24]
-platforms = ["linux-64", "linux-aarch64", "osx-arm64", "win-64"]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
 dependencies = { numpy = "2.4.*" }
 
 [feature.nb]
@@ -131,13 +124,6 @@ numba = { channel = "numba" }
 [feature.nbx.target.win.dependencies]
 llvmlite = { channel = "numba" }
 numba = { channel = "numba" }
-
-# TODO: Remove these sections once we update Pixi to 0.71.0
-[feature.clangd.system-requirements]
-# macos = "10.15"
-
-[system-requirements]
-# macos = "10.15"
 
 [target]
 linux-64 = { dependencies = { libblas = { build = "*_mkl" } } }
@@ -193,12 +179,23 @@ inputs = [
 # We don't care about other outputs
 outputs = ["build/compile_commands.json"]
 
-[environments.tests]
-features = ["tests"]
-no-default-feature = true
-
 [feature.tests]
-platforms = ["linux-64", "linux-aarch64", "osx-arm64", "win-64"]
+channels = ["conda-forge", "https://prefix.dev/github-releases"]
+
+[feature.tests.dependencies]
+ruff = ">=0.15.1"
+
+[feature.tests.target.linux.dependencies]
+tombi = ">=1.4.1"
+
+[feature.tests.target.osx-64.dependencies]
+tombi = { version = ">=1.4.0", channel = "https://prefix.dev/github-releases" }
+
+[feature.tests.target.osx-arm64.dependencies]
+tombi = ">=1.4.1"
+
+[feature.tests.target.win-64.dependencies]
+tombi = ">=1.4.1"
 
 [feature.tests.tasks]
 test = [
@@ -230,14 +227,7 @@ test = [
     { task = "pytest", environment = "py314np24" },
 ]
 
-[environments.tests-osx-64]
-features = ["tests-osx-64"]
-no-default-feature = true
-
-[feature.tests-osx-64]
-platforms = ["osx-64"]
-
-[feature.tests-osx-64.tasks]
+[feature.tests.target.osx-64.tasks]
 test = [
     { task = "pytest", environment = "default" },
     { task = "pytest", environment = "py310np125" },
