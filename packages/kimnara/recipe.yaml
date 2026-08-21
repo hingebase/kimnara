@@ -78,7 +78,7 @@ requirements:
     - if: match(python, ">=3.11.0")
       then: scipy <=1.16.3 [when="numpy <1.26.4"]
   run_exports:
-    - ${{ pin_subpackage(name) }}
+    - ${{ pin_subpackage(name, upper_bound="x.x.x") }}
 
 about:
   homepage: ${{ load_from_file("../../pyproject.toml").project.urls.Homepage }}
