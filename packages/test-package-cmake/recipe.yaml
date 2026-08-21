@@ -4,6 +4,9 @@ package:
 
 source:
   path: ../..
+  filter:
+    exclude:
+      - .pixi
 
 build:
   number: 0
