@@ -46,7 +46,7 @@ scipy-stubs = ">=1.14.1,<2.0.0"
 pytest = ">=9.0.3"
 
 [environments]
-default = ["py310", "np124", "nb", "ruff"]
+default = ["py310", "np124", "nb", "tests"]
 py310np125 = ["py310", "np125", "nb"]
 py310np126 = ["py310", "np126", "nb"]
 py310np20 = ["py310", "np20", "nb"]
@@ -88,7 +88,6 @@ np20 = { dependencies = { numpy = "2.0.*" } }
 np21 = { dependencies = { numpy = "2.1.*" } }
 np22 = { dependencies = { numpy = "2.2.*" } }
 np23 = { dependencies = { numpy = "2.3.*" } }
-ruff = { dependencies = { ruff = ">=0.15.1" } }
 
 [feature.py314]
 platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
@@ -177,12 +176,8 @@ inputs = [
 # We don't care about other outputs
 outputs = ["build/compile_commands.json"]
 
-[environments.tests]
-features = ["tests"]
-no-default-feature = true
-
-[feature.tests]
-platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
+[feature.tests.dependencies]
+ruff = ">=0.15.1"
 
 [feature.tests.tasks]
 test = [
@@ -214,14 +209,7 @@ test = [
     { task = "pytest", environment = "py314np24" },
 ]
 
-[environments.tests-osx-64]
-features = ["tests-osx-64"]
-no-default-feature = true
-
-[feature.tests-osx-64]
-platforms = ["osx-64-macos-10-15"]
-
-[feature.tests-osx-64.tasks]
+[feature.tests.target.osx-64.tasks]
 test = [
     { task = "pytest", environment = "default" },
     { task = "pytest", environment = "py310np125" },

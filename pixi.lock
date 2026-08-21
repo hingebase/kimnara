@@ -19256,14 +19256,6 @@ environments:
       - conda_source: kimnara[51e77a8d] @ packages/kimnara
       - conda_source: spydlog[5d4343c4] @ packages/spydlog
       - conda_source: test-package-cmake[a6530483] @ packages/test-package-cmake
-  tests:
-    channels:
-    - url: https://conda.anaconda.org/conda-forge/
-    packages: {}
-  tests-osx-64:
-    channels:
-    - url: https://conda.anaconda.org/conda-forge/
-    packages: {}
 packages:
 - conda: https://conda.anaconda.org/conda-forge/linux-64/_openmp_mutex-4.5-20_gnu.conda
   build_number: 20
