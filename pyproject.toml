@@ -130,15 +130,7 @@ allow-dunder-method-names = ["_as_parameter_", "__name__", "_repr_svg_"]
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"
 logging.level = "INFO"
-sdist.exclude = [
-    ".*",
-    "docs",
-    "packages",
-    "scripts",
-    "tests",
-    "pixi.*",
-    "pyrightconfig.json",
-]
+sdist.exclude = [".*", "docs", "packages", "scripts", "tests", "pixi.*"]
 wheel.exclude = ["CMakeLists.txt", "*.cmake.in", "*.cpp"]
 
 # https://github.com/scikit-build/scikit-build-core/issues/1089#issuecomment-2926373236
