@@ -165,7 +165,10 @@ def _convert_timedelta(
     units: str | None,
 ) -> PlainQuantity[Any]:
     unit, count = np.datetime_data(dtype)
-    raw_value = value / np.timedelta64(1, unit)  # Cast NaTs to NaNs
+
+    # Cast NaTs to NaNs
+    raw_value = value / np.timedelta64(1, unit)  # pyright: ignore[reportArgumentType, reportCallIssue]
+
     match unit:
         case "generic":
             if units is None:

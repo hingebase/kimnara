@@ -124,25 +124,27 @@ def _codegen(
     return c._getvalue()  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]  # ruff: ignore[private-member-access]
 
 
-@numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
+@numba.extending.intrinsic  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+@no_type_check
 def _complex64(
     _: context.Context,
     real: scalars.Float,
     imag: scalars.Float,
 ) -> "kn.typing.Intrinsic[ir.Value, ir.Value]":
-    return types.complex64(real, imag), _codegen  # pyright: ignore[reportUnknownVariableType]
+    return types.complex64(real, imag), _codegen
 
 
-@numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
+@numba.extending.intrinsic  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+@no_type_check
 def _intrinsic(
     _: context.Context,
     a: scalars.Float,
     b: scalars.Float,
     c: scalars.Float,
 ) -> "kn.typing.Intrinsic[ir.Value, ir.Value, ir.Value]":
-    return (  # pyright: ignore[reportUnknownVariableType]
+    return (
         a(a, b, c),
-        lambda _context, builder, _signature, args: builder.fma(*args),  # pyright: ignore[reportUnknownMemberType]
+        lambda _context, builder, _signature, args: builder.fma(*args),
     )
 
 

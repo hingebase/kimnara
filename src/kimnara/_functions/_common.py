@@ -100,7 +100,7 @@ class Dispatchable:
         key = value._sig  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownMemberType, reportUnknownVariableType]
         cres = value._cache.load_overload(  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownMemberType, reportUnknownVariableType]
             key,
-            registry.cpu_target.target_context,
+            registry.cpu_target.target_context,  # pyright: ignore[reportUnknownMemberType]
         )
         if not cres:
             fndesc = FunctionDescriptor.__new__(FunctionDescriptor)

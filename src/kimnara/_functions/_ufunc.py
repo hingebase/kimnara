@@ -541,7 +541,7 @@ class PyUFunc(_UFunc[_T]):
             out = np.empty(
                 # `np.generic.__getitem__` exists at runtime but
                 # missing in type stubs before numpy 2.5.0
-                cast("tuple[int, ...]", array[indices].shape),  # pyright: ignore[reportIndexIssue]
+                cast("tuple[int, ...]", array[indices].shape),  # pyright: ignore[reportArgumentType, reportCallIssue, reportIndexIssue]
                 cast("ScalarType", self.restype).dtype,
             )
             if initial is MISSING:
