@@ -24,7 +24,7 @@ osx = { build-variants = { cxx_compiler = ["clangxx"] } }
 
 [workspace.target.linux.build-variants]
 cxx_compiler = ["gxx"]
-cxx_compiler_version = ["15.2"]
+cxx_compiler_version = ["16.1"]
 
 [workspace.target.osx-64.build-variants]
 cxx_compiler_version = ["21.1"]
