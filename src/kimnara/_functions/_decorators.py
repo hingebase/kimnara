@@ -193,7 +193,7 @@ def cfunc(
 ]: ...
 
 
-def cfunc(  # noqa: PLR0913
+def cfunc(  # ruff: ignore[too-many-arguments]
     wrapped: Callable[..., Any] | None = None,
     /,
     *,
@@ -278,7 +278,7 @@ def func(
 ) -> _NumbaFuncDecorator: ...
 
 
-def func(  # noqa: PLR0913
+def func(  # ruff: ignore[too-many-arguments]
     wrapped: Callable[..., Any] | None = None,
     /,
     *,
@@ -366,7 +366,7 @@ def gufunc(
 ) -> Callable[[Callable[..., None]], _gufunc.NumbaParallelGUFunc]: ...
 
 
-def gufunc(  # noqa: PLR0913
+def gufunc(  # ruff: ignore[too-many-arguments]
     signature: str,
     *,
     align: _GUFuncAlignment = "A",
@@ -476,7 +476,7 @@ def ufunc(
 ) -> _NumbaParallelUFuncDecorator: ...
 
 
-def ufunc(  # noqa: PLR0913
+def ufunc(  # ruff: ignore[too-many-arguments]
     wrapped: Callable[..., Any] | None = None,
     /,
     *,

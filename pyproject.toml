@@ -79,7 +79,7 @@ dev = [
     "nodejs-wheel-binaries <=22.20.0; sys_platform == 'darwin' and platform_release < '22'",
     "pandas-stubs >=1.4.2,<4.0.0",
     "pytest >=9.1.0",
-    "ruff >=0.15.17",
+    "ruff >=0.16.4",
     "scipy-stubs >=1.14.1,<2.0.0",
     "test-package-cmake",
     "tombi >=1.4.1",
@@ -111,9 +111,9 @@ preview = true
 select = ["ALL"]
 
 [tool.ruff.lint.per-file-ignores]
-"scripts/**/*.py" = ["INP001"]
-"src/kimnara/ops/**/*.py" = ["PLW0108"]
-"tests/**/*.py" = ["INP001", "S101"]
+"scripts/**/*.py" = ["implicit-namespace-package"]
+"src/kimnara/ops/**/*.py" = ["unnecessary-lambda"]
+"tests/**/*.py" = ["assert", "implicit-namespace-package"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 72

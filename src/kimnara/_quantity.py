@@ -141,7 +141,7 @@ def _(value: datetime.timedelta, units: str | None) -> PlainQuantity[Any]:
 @_quantity.register(PlainQuantity)
 def _(value: PlainQuantity[Any], units: str | None) -> PlainQuantity[Any]:
     # https://github.com/hgrecco/pint/issues/2207
-    if value._REGISTRY is not _spec.ureg:  # noqa: SLF001  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
+    if value._REGISTRY is not _spec.ureg:  # ruff: ignore[private-member-access]  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
         message = "Cannot operate quantities of different registries"
         raise ValueError(message)
     value = _numpy_quantity(value.magnitude, value.units)

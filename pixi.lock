@@ -757,7 +757,6 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/python-3.10.14-h00d2728_0_cpython.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/qhull-2020.2-h3c5361c_5.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/readline-8.3-h68b038d_0.conda
-      - conda: https://conda.anaconda.org/conda-forge/osx-64/ruff-0.15.1-h5930b28_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/scipy-1.15.2-py310hef62574_0.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/shapely-2.1.2-py310hd250500_2.conda
       - conda: https://conda.anaconda.org/conda-forge/osx-64/spdlog-1.17.0-h30f01e4_1.conda
@@ -775,6 +774,7 @@ environments:
       - conda: https://conda.anaconda.org/conda-forge/osx-64/zstd-1.5.6-h915ae27_0.conda
       - conda: https://conda.anaconda.org/numba/osx-64/llvmlite-0.45.1-py310hc6b433d_0.conda
       - conda: https://conda.anaconda.org/numba/osx-64/numba-0.62.1-np2.0py3.10haa2f57f_ge6a402793_0.conda
+      - conda: https://prefix.dev/github-releases/osx-64/ruff-0.16.4-h0dc7051_0.conda
       - conda: https://prefix.dev/github-releases/osx-64/tombi-1.4.0-h0dc7051_0.conda
       - conda_source: kimnara[f40e70ba] @ packages/kimnara-py310
       - conda_source: spydlog[50c4e77c] @ packages/spydlog-py310
@@ -32760,20 +32760,6 @@ packages:
     - rhash >=1.4.6,<2.0a0
   size: 185180
   timestamp: 1748644989546
-- conda: https://conda.anaconda.org/conda-forge/osx-64/ruff-0.15.1-h5930b28_0.conda
-  noarch: python
-  sha256: 95aad456b80e911b59d0817824eee7ff97a8c1f19fc14af7c8fcd768eceb32d6
-  md5: 112d2a215c854f637ace6b313a078e14
-  depends:
-  - python
-  - __osx >=10.13
-  constrains:
-  - __osx >=10.13
-  license: MIT
-  license_family: MIT
-  run_exports: {}
-  size: 9130878
-  timestamp: 1770954707231
 - conda: https://conda.anaconda.org/conda-forge/osx-64/scipy-1.15.2-py310hef62574_0.conda
   sha256: da86efbfa72e4eb3e4748e5471d04fdbe3f9887f367b6302c1dcdb155bbf712b
   md5: e79860e43d87b020a0254f0b3f5017c5
@@ -42078,6 +42064,13 @@ packages:
   license: BSD
   size: 5859741
   timestamp: 1786466872995
+- conda: https://prefix.dev/github-releases/osx-64/ruff-0.16.4-h0dc7051_0.conda
+  sha256: 6f5d122bca9e1133078bc0c721b2edd2c21d9178855606f959cab1c8d3d1ed7a
+  md5: 52b9ac7023c08e2032623756dd48e5c0
+  license: MIT
+  run_exports: {}
+  size: 8453263
+  timestamp: 1787276761994
 - conda: https://prefix.dev/github-releases/osx-64/tombi-1.4.0-h0dc7051_0.conda
   sha256: 34491aa51763ef22eeebc1e95e4e41f27a400cc9fc8de9c68dd5a7281a5ccdab
   md5: 2177c30840d4f303c7a937f27dfa866b

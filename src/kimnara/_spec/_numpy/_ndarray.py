@@ -43,7 +43,7 @@ class TypingContext(_generic.TypingContext):
     __slots__ = ()
 
     @override
-    def infer(self, annotation: object) -> _spec.Type:  # noqa: C901
+    def infer(self, annotation: object) -> _spec.Type:  # ruff: ignore[complex-structure]
         inspected = self.parse(annotation)
         match inspected.type:
             case types.NoneType | None:
@@ -56,7 +56,7 @@ class TypingContext(_generic.TypingContext):
                 inspected = inspected._replace(type=np.float64)
             case builtins.int:
                 inspected = inspected._replace(type=np.int64)
-            case typing.Tuple:  # noqa: UP006
+            case typing.Tuple:  # ruff: ignore[non-pep585-annotation]
                 message = "Incomplete type: typing.Tuple without args"
                 raise kn.TypeInferenceError(message)
             case _:
@@ -124,7 +124,7 @@ class TypingContext(_generic.TypingContext):
         if (
             typing_objects.is_any(shape)
             or shape is tuple
-            or shape is typing.Tuple  # noqa: UP006
+            or shape is typing.Tuple  # ruff: ignore[non-pep585-annotation]
         ):
             return self._default_ndim()
         if get_origin(shape) is not tuple:

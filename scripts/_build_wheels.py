@@ -16,7 +16,7 @@ import os
 import pathlib
 import platform
 import runpy
-import subprocess  # noqa: S404
+import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import zlib
 
@@ -35,7 +35,7 @@ def main() -> None:
 
     uv = os.getenv("UV", "uv")
     for python in "3.10", "3.11", "3.12":
-        subprocess.run(  # noqa: S603
+        subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
             [uv, "build", "--wheel", "-p", python, "--managed-python"],
             check=True,
         )

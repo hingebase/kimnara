@@ -148,7 +148,7 @@ def test_np_vectorize(subtests: pytest.Subtests) -> None:
             sleep(x)
             toc = time.monotonic()
             eps = toc - math.nextafter(toc, -math.inf)
-            assert 1-eps < toc-tic < n-eps  # noqa: E226
+            assert 1-eps < toc-tic < n-eps  # ruff: ignore[missing-whitespace-around-arithmetic-operator]
 
 
 class _ExpectedError(Exception):
