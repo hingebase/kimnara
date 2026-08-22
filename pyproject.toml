@@ -99,6 +99,12 @@ Homepage = "https://github.com/hingebase/kimnara"
 "Source Code" = "https://github.com/hingebase/kimnara"
 "Issue Tracker" = "https://github.com/hingebase/kimnara/issues"
 
+[tool.basedpyright]
+failOnWarnings = true
+ignore = ["build"]
+strict = ["."]
+typeCheckingMode = "off"
+
 [tool.pytest]
 testpaths = ["tests"]
 
