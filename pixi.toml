@@ -47,6 +47,7 @@ hypothesis = ">=6.155.7"
 pandas-stubs = ">=1.4.2,<4.0.0"
 scipy-stubs = ">=1.14.1,<2.0.0"
 pytest = ">=9.1.1"
+uv = ">=0.10.2"
 
 [environments]
 default = ["py310", "np124", "nb057", "tests"]
