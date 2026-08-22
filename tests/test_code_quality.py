@@ -68,7 +68,7 @@ def test_clangd_tidy(monkeypatch: pytest.MonkeyPatch) -> None:
     if not config.is_file():
         if sys.platform.startswith(("darwin", "win32")):
             pytest.fail("Please run `pixi r configure` manually")
-        assert subprocess.call(["pixi", "r", "--clean-env", "configure"]) == 0  # ruff: ignore[start-process-with-partial-path]
+        subprocess.run(["pixi", "r", "--clean-env", "configure"], check=True)  # ruff: ignore[start-process-with-partial-path]
         assert config.is_file()
     argv = ["clangd-tidy", *map(str, src.rglob("*.cpp"))]
     monkeypatch.setattr(sys, "argv", argv)
