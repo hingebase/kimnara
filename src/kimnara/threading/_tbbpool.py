@@ -14,6 +14,7 @@
 
 __all__ = ["TBBNumPyVectorize", "tbb_available"]
 
+import weakref
 from collections.abc import Callable
 
 from typing_extensions import override
@@ -41,6 +42,7 @@ with _genericpool.add_dll_directory():
     except ImportError:
         _tbb = None
     else:
+        weakref.finalize(_tbb, _tbb.finalize)
         register_custom_backend(
             "tbb",
             _tbb.get_num_threads,
