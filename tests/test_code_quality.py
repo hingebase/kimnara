@@ -19,7 +19,7 @@ import importlib.metadata
 import os
 import pathlib
 import runpy
-import subprocess  # noqa: S404
+import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import sysconfig
 from collections.abc import Generator
@@ -37,7 +37,7 @@ else:
         def execvp(executable: str, args: list[str]) -> NoReturn:
             nonlocal patched
             patched = True
-            sys.exit(subprocess.call(args, executable=executable))  # noqa: S603
+            sys.exit(subprocess.call(args, executable=executable))  # ruff: ignore[subprocess-without-shell-equals-true]
         patched = False
         monkeypatch.setattr(os, "execvp", execvp)
         try:
@@ -68,7 +68,7 @@ def test_clangd_tidy(monkeypatch: pytest.MonkeyPatch) -> None:
     if not config.is_file():
         if sys.platform.startswith(("darwin", "win32")):
             pytest.fail("Please run `pixi r configure` manually")
-        assert subprocess.call(["pixi", "r", "--clean-env", "configure"]) == 0  # noqa: S607
+        assert subprocess.call(["pixi", "r", "--clean-env", "configure"]) == 0  # ruff: ignore[start-process-with-partial-path]
         assert config.is_file()
     argv = ["clangd-tidy", *map(str, src.rglob("*.cpp"))]
     monkeypatch.setattr(sys, "argv", argv)

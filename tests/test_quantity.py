@@ -14,14 +14,17 @@
 
 """Test `kn.quantity`."""
 
+import contextlib
 import datetime
 import math
+from contextlib import AbstractContextManager
 from typing import TypeGuard, cast
 
 import hypothesis
 import hypothesis.strategies as st
 import numpy as np
 import numpy.typing as npt
+import numpy_typing_compat as nptc
 import pandas as pd
 import pint
 import pytest
@@ -108,27 +111,33 @@ def test_pandas_timedelta() -> None:
 
 def test_numpy_timedelta64() -> None:
     """Test `kn.quantity(np.timedelta64)` and its (x)array variants."""
-    for quantity in [
-        kn.quantity(np.timedelta64(1, "m")),
-        kn.quantity(np.timedelta64(1), "minute"),
-    ]:
-        assert math.isclose(quantity.magnitude, 1)
-        assert str(quantity.units) == "minute"
+    with _np25_deprecated_generic_timedelta():
+        for quantity in [
+            kn.quantity(np.timedelta64(1, "m")),
+            kn.quantity(np.timedelta64(1), "minute"),  # pyright: ignore[reportDeprecated]
+        ]:
+            assert math.isclose(quantity.magnitude, 1)
+            assert str(quantity.units) == "minute"
 
-    quantity = kn.quantity(np.timedelta64("NaT"))
+    with _np25_deprecated_generic_timedelta():
+        quantity = kn.quantity(np.timedelta64("NaT"))  # pyright: ignore[reportDeprecated]
     assert math.isnan(quantity.magnitude)
     assert str(quantity.units) == "second"
 
-    quantity = kn.quantity(np.timedelta64(0))
+    with _np25_deprecated_generic_timedelta():
+        quantity = kn.quantity(np.timedelta64(0))  # pyright: ignore[reportDeprecated]
     assert quantity.magnitude == 0
     assert str(quantity.units) == "second"
 
-    with pytest.raises(pint.UndefinedUnitError):
-        kn.quantity(np.timedelta64(1))
+    with (
+        _np25_deprecated_generic_timedelta(),
+        pytest.raises(pint.UndefinedUnitError),
+    ):
+        kn.quantity(np.timedelta64(1))  # pyright: ignore[reportDeprecated]
 
     sctype = np.dtype("m8[s]")
     for unit in "YMWDhms":
-        scalar = np.timedelta64(1, unit)
+        scalar = np.timedelta64(1, unit)  # pyright: ignore[reportArgumentType, reportCallIssue]
         seconds = scalar.astype(sctype).view(np.int64)
         assert math.isclose(kn.quantity(scalar, "s").magnitude, seconds)
         array = np.full(2, scalar)
@@ -273,3 +282,14 @@ def _is_quantity(x: object) -> TypeGuard[
     NumpyQuantity[np.number[Any] | npt.NDArray[np.number[Any]]]
 ]:
     return isinstance(x, pint.Quantity)  # pyright: ignore[reportUnknownMemberType]
+
+
+if getattr(nptc, "NUMPY_GE_2_5", False):
+    def _np25_deprecated_generic_timedelta() -> AbstractContextManager[object]:
+        return pytest.warns(
+            DeprecationWarning,
+            match="The 'generic' unit for NumPy timedelta is deprecated",
+        )
+else:
+    def _np25_deprecated_generic_timedelta() -> AbstractContextManager[object]:
+        return contextlib.nullcontext()

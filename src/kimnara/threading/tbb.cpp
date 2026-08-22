@@ -52,8 +52,8 @@ class alignas(hardware_destructive_interference_size) TBBScratchSpace {
     char **array_arg_space_;
 };
 
-const auto &TBBConstraints() {
-    static const auto constraints = [] {
+auto *TBBArena() {
+    static auto *arena = [] {
         auto core_types = tbb::info::core_types();
         tbb::task_arena::constraints constraint {
             .numa_id = tbb::task_arena::automatic,
@@ -62,13 +62,17 @@ const auto &TBBConstraints() {
             .max_threads_per_core = 1,
         };
         constraint.max_concurrency = tbb::info::default_concurrency(constraint);
-        return constraint;
+        return new tbb::task_arena {
+            constraint,
+            /*reserved_slots=*/1,
+            tbb::task_arena::priority::normal,
+        };
     }();
-    return constraints;
+    return arena;
 }
 
 intptr_t TBBGetNumThreads() {
-    return TBBConstraints().max_concurrency;
+    return TBBArena()->max_concurrency();
 }
 
 intptr_t TBBGetThreadID() {
@@ -80,12 +84,7 @@ intptr_t TBBGetThreadID() {
 }
 
 void TBBNumPyVectorize(const std::function<void(intptr_t)> &func, intptr_t n) {
-    tbb::task_arena limited {
-        TBBConstraints(),
-        /*reserved_for_masters=*/1,
-        tbb::task_arena::priority::normal,
-    };
-    limited.execute([&, n] {
+    TBBArena()->execute([&, n] {
         using range_t = tbb::blocked_range<intptr_t>;
         tbb::parallel_for(
             range_t(0, n, 1),
@@ -118,12 +117,7 @@ void TBBParallelFor(
     tbb::enumerable_thread_specific<TBBScratchSpace> ets {
         dimensions, inner_ndim+1, array_count,
     };
-    tbb::task_arena limited {
-        TBBConstraints(),
-        /*reserved_for_masters=*/1,
-        tbb::task_arena::priority::normal,
-    };
-    limited.execute([=, &ets] {
+    TBBArena()->execute([=, &ets] {
         using range_t = tbb::blocked_range<size_t>;
         tbb::parallel_for(
             range_t(0, dimensions[0], 1),
@@ -147,6 +141,7 @@ void TBBParallelFor(
 
 NB_MODULE(_tbb, m)  // NOLINT
 {
+    m.def("finalize", [] { delete TBBArena(); });
     m.attr("get_num_threads") = reinterpret_cast<uintptr_t>(TBBGetNumThreads);
     m.attr("get_thread_id") = reinterpret_cast<uintptr_t>(TBBGetThreadID);
     m.attr("parallel_for") = reinterpret_cast<uintptr_t>(TBBParallelFor);

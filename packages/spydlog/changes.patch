@@ -30,7 +30,7 @@
  # nanobind
 -add_subdirectory(${CMAKE_SOURCE_DIR}/ext/nanobind CONFIG)
 -include_directories(${CMAKE_SOURCE_DIR}/ext/nanobind/include)
-+find_package(nanobind 2.10.2...<3.0.0 REQUIRED CONFIG)
++find_package(nanobind 2.12.0...<3.0.0 REQUIRED CONFIG)
 
  # spdlog
 -set(spdlog_INCLUDE_DIRS "${CMAKE_SOURCE_DIR}/ext/spdlog/include")

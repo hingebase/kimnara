@@ -100,7 +100,7 @@ num = {code: np.dtype(code).num for code in (
 
 
 def base_repr(x: object, /) -> str:
-    return type.__repr__(x) if isclass(x) else object.__repr__(x)  # noqa: PLC2801
+    return type.__repr__(x) if isclass(x) else object.__repr__(x)  # ruff: ignore[unnecessary-dunder-call]
 
 
 def calculate_padding(

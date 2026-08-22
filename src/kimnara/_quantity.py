@@ -141,7 +141,7 @@ def _(value: datetime.timedelta, units: str | None) -> PlainQuantity[Any]:
 @_quantity.register(PlainQuantity)
 def _(value: PlainQuantity[Any], units: str | None) -> PlainQuantity[Any]:
     # https://github.com/hgrecco/pint/issues/2207
-    if value._REGISTRY is not _spec.ureg:  # noqa: SLF001  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
+    if value._REGISTRY is not _spec.ureg:  # ruff: ignore[private-member-access]  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
         message = "Cannot operate quantities of different registries"
         raise ValueError(message)
     value = _numpy_quantity(value.magnitude, value.units)
@@ -165,7 +165,10 @@ def _convert_timedelta(
     units: str | None,
 ) -> PlainQuantity[Any]:
     unit, count = np.datetime_data(dtype)
-    raw_value = value / np.timedelta64(1, unit)  # Cast NaTs to NaNs
+
+    # Cast NaTs to NaNs
+    raw_value = value / np.timedelta64(1, unit)  # pyright: ignore[reportArgumentType, reportCallIssue]
+
     match unit:
         case "generic":
             if units is None:

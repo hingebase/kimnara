@@ -1,6 +1,6 @@
 [build-system]
 requires = [
-    "nanobind >=2.10.2,<3.0.0",
+    "nanobind >=2.12.0,<3.0.0",  # https://github.com/wjakob/nanobind/pull/1287
     "scikit-build-core >=0.11.3,<2.0.0",
 
     # Only the PyPI wheels contain proprietary dependencies.
@@ -71,15 +71,15 @@ nonfree = [
 
 [dependency-groups]
 dev = [
-    "basedpyright >=1.39.7",
+    "basedpyright ==1.39.9",  # https://github.com/conda-forge/basedpyright-feedstock/pull/66
     "clangd >=22.1.1",
     "clangd-tidy >=1.1.1",
-    "hypothesis >=6.155.7",
+    "hypothesis >=6.165.10",
     "nodejs-wheel-binaries <=20.18.0; sys_platform == 'darwin' and platform_release < '20'",
     "nodejs-wheel-binaries <=22.20.0; sys_platform == 'darwin' and platform_release < '22'",
     "pandas-stubs >=1.4.2,<4.0.0",
-    "pytest >=9.1.0",
-    "ruff >=0.15.17",
+    "pytest >=9.1.1",
+    "ruff >=0.16.4",
     "scipy-stubs >=1.14.1,<2.0.0",
     "test-package-cmake",
     "tombi >=1.4.1",
@@ -111,9 +111,9 @@ preview = true
 select = ["ALL"]
 
 [tool.ruff.lint.per-file-ignores]
-"scripts/**/*.py" = ["INP001"]
-"src/kimnara/ops/**/*.py" = ["PLW0108"]
-"tests/**/*.py" = ["INP001", "S101"]
+"scripts/**/*.py" = ["implicit-namespace-package"]
+"src/kimnara/ops/**/*.py" = ["unnecessary-lambda"]
+"tests/**/*.py" = ["assert", "implicit-namespace-package"]
 
 [tool.ruff.lint.pycodestyle]
 max-doc-length = 72

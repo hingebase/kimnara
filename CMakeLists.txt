@@ -48,10 +48,10 @@ find_package(
 )
 
 if(DEFINED SKBUILD_CORE_VERSION)
-    find_package(nanobind 2.10.2...<3.0.0 REQUIRED CONFIG)
+    find_package(nanobind 2.12.0...<3.0.0 REQUIRED CONFIG)
 else()
     find_package(
-        nanobind 2.10.2...<3.0.0
+        nanobind 2.12.0...<3.0.0
         REQUIRED
         CONFIG
         PATHS "${Python_SITELIB}/nanobind"
