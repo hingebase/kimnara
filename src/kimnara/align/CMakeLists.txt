@@ -10,7 +10,7 @@ set(MI_BUILD_TESTS OFF)
 FetchContent_Declare(
     mimalloc
     GIT_REPOSITORY https://github.com/microsoft/mimalloc.git
-    GIT_TAG v3.3.2
+    GIT_TAG v3.5.0
     GIT_SHALLOW ON
     EXCLUDE_FROM_ALL
     FIND_PACKAGE_ARGS 3.1.5...<4.0.0
