@@ -71,7 +71,7 @@ nonfree = [
 
 [dependency-groups]
 dev = [
-    "basedpyright ==1.39.9",  # https://github.com/conda-forge/basedpyright-feedstock/pull/66
+    "basedpyright >=1.39.10",
     "clangd >=22.1.1",
     "clangd-tidy >=1.1.1",
     "hypothesis >=6.165.10",

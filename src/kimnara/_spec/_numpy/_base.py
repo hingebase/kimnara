@@ -51,7 +51,6 @@ class Type(_spec.Type):
         return np.empty(shape, self.dtype)
 
     @override
-    @no_type_check
     def to_python(self) -> TypeForm[Any]:
         return Annotated[Any, pydantic.PlainValidator(self.dequantifier)]
 

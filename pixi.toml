@@ -42,7 +42,7 @@ cxx_compiler_version = ["2026.1"]
 microarch_level = ["0"]
 
 [dependencies]
-basedpyright = ">=1.39.8"
+basedpyright = ">=1.39.10"
 hypothesis = ">=6.155.7"
 pandas-stubs = ">=1.4.2,<4.0.0"
 scipy-stubs = ">=1.14.1,<2.0.0"
