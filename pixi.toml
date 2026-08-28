@@ -24,14 +24,14 @@ osx = { build-variants = { cxx_compiler = ["clangxx"] } }
 
 [workspace.target.linux.build-variants]
 cxx_compiler = ["gxx"]
-cxx_compiler_version = ["16.1"]
+cxx_compiler_version = ["16.2"]
 
 [workspace.target.osx-64.build-variants]
 cxx_compiler_version = ["21.1"]
 microarch_level = ["1"]
 
 [workspace.target.osx-arm64.build-variants]
-cxx_compiler_version = ["22.1"]
+cxx_compiler_version = ["23.1"]
 microarch_level = ["0"]
 
 [workspace.target.win.build-variants]
@@ -39,7 +39,7 @@ c_stdlib = ["vs"]
 c_stdlib_version = ["2026.1"]
 cxx_compiler = ["vs"]
 cxx_compiler_version = ["2026.1"]
-microarch_level = ["0"]
+microarch_level = ["1"]
 
 [dependencies]
 basedpyright = ">=1.39.10"
@@ -160,10 +160,10 @@ spdlog = ">=1.16.0,<2.0.0"
 tbb-devel = ">=2021.6.0,<2024.0.0"
 
 [feature.clangd.target]
-linux-64 = { dependencies = { gxx_linux-64 = ">=15.2.0" } }
-linux-aarch64 = { dependencies = { gxx_linux-aarch64 = ">=15.2.0" } }
+linux-64 = { dependencies = { gxx_linux-64 = ">=16.2.0" } }
+linux-aarch64 = { dependencies = { gxx_linux-aarch64 = ">=16.2.0" } }
 osx-64 = { dependencies = { clangxx_osx-64 = ">=21.1.0" } }
-osx-arm64 = { dependencies = { clangxx_osx-arm64 = ">=22.1.0" } }
+osx-arm64 = { dependencies = { clangxx_osx-arm64 = ">=23.1.0" } }
 # https://discourse.cmake.org/t/cmake-3-28-cmake-cxx-compiler-clang-scan-deps-notfound-not-found/9244
 osx = { dependencies = { clang-tools = ">=21.1.0" } }
 
