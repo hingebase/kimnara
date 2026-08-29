@@ -19,6 +19,7 @@ build:
     content:
       - uv pip install --no-deps --no-build-isolation -vv --system .
     env:
+      CI: ${{ env.get("CI", default="") }}
       USERPROFILE: ${{ env.get("USERPROFILE", default="") }}
   python:
     version_independent: ${{ match(python, ">=3.12.0") }}

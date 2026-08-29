@@ -19,6 +19,7 @@ validation, threading and pickling are also tested here.
 """
 
 import pickle  # ruff: ignore[suspicious-pickle-import]
+import sys
 from typing import TYPE_CHECKING, Annotated, cast
 
 import annotated_types as at
@@ -149,12 +150,13 @@ def test_parallel() -> None:
     assert "@get_thread_id" not in llvm
     assert "@numba_parallel_for" not in llvm
     asm = _parallel.inspect_asm()
-    assert "$workqueue_get_num_threads" in asm
-    assert "$workqueue_get_thread_id" in asm
-    assert "$workqueue_numba_parallel_for" in asm
-    assert "$get_num_threads" not in asm
-    assert "$get_thread_id" not in asm
-    assert "$numba_parallel_for" not in asm
+    prefix = "$_" if sys.platform == "darwin" else "$"
+    assert f"{prefix}workqueue_get_num_threads" in asm
+    assert f"{prefix}workqueue_get_thread_id" in asm
+    assert f"{prefix}workqueue_numba_parallel_for" in asm
+    assert f"{prefix}get_num_threads" not in asm
+    assert f"{prefix}get_thread_id" not in asm
+    assert f"{prefix}numba_parallel_for" not in asm
 
 
 def test_pickle() -> None:

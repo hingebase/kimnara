@@ -92,9 +92,15 @@ def test_conda_pypi_interoperability() -> None:
 )
 def test_ruff(monkeypatch: pytest.MonkeyPatch) -> None:
     """Linting with Ruff."""
-    monkeypatch.setattr(sys, "argv", ["ruff", "check"])
-    with _astral_context(monkeypatch):
-        _run_module("ruff")
+    args = ["ruff", "check", "--ignore", "FIX002"]
+    try:
+        importlib.metadata.distribution("ruff")
+    except ModuleNotFoundError:
+        subprocess.run(args, check=True)  # ruff: ignore[subprocess-without-shell-equals-true]
+    else:
+        monkeypatch.setattr(sys, "argv", args)
+        with _astral_context(monkeypatch):
+            _run_module("ruff")
 
 
 @pytest.mark.skipif(

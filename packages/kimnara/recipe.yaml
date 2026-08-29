@@ -14,9 +14,13 @@ source:
 build:
   number: 0
   script:
-    - if: unix
-      then: test ! -d .pixi
-    - uv pip install --no-deps --no-build-isolation -vv --system .
+    content:
+      - if: unix
+        then: test ! -d .pixi
+      - uv pip install --no-deps --no-build-isolation -vv --system .
+    env:
+      # https://github.com/scikit-build/scikit-build-core/issues/1127#issuecomment-3194377553
+      CI: ${{ env.get("CI", default="") }}
   python:
     version_independent: ${{ match(python, ">=3.12.0") }}
 
