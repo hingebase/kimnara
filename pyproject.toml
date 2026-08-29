@@ -71,7 +71,7 @@ nonfree = [
 
 [dependency-groups]
 dev = [
-    "basedpyright ==1.39.9",  # https://github.com/conda-forge/basedpyright-feedstock/pull/66
+    "basedpyright >=1.39.10",
     "clangd >=22.1.1",
     "clangd-tidy >=1.1.1",
     "hypothesis >=6.165.10",
@@ -79,7 +79,7 @@ dev = [
     "nodejs-wheel-binaries <=22.20.0; sys_platform == 'darwin' and platform_release < '22'",
     "pandas-stubs >=1.4.2,<4.0.0",
     "pytest >=9.1.1",
-    "ruff >=0.16.4",
+    "ruff >=0.16.5",
     "scipy-stubs >=1.14.1,<2.0.0",
     "test-package-cmake",
     "tombi >=1.4.1",

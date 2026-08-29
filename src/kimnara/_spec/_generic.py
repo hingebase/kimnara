@@ -186,6 +186,7 @@ class TupleType(_spec.Type):
         return numba.core.types.Tuple([arg.to_numba() for arg in self._args])
 
     @override
+    @no_type_check
     def to_python(self) -> TypeForm[tuple[Any, ...]]:
         return tuple[tuple(arg.to_python() for arg in self._args)]
 

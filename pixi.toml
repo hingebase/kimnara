@@ -24,14 +24,14 @@ osx = { build-variants = { cxx_compiler = ["clangxx"] } }
 
 [workspace.target.linux.build-variants]
 cxx_compiler = ["gxx"]
-cxx_compiler_version = ["16.1"]
+cxx_compiler_version = ["16.2"]
 
 [workspace.target.osx-64.build-variants]
 cxx_compiler_version = ["21.1"]
 microarch_level = ["1"]
 
 [workspace.target.osx-arm64.build-variants]
-cxx_compiler_version = ["22.1"]
+cxx_compiler_version = ["23.1"]
 microarch_level = ["0"]
 
 [workspace.target.win.build-variants]
@@ -39,10 +39,10 @@ c_stdlib = ["vs"]
 c_stdlib_version = ["2026.1"]
 cxx_compiler = ["vs"]
 cxx_compiler_version = ["2026.1"]
-microarch_level = ["0"]
+microarch_level = ["1"]
 
 [dependencies]
-basedpyright = ">=1.39.8"
+basedpyright = ">=1.39.10"
 hypothesis = ">=6.155.7"
 pandas-stubs = ">=1.4.2,<4.0.0"
 scipy-stubs = ">=1.14.1,<2.0.0"
@@ -160,10 +160,10 @@ spdlog = ">=1.16.0,<2.0.0"
 tbb-devel = ">=2021.6.0,<2024.0.0"
 
 [feature.clangd.target]
-linux-64 = { dependencies = { gxx_linux-64 = ">=15.2.0" } }
-linux-aarch64 = { dependencies = { gxx_linux-aarch64 = ">=15.2.0" } }
+linux-64 = { dependencies = { gxx_linux-64 = ">=16.2.0" } }
+linux-aarch64 = { dependencies = { gxx_linux-aarch64 = ">=16.2.0" } }
 osx-64 = { dependencies = { clangxx_osx-64 = ">=21.1.0" } }
-osx-arm64 = { dependencies = { clangxx_osx-arm64 = ">=22.1.0" } }
+osx-arm64 = { dependencies = { clangxx_osx-arm64 = ">=23.1.0" } }
 # https://discourse.cmake.org/t/cmake-3-28-cmake-cxx-compiler-clang-scan-deps-notfound-not-found/9244
 osx = { dependencies = { clang-tools = ">=21.1.0" } }
 
@@ -192,19 +192,19 @@ outputs = ["build/compile_commands.json"]
 channels = ["conda-forge", "https://prefix.dev/github-releases"]
 
 [feature.tests.target.linux.dependencies]
-ruff = ">=0.16.4"
+ruff = ">=0.16.5"
 tombi = ">=1.4.1"
 
 [feature.tests.target.osx-64.dependencies]
-ruff = { version = ">=0.16.4", channel = "https://prefix.dev/github-releases" }
-tombi = { version = ">=1.4.0", channel = "https://prefix.dev/github-releases" }
+ruff = { version = ">=0.16.5", channel = "https://prefix.dev/github-releases" }
+tombi = { version = ">=1.4.1", channel = "https://prefix.dev/github-releases" }
 
 [feature.tests.target.osx-arm64.dependencies]
-ruff = ">=0.16.4"
+ruff = ">=0.16.5"
 tombi = ">=1.4.1"
 
 [feature.tests.target.win-64.dependencies]
-ruff = ">=0.16.4"
+ruff = ">=0.16.5"
 tombi = ">=1.4.1"
 
 [feature.tests.tasks]
