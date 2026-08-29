@@ -134,7 +134,7 @@ def _dimensionless(unit: pint.Unit) -> bool:
 def _init() -> None:
     ntypes = 10
     for i, code in enumerate("bhiqBHIQfd"):
-        dtype = np.dtype(code)
+        dtype = np.dtype(np.dtype(code).str)
         name = b"scale_to_" + dtype.name.encode("ascii")
         types = bytes(
             map(_utils.num, f"{f'd{code}'.join('bhiqBHIQfd')}d{code}"),

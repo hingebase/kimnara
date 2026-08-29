@@ -120,7 +120,7 @@ class NonMultiplicativeUnit(_units.BaseUnit[NumberT]):
 
 def _init() -> None:
     for i, code in enumerate("bhiqBHIQfd"):
-        dtype = np.dtype(code)
+        dtype = np.dtype(np.dtype(code).str)
         name = b"round_to_" + dtype.name.encode("ascii")
         types = bytes(map(_utils.num, f"d{code}"))
         _func[dtype.type] = PyUFunc_FromFuncAndData(

@@ -122,8 +122,8 @@ class BaseUnit(abc.ABC, Generic[SCT]):
                 | np.float32 | np.float64 | np.complex64 | np.complex128
             ):
                 return annotation
-            case np.intc | np.uintc:
-                return np.iinfo(annotation).dtype.type
+            case np.intc | np.uintc | np.longlong | np.ulonglong:
+                return np.dtype(np.dtype(annotation).str).type
             case _:
                 if (
                     _utils.isclass(annotation)
