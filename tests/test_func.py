@@ -150,7 +150,7 @@ def test_parallel() -> None:
     assert "@get_thread_id" not in llvm
     assert "@numba_parallel_for" not in llvm
     asm = _parallel.inspect_asm()
-    prefix = "$" if sys.platform == "win32" else "$_"
+    prefix = "$_" if sys.platform == "darwin" else "$"
     assert f"{prefix}workqueue_get_num_threads" in asm
     assert f"{prefix}workqueue_get_thread_id" in asm
     assert f"{prefix}workqueue_numba_parallel_for" in asm
