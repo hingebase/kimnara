@@ -33,7 +33,7 @@ requirements:
     - ${{ compiler("cxx") }}
     - ninja >=1.11.1,<2.0.0
     - ${{ stdlib("c") }}
-    - if: microarch_level|int > 0
+    - if: microarch_level | int
       then: x86_64-microarch-level ==${{ microarch_level }}
   host:
     - if: osx
