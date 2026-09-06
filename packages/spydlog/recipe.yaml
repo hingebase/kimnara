@@ -47,9 +47,9 @@ about:
   homepage: https://github.com/romainaugier/spydlog
   license: MIT
   license_file:
-  - LICENSE
-  - ext/nanobind/LICENSE
-  - ext/nanobind/ext/robin_map/LICENSE
+    - LICENSE
+    - ext/nanobind/LICENSE
+    - ext/nanobind/ext/robin_map/LICENSE
   summary: Python bindings for spdlog
   repository: https://github.com/romainaugier/spydlog
   documentation: https://github.com/romainaugier/spydlog/blob/v${{ version }}/DOCUMENTATION.md

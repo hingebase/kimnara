@@ -18,14 +18,18 @@ import contextlib
 import importlib.metadata
 import os
 import pathlib
+import platform
 import runpy
 import subprocess  # ruff: ignore[suspicious-subprocess-import]
 import sys
 import sysconfig
 from collections.abc import Generator
-from typing import NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 import pytest
+
+if TYPE_CHECKING:
+    from _typeshed import StrPath
 
 if sys.platform == "win32":
     from contextlib import (
@@ -106,25 +110,25 @@ def test_ruff(monkeypatch: pytest.MonkeyPatch) -> None:
 @pytest.mark.skipif(
     os.getenv("PIXI_PROJECT_NAME") == "kimnara"
         and os.getenv("PIXI_ENVIRONMENT_NAME", "default") != "default",
+    reason="It's unnecessary to run ryl for each Python environment",
+)
+@pytest.mark.skipif(
+    sys.platform == "darwin" and platform.machine() == "x86_64",
+    reason="https://github.com/owenlamont/ryl/pull/130",
+)
+def test_ryl() -> None:
+    """Linting with ryl."""
+    subprocess.run([_which("ryl"), "."], check=True)  # ruff: ignore[subprocess-without-shell-equals-true]
+
+
+@pytest.mark.skipif(
+    os.getenv("PIXI_PROJECT_NAME") == "kimnara"
+        and os.getenv("PIXI_ENVIRONMENT_NAME", "default") != "default",
     reason="It's unnecessary to run Tombi for each Python environment",
 )
 def test_tombi() -> None:
     """Linting with Tombi."""
-    tombi = "tombi" + sysconfig.get_config_var("EXE")
-    try:
-        dist = importlib.metadata.distribution("tombi")
-    except ModuleNotFoundError:
-        pass
-    else:
-        if paths := dist.files:
-            for p in paths:
-                if p.name == tombi:
-                    match dist.locate_file(p):
-                        case pathlib.Path() as tombi:
-                            break
-                        case _:
-                            break
-    subprocess.run([tombi, "lint"], check=True)  # ruff: ignore[subprocess-without-shell-equals-true]
+    subprocess.run([_which("tombi"), "lint"], check=True)  # ruff: ignore[subprocess-without-shell-equals-true]
 
 
 def _run_module(module_name: str) -> None:
@@ -135,3 +139,20 @@ def _run_module(module_name: str) -> None:
     else:
         return
     assert code == 0
+
+
+def _which(name: str) -> "StrPath":
+    normalized_name = os.path.normcase(name + sysconfig.get_config_var("EXE"))
+    try:
+        dist = importlib.metadata.distribution(name)
+    except ModuleNotFoundError:
+        pass
+    else:
+        if paths := dist.files:
+            for p in paths:
+                if os.path.normcase(p.name) == normalized_name:
+                    found = dist.locate_file(p)
+                    if isinstance(found, pathlib.Path):
+                        return found
+                    break
+    return normalized_name
