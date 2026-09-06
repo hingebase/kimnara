@@ -10,7 +10,7 @@ build-backend = "scikit_build_core.build"
 
 [project]
 name = "test-package-cmake"
-version = "0.0.1"
+version = "0.0.2"
 description = "A package built with Kimnara"
 requires-python = ">=3.10"
 license = "Apache-2.0"
