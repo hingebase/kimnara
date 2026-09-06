@@ -80,6 +80,7 @@ dev = [
     "pyproj <=3.7.0; sys_platform == 'darwin' and platform_machine == 'x86_64' and platform_release < '22' and python_version < '3.14'",
     "pytest >=9.1.1",
     "ruff >=0.16.5",
+    "ryl >=0.21.0; sys_platform != 'darwin' or platform_machine != 'x86_64'",
     "scipy-stubs >=1.14.1,<2.0.0",
     "test-package-cmake",
     "tombi >=1.4.1",

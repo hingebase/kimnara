@@ -193,6 +193,7 @@ channels = ["conda-forge", "https://prefix.dev/github-releases"]
 
 [feature.tests.target.linux.dependencies]
 ruff = ">=0.16.5"
+ryl = ">=0.21.0"
 tombi = ">=1.4.1"
 
 [feature.tests.target.osx-64.dependencies]
@@ -201,10 +202,12 @@ tombi = { version = ">=1.4.1", channel = "https://prefix.dev/github-releases" }
 
 [feature.tests.target.osx-arm64.dependencies]
 ruff = ">=0.16.5"
+ryl = ">=0.21.0"
 tombi = ">=1.4.1"
 
 [feature.tests.target.win-64.dependencies]
 ruff = ">=0.16.5"
+ryl = ">=0.21.0"
 tombi = ">=1.4.1"
 
 [feature.tests.tasks]

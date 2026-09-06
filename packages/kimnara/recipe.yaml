@@ -37,7 +37,8 @@ requirements:
       then: x86_64-microarch-level ==${{ microarch_level }}
   host:
     - if: osx
-      # __kmpc_dispatch_deinit in https://github.com/llvm/llvm-project/pull/97065
+      # Require `__kmpc_dispatch_deinit` introduced in
+      # https://github.com/llvm/llvm-project/pull/97065
       then: llvm-openmp ==19.1.0
       else: llvm-openmp ==9.0.1
     - mimalloc >=3.1.5,<4.0.0
