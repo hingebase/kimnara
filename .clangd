@@ -28,3 +28,6 @@ Diagnostics:
       - cppcoreguidelines-pro-type-reinterpret-cast
       - llvmlibc-*
       - modernize-use-trailing-return-type
+
+      # Conflicts with `misc-use-anonymous-namespace`
+      - llvm-prefer-static-over-anonymous-namespace

@@ -1,4 +1,4 @@
-#define _CRT_SECURE_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS  // NOLINT
 
 #include <algorithm>
 #include <cstdlib>
@@ -13,6 +13,7 @@
 #  include <strings.h>
 #endif  // defined __linux || defined __linux__
 
+// NOLINTBEGIN
 #if (defined __linux || defined __linux__) && defined __x86_64
 #  include <cpuid.h>
 #  define KIMNARA_LINUX64 1
@@ -39,6 +40,7 @@
 #  define MAYBE_CONSTEXPR_2
 #endif  // defined __APPLE__ && defined __MACH__
 
+// P3391R2 constexpr std::format is needed to eliminate this macro
 #define KMP_DEFAULTS(verbose, hybrid) ( \
     "OMP_DYNAMIC=false" \
     "|OMP_MAX_ACTIVE_LEVELS=1" \
@@ -47,6 +49,7 @@
     "|KMP_HW_SUBSET=" hybrid "1t" \
     "|KMP_TOPOLOGY_METHOD=all" \
 )
+// NOLINTEND
 
 namespace {
 intptr_t OpenMPGetNumThreads() {

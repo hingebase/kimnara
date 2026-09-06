@@ -5,7 +5,7 @@
 #include <nanobind/nanobind.h>
 #include <nanobind/stl/function.h>
 
-#define TBB_PREVIEW_TASK_ARENA_CONSTRAINTS_EXTENSION 1
+#define TBB_PREVIEW_TASK_ARENA_CONSTRAINTS_EXTENSION 1  // NOLINT(cppcoreguidelines-macro-usage)
 #include <oneapi/tbb.h>
 
 namespace {
@@ -29,9 +29,9 @@ class alignas(hardware_destructive_interference_size) TBBScratchSpace {
                     + ((arg_len+array_count) * sizeof(size_t))
                 )
             )
-        )
+        ),
     }, array_arg_space_ {
-        reinterpret_cast<char **>(count_space_) + arg_len
+        reinterpret_cast<char **>(count_space_) + arg_len,
     } {
         std::copy_n(dimensions, arg_len, count_space_);
     }
