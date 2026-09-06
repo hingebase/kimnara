@@ -31,6 +31,7 @@ import pydantic
 import pytest
 from numba.core import types  # pyright: ignore[reportMissingTypeStubs]
 from pint.facets.numpy.quantity import NumpyQuantity
+from typing_extensions import Any
 
 import kimnara as kn
 
@@ -124,6 +125,16 @@ def test_nested_tuple_py() -> None:
     assert isinstance(tup[1], np.complex128)  # pyright: ignore[reportArgumentType]
 
 
+def test_option_precedence() -> None:
+    """Argument-level options should override function-level ones."""
+    _option_precedence(
+        kn.empty((2, 1), np.bool_, align="avx512", pad_value=True),
+        kn.empty((2, 1), np.int64, align="avx", pad_value=1),
+        kn.empty((2, 1), np.float64, align="avx2", pad_value=1),
+        kn.empty((2, 255), np.complex128, align="mkl", pad_value=0),
+    )
+
+
 def test_optional_input_nb() -> None:
     """Numba func should allow `Optional[T]` inputs."""
     [[arg]] = _optional_input_nb.dispatcher.overloads  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
@@ -164,6 +175,12 @@ def test_pickle() -> None:
     assert pickle.loads(pickle.dumps(_parallel)) is _parallel  # ruff: ignore[suspicious-pickle-usage]
 
 
+def _base(x: npt.NDArray[Any]) -> npt.NDArray[Any]:
+    base = x.base  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    assert base is not None
+    return base  # pyright: ignore[reportUnknownVariableType]
+
+
 @kn.func(cache=False, nopython=True)
 def _nested_tuple_nb() -> tuple[
     np.int8 | None,
@@ -186,6 +203,30 @@ def _nested_tuple_py() -> tuple[
 ]:
     arr = np.ones(2, np.complex64)
     return np.uint16(2), np.uint32(3), None, arr, (arr, np.complex128(4))
+
+
+@kn.func(align=kn.AVX, pad_value=0)
+def _option_precedence(
+    default: onp.Array2D[np.bool_],
+    override_align: Annotated[onp.Array2D[np.int64], kn.SSE],
+    override_pad_value: Annotated[onp.Array2D[np.float64], kn.Pad(None)],
+    override_both: Annotated[onp.Array2D[np.complex128], kn.AVX512, kn.Pad(1)],
+) -> None:
+    assert kn.isaligned(default, kn.AVX)
+    assert not kn.isaligned(default, kn.AVX512)
+    np.testing.assert_equal(_base(default)[:, 1:], 0)
+
+    assert kn.isaligned(override_align, kn.SSE)
+    assert not kn.isaligned(override_align, kn.AVX)
+    np.testing.assert_equal(_base(override_align)[:, 1:], 0)
+
+    assert kn.isaligned(override_pad_value, kn.AVX)
+    assert not kn.isaligned(override_pad_value, kn.AVX512)
+    np.testing.assert_equal(_base(override_pad_value)[:, 1:], 1)
+
+    assert kn.isaligned(override_both, kn.AVX512)
+    assert not kn.isaligned(override_both, kn.Alignment.MKL)
+    np.testing.assert_equal(_base(override_both)[:, 255:], 1)
 
 
 @kn.func(cache=False, nopython=True)

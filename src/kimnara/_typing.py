@@ -76,7 +76,7 @@ SCT = TypeVar(
 ShapeT = TypeVar("ShapeT", bound=tuple[int, ...])
 
 _SCT = TypeVar("_SCT", bound=np.generic)
-_ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...], default=tuple[int, ...])
+_ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...], default=Any)
 ArrayLike = TypeAliasType(
     "ArrayLike",
     _SCT | np.ndarray[_ShapeT, np.dtype[_SCT]],
