@@ -83,6 +83,19 @@ def test_input_validation() -> None:
         _parallel(1e42)
 
 
+def test_mutable_input() -> None:
+    """Inputs should be read-only unless `kn.Mut[]` is used."""
+    immutable = np.zeros(1, np.int32)
+    mutable = np.zeros(1, np.int32)
+    _mutable_input(immutable, mutable)
+    np.testing.assert_equal(immutable, 0)
+    np.testing.assert_equal(mutable, 1)
+
+    # The immutability is limited to the function body
+    immutable[0] = 1
+    np.testing.assert_equal(immutable, 1)
+
+
 def test_nested_tuple_nb() -> None:
     """Numba func should be able to return nested tuples."""
     [cres] = _nested_tuple_nb.dispatcher.overloads.values()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
@@ -179,6 +192,16 @@ def _base(x: npt.NDArray[Any]) -> npt.NDArray[Any]:
     base = x.base  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
     assert base is not None
     return base  # pyright: ignore[reportUnknownVariableType]
+
+
+@kn.func
+def _mutable_input(
+    immutable: npt.NDArray[np.int32],
+    mutable: npt.NDArray[kn.Mut[np.int32]],
+) -> None:
+    with pytest.raises(ValueError, match="read-only"):
+        immutable[0] = 1
+    mutable[0] = 1
 
 
 @kn.func(cache=False, nopython=True)
