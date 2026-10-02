@@ -263,6 +263,7 @@ test = [
     { task = "pytest", environment = "py312np20" },
     { task = "pytest", environment = "py312np20nb060" },
     { task = "pytest", environment = "py312np25" },
+    { task = "pytest", environment = "py312np25nb067" },
     { task = "pytest", environment = "py313np21" },
     { task = "pytest", environment = "py313np21nb061" },
     { task = "pytest", environment = "py313np22" },
@@ -273,6 +274,7 @@ test = [
     { task = "pytest", environment = "py314np24" },
     { task = "pytest", environment = "py314np24nb064" },
     { task = "pytest", environment = "py314np25" },
+    { task = "pytest", environment = "py314np25nb067" },
 ]
 
 [feature.tests.target.osx-64.tasks]
