@@ -71,7 +71,7 @@ dev = [
     "basedpyright >=1.40.1",
     "clangd >=22.1.1",
     "clangd-tidy >=1.1.1",
-    "hypothesis >=6.165.10",
+    "hypothesis >=6.168.3",
     "nodejs-wheel-binaries <=20.18.0; sys_platform == 'darwin' and platform_release < '20'",
     "nodejs-wheel-binaries <=22.20.0; sys_platform == 'darwin' and platform_release < '22'",
     "pandas-stubs >=1.4.2,<4.0.0",
