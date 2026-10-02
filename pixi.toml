@@ -62,30 +62,32 @@ py310np21 = ["py310", "np21", "nb"]
 py310np21nb061 = ["py310", "np21", "nb061"]
 py310np22 = ["py310", "np22", "nb"]
 py310np22nb061 = ["py310", "np22", "nb061"]
-py311np124 = ["py311", "np124", "nb"]
+py311np124 = ["py311", "np124", "cf"]
 py311np124nb057 = ["py311", "np124", "nb057"]
-py311np125 = ["py311", "np125", "nb"]
+py311np125 = ["py311", "np125", "cf"]
 py311np125nb058 = ["py311", "np125", "nb058"]
 py311np126nb058 = ["py311", "np126", "nb058"]
-py311np23 = ["py311", "np23", "nb"]
+py311np23 = ["py311", "np23", "cf"]
 py311np23nb062 = ["py311", "np23", "nb062"]
-py311np24 = ["py311", "np24", "nb"]
+py311np24 = ["py311", "np24", "cf"]
 py311np24nb064 = ["py311", "np24", "nb064"]
-py312np126 = ["abi3", "py312", "np126", "nb"]
+py312np126 = ["abi3", "py312", "np126", "cf"]
 py312np126nb059 = ["abi3", "py312", "np126", "nb059"]
-py312np20 = ["abi3", "py312", "np20", "nb"]
+py312np20 = ["abi3", "py312", "np20", "cf"]
 py312np20nb060 = ["abi3", "py312", "np20", "nb060"]
-py312np25 = ["abi3", "py312", "np25", "nb"]
-py313np21 = ["abi3", "py313", "np21", "nb"]
+py312np25 = ["abi3", "py312", "np25", "cf"]
+py312np25nb067 = ["abi3", "py312", "np25", "nb067"]
+py313np21 = ["abi3", "py313", "np21", "cf"]
 py313np21nb061 = ["abi3", "py313", "np21", "nb061"]
-py313np22 = ["abi3", "py313", "np22", "nb"]
+py313np22 = ["abi3", "py313", "np22", "cf"]
 py313np22nb061 = ["abi3", "py313", "np22", "nb061"]
 py313np23nb062 = ["abi3", "py313", "np23", "nb062"]
-py314np23 = ["abi3", "py314", "np23", "nb"]
+py314np23 = ["abi3", "py314", "np23", "cf"]
 py314np23nb063 = ["abi3", "py314", "np23", "nb063"]
-py314np24 = ["abi3", "py314", "np24", "nb"]
+py314np24 = ["abi3", "py314", "np24", "cf"]
 py314np24nb064 = ["abi3", "py314", "np24", "nb064"]
-py314np25 = ["abi3", "py314", "np25", "nb"]
+py314np25 = ["abi3", "py314", "np25", "cf"]
+py314np25nb067 = ["abi3", "py314", "np25", "nb067"]
 
 [feature]
 # One variant per directory, see
@@ -129,11 +131,34 @@ dependencies = { numba = "==0.63.1" }
 platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
 dependencies = { numba = "==0.64.0" }
 
-[feature.nb.target]
-linux = { dependencies = { numba = ">=0.67.0" } }
+[feature.nb067]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
+dependencies = { numba = "==0.67.0" }
+
+[feature.cf.target]
+linux = { dependencies = { numba = ">=0.68.0" } }
 osx-64 = { dependencies = { numba = "==0.62.1" } }
-osx-arm64 = { dependencies = { numba = ">=0.67.0" } }
-win-64 = { dependencies = { numba = ">=0.67.0" } }
+osx-arm64 = { dependencies = { numba = ">=0.68.0" } }
+win-64 = { dependencies = { numba = ">=0.68.0" } }
+
+# conda-forge has dropped support for Python 3.10
+[feature.nb]
+channels = ["conda-forge", "numba"]
+
+[feature.nb.target.linux.dependencies]
+llvmlite = { channel = "numba" }
+numba = { version = ">=0.68.0", channel = "numba" }
+
+[feature.nb.target.osx-64.dependencies]
+numba = { version = "==0.62.1", channel = "conda-forge" }
+
+[feature.nb.target.osx-arm64.dependencies]
+llvmlite = { channel = "numba" }
+numba = { version = ">=0.68.0", channel = "numba" }
+
+[feature.nb.target.win-64.dependencies]
+llvmlite = { channel = "numba" }
+numba = { version = ">=0.68.0", channel = "numba" }
 
 [target]
 linux-64 = { dependencies = { libblas = { build = "*_mkl" } } }
