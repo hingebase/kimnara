@@ -49,6 +49,9 @@ scipy-stubs = ">=1.14.1,<2.0.0"
 pytest = ">=9.1.1"
 uv = ">=0.10.2"
 
+# For each minor version of NumPy, the convex hull of compatible minor
+# (Python, Numba) versions is obtained, and all the vertices of the convex hull
+# are tested.
 [environments]
 default = ["py310", "np124", "nb057", "tests"]
 py310np124 = ["py310", "np124", "nb"]
