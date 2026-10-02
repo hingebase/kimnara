@@ -33,6 +33,7 @@ from ._converters import PyUFunc_FromFuncAndData
 
 if TYPE_CHECKING:
     import numpy.typing as npt
+    from pint.facets.plain import PlainQuantity
 
 _DOC = b"Round doubles to integers."
 _POINTER_SIZE = ctypes.sizeof(ctypes.c_void_p)
@@ -69,7 +70,7 @@ class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
                 )
             else:
                 magnitude = magnitude.astype(dtype, order="C", subok=False)
-            quantity = type(value)(magnitude, value.units)
+            quantity: PlainQuantity[Any] = type(value)(magnitude, value.units)
             quantity.ito(self._unit)  # pyright: ignore[reportUnknownMemberType]
         else:
             fast_path = False
