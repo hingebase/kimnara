@@ -19,10 +19,12 @@ import sys
 from collections.abc import Sequence
 
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
-from numba.core import cgutils, cpu  # pyright: ignore[reportMissingTypeStubs]
+from numba.core import cpu  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.typing.templates import (  # pyright: ignore[reportMissingTypeStubs]
     Signature,
 )
+
+from kimnara import _numba
 
 if sys.platform == "win32":
     c = ctypes.cdll.ucrtbase
@@ -41,9 +43,4 @@ def call(
         context.get_argument_type(signature.return_type),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
         map(context.get_argument_type, signature.args),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
     )
-    fn = cgutils.get_or_insert_function(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-        builder.module,  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-        fnty,
-        name,
-    )
-    return builder.call(fn, args)  # pyright: ignore[reportUnknownMemberType]
+    return _numba.call(name, builder, fnty, args)
