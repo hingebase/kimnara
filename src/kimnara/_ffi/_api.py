@@ -15,12 +15,24 @@
 __all__ = ["ccall", "cdecl", "cycall", "cydecl"]
 
 import types
+from collections.abc import Callable
 
-from typing_extensions import Any
+from typing_extensions import Any, overload
+
+
+@overload
+def cdecl(wrapped: Callable[..., Any], /) -> ...: ...
+
+@overload
+def cdecl(
+    lib: str = ...,
+    *,
+    function_name: str | None = ...,
+) -> Callable[[Callable[..., Any]], Any]: ...
 
 
 def cdecl(
-    lib: str = "c",
+    lib: Callable[..., Any] | str = "c",
     *,
     function_name: str | None = None,
 ) -> ...:
