@@ -398,7 +398,7 @@ def can_cache(
             kn.CacheWarning,
             stacklevel=4,
         )
-    if filename not in linecache.cache:
+    if not linecache.getlines(filename):
         if not cache:
             return False
         warnings.warn(
