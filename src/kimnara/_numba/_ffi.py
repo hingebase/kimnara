@@ -20,8 +20,9 @@ from typing import TYPE_CHECKING, cast, no_type_check
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import cgutils, cpu, types  # pyright: ignore[reportMissingTypeStubs]
-from numba.core.typing.context import (  # pyright: ignore[reportMissingTypeStubs]
-    Context,
+from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
+    context,
+    templates,
 )
 
 if TYPE_CHECKING:
@@ -29,17 +30,19 @@ if TYPE_CHECKING:
 
 
 def call(
-    name: str,
+    fndesc: str | ir.Value,
+    context: cpu.CPUContext,
     builder: ir.IRBuilder,
-    fnty: ir.FunctionType,
+    signature: templates.Signature,
     args: Sequence[ir.Value],
 ) -> ir.Instruction:
-    fn = cgutils.get_or_insert_function(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-        builder.module,  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-        fnty,
-        name,
+    fnty = ir.FunctionType(
+        context.get_argument_type(signature.return_type),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+        map(context.get_argument_type, signature.args),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
     )
-    return builder.call(fn, args)  # pyright: ignore[reportUnknownMemberType]
+    if isinstance(fndesc, str):
+        return _call(fndesc, builder, fnty, args)
+    return builder.call(builder.inttoptr(fndesc, fnty.as_pointer()), args)  # pyright: ignore[reportUnknownMemberType]
 
 
 def get_cython_function_address(
@@ -62,7 +65,7 @@ def get_cython_function_address(
         pyapi.dict_getitem_string(pyx_capi, function_name),  # pyright: ignore[reportUnknownMemberType]
     )
     pyapi.decref(pyx_capi)  # pyright: ignore[reportUnknownMemberType]
-    capsule_name = call(
+    capsule_name = _call(
         "PyCapsule_GetName",
         builder,
         ir.FunctionType(pyapi.cstring, [pyapi.pyobj]),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
@@ -72,7 +75,7 @@ def get_cython_function_address(
         context.get_argument_type(types.uintp),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
         [pyapi.pyobj, pyapi.cstring],  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
     )
-    address = call(
+    address = _call(
         "PyCapsule_GetPointer",
         builder,
         fnty,
@@ -80,6 +83,20 @@ def get_cython_function_address(
     )
     pyapi.gil_release(gil_state)  # pyright: ignore[reportUnknownMemberType]
     return address
+
+
+def _call(
+    name: str,
+    builder: ir.IRBuilder,
+    fnty: ir.FunctionType,
+    args: Sequence[ir.Value],
+) -> ir.Instruction:
+    fn = cgutils.get_or_insert_function(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        builder.module,  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+        fnty,
+        name,
+    )
+    return builder.call(fn, args)  # pyright: ignore[reportUnknownMemberType]
 
 
 @numba.extending.overload(  # pyright: ignore[reportUnknownMemberType, reportUntypedFunctionDecorator]
@@ -95,7 +112,7 @@ def _(module_name: types.Type, function_name: types.Type) -> object:
 
     @numba.extending.intrinsic
     @no_type_check
-    def intrinsic(_: Context) -> "kn.typing.Intrinsic[()]":
+    def intrinsic(_: context.Context) -> "kn.typing.Intrinsic[()]":
         return (
             types.uintp(),
             lambda context, builder, _sig, _args: get_cython_function_address(

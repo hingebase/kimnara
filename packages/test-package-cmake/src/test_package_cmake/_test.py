@@ -13,6 +13,8 @@
 # permissions and limitations under the License.
 
 __all__ = [
+    "erf_scipy_ctypes",
+    "erf_scipy_numba",
     "test_logging_capi",
 ]
 
@@ -20,7 +22,22 @@ import ctypes
 import importlib.metadata
 import sys
 
+import numpy as np
+
 import kimnara as kn
+
+
+@kn.cydecl("scipy.special.cython_special")
+def __pyx_fuse_1erf(x: np.float64, skip_dispatch: np.int32) -> np.float64: ...
+
+
+def erf_scipy_ctypes(x: float) -> float:
+    return __pyx_fuse_1erf(x, 1)
+
+
+@kn.func(nopython=True)
+def erf_scipy_numba(x: np.float64) -> np.float64:
+    return __pyx_fuse_1erf(x, 1)
 
 
 def test_logging_capi(logger: object) -> None:

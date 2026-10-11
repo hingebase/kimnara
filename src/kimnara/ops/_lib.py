@@ -12,35 +12,12 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["c", "call"]
+__all__ = ["c"]
 
 import ctypes
 import sys
-from collections.abc import Sequence
-
-from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
-from numba.core import cpu  # pyright: ignore[reportMissingTypeStubs]
-from numba.core.typing.templates import (  # pyright: ignore[reportMissingTypeStubs]
-    Signature,
-)
-
-from kimnara import _numba
 
 if sys.platform == "win32":
     c = ctypes.cdll.ucrtbase
 else:
     c = ctypes.CDLL(None)
-
-
-def call(
-    name: str,
-    context: cpu.CPUContext,
-    builder: ir.IRBuilder,
-    signature: Signature,
-    args: Sequence[ir.Value],
-) -> ir.Instruction:
-    fnty = ir.FunctionType(
-        context.get_argument_type(signature.return_type),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-        map(context.get_argument_type, signature.args),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-    )
-    return _numba.call(name, builder, fnty, args)

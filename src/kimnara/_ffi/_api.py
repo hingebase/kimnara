@@ -19,23 +19,25 @@ from collections.abc import Callable
 
 from typing_extensions import Any, overload
 
+from . import _decl
+
 
 @overload
-def cdecl(wrapped: Callable[..., Any], /) -> ...: ...
+def cdecl(wrapped: Callable[..., Any], /) -> _decl.Decl: ...
 
 @overload
 def cdecl(
     lib: str = ...,
     *,
     function_name: str | None = ...,
-) -> Callable[[Callable[..., Any]], Any]: ...
+) -> Callable[[Callable[..., Any]], _decl.Decl]: ...
 
 
 def cdecl(
     lib: Callable[..., Any] | str = "c",
     *,
     function_name: str | None = None,
-) -> ...:
+) -> _decl.Decl | Callable[[Callable[..., Any]], _decl.Decl]:
     raise NotImplementedError
 
 
@@ -43,8 +45,10 @@ def cydecl(
     module: types.ModuleType | str,
     *,
     function_name: str | None = None,
-) -> ...:
-    raise NotImplementedError
+) -> Callable[[Callable[..., Any]], _decl.Decl]:
+    def decorator(wrapped: Callable[..., Any], /) -> _decl.Decl:
+        return _decl.cydecl(wrapped, module, function_name)
+    return decorator
 
 
 def ccall(
