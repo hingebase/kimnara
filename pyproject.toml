@@ -9,7 +9,7 @@ requires = [
     # https://docs.astral.sh/uv/reference/cli/#uv-pip-install--no-build-isolation
     "intel-openmp ==2023.2.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     "intel-openmp ==2024.1.0; sys_platform == 'linux' and platform_machine == 'x86_64' or sys_platform == 'win32' and platform_machine == 'AMD64'",
-    "tbb-devel ==2021.10.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "tbb-devel ==2021.9.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     "tbb-devel ==2022.2.0; sys_platform == 'linux' and platform_machine == 'x86_64' or sys_platform == 'win32' and platform_machine == 'AMD64'",
 ]
 build-backend = "scikit_build_core.build"
