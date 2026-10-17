@@ -14,22 +14,32 @@
 
 __all__ = ["NumbaCFunc", "NumbaT", "PyCFunc", "PythonT"]
 
-import abc
 import ctypes
+import functools
 import sys
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Literal, no_type_check
+from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 import numba  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    ccallback,
+    cgutils,
     compiler,
+    cpu,
+    errors,
+    imputils,
+    registry,
     types,
 )
+from numba.core.typeconv.castgraph import (  # pyright: ignore[reportMissingTypeStubs]
+    Conversion,
+)
 from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
-    ctypes_utils,
+    context,
     templates,
+)
+from numba.experimental.function_type import (  # pyright: ignore[reportMissingTypeStubs]
+    lower_cast_dispatcher_to_function_type,  # pyright: ignore[reportUnknownVariableType]
 )
 from typing_extensions import TypeVar, override
 
@@ -41,6 +51,8 @@ from . import _common
 
 if TYPE_CHECKING:
     from ctypes import _CFunctionType  # pyright: ignore[reportPrivateUsage]
+
+    from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
 
 NumbaT = TypeVar(
     "NumbaT",
@@ -72,7 +84,9 @@ else:
     )
 
 
-class _CFunc(types.WrapperAddressProtocol, _common.Inferable[_T]):
+class _CFunc(_common.Inferable[_T]):
+    _address_or_callable: ClassVar[str]
+
     def __init__(self, wrapped: Callable[..., _T]) -> None:
         self.infer(wrapped)
 
@@ -99,17 +113,23 @@ class _CFunc(types.WrapperAddressProtocol, _common.Inferable[_T]):
             allow_scalar=True,
         )
 
-    @property
-    @abc.abstractmethod
+    @functools.cached_property
     def _as_parameter_(self) -> "_CFunctionType":
-        raise NotImplementedError
+        argtypes = [
+            arg.to_ctypes() or _utils.unreachable()
+            for arg in self.argtypes
+        ]
+        restype = self.restype.to_ctypes()
+        ftype = ctypes.CFUNCTYPE(restype, *argtypes)
+        return ftype(getattr(self, self._address_or_callable))
 
     def __call__(self, *args: object) -> _T:
-        return self.__wrapped__(*args)
+        return self._as_parameter_(*args)
 
 
 class NumbaCFunc(_CFunc[NumbaT], _common.Dispatchable):
-    _numba: ccallback.CFunc
+    _address_or_callable = "address"
+    _cres: compiler.CompileResult
 
     @override
     def __init__(
@@ -122,73 +142,166 @@ class NumbaCFunc(_CFunc[NumbaT], _common.Dispatchable):
         fastmath: FastMathOptions = False,
         forceinline: bool = False,
         inline: Literal["always", "never"] | CustomInliningRule = "never",
-        nogil: bool = False,
         parallel: bool | str = False,
         pipeline_class: type[compiler.CompilerBase] | None = None,
     ) -> None:
         super().__init__(wrapped)
         argtypes = [arg.to_numba() for arg in self.argtypes]
         restype = self.restype.to_numba()
-        decorator = numba.cfunc(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-            restype(*argtypes),
-            boundscheck=boundscheck,  # pyright: ignore[reportCallIssue]
+        sig = restype(*argtypes)  # pyright: ignore[reportUnknownVariableType]
+        decorator = numba.njit(  # pyright: ignore[reportCallIssue, reportUnknownMemberType, reportUnknownVariableType]
+            sig,
+            boundscheck=boundscheck,
             cache=_common.can_cache(wrapped, cache=cache),
             error_model=error_model,
-            fastmath=fastmath,
+            fastmath=fastmath,  # pyright: ignore[reportArgumentType]
             forceinline=forceinline,
             inline=inline,
-            nogil=nogil,
+            no_cpython_wrapper=True,
             parallel=bool(parallel),
             pipeline_class=pipeline_class,
         )
         if parallel:
             with kn.threading.using_backend(parallel):
-                self.dispatcher = self._numba = decorator(wrapped)
+                func = cast("registry.CPUDispatcher", decorator(wrapped))
         else:
-            self.dispatcher = self._numba = decorator(wrapped)
+            func = cast("registry.CPUDispatcher", decorator(wrapped))
+        self.dispatcher = func
+        self._cres = func.get_compile_result(sig)  # pyright: ignore[reportUnknownMemberType]
 
     @property
-    @override
-    def _as_parameter_(self) -> "_CFunctionType":
-        return self._numba.ctypes
-
-    @no_type_check
-    @override
-    def signature(self) -> templates.Signature:
-        return self._numba._sig  # ruff: ignore[private-member-access]
-
-    @no_type_check
-    @override
-    def __wrapper_address__(self) -> int:
-        return self._numba.address
+    def _numba_type_(self) -> types.Dispatcher:
+        return types.Dispatcher(self.dispatcher)
 
     @property
-    @no_type_check
     def native_name(self) -> str:
-        return self._numba.native_name
-
-
-class PyCFunc(_CFunc[PythonT]):
-    @override
-    def __init__(self, wrapped: Callable[..., PythonT]) -> None:
-        super().__init__(wrapped)
-        argtypes = [
-            arg.to_ctypes() or _utils.unreachable()
-            for arg in self.argtypes
-        ]
-        restype = self.restype.to_ctypes()
-        self._ctypes = ctypes.CFUNCTYPE(restype, *argtypes)(wrapped)
+        return self._cres.fndesc.llvm_cfunc_wrapper_name
 
     @property
-    @override
-    def _as_parameter_(self) -> "_CFunctionType":
-        return self._ctypes
+    def address(self) -> int:
+        match self._cres.library.get_pointer_to_function(self.native_name):
+            case int(addr) if addr > 0:
+                return addr
+            case _:
+                return _utils.unreachable()
+
+
+class PyCFunc(_CFunc[PythonT], types.WrapperAddressProtocol):
+    _address_or_callable = "__wrapped__"
 
     @override
     def signature(self) -> templates.Signature:  # pyright: ignore[reportIncompatibleMethodOverride]
-        return ctypes_utils.make_function_type(self._ctypes).sig  # pyright: ignore[reportUnknownMemberType]
+        argtypes = [arg.to_numba() for arg in self.argtypes]
+        restype = self.restype.to_numba()
+        return restype(*argtypes)  # pyright: ignore[reportUnknownVariableType]
 
     @override
     def __wrapper_address__(self) -> int:  # pyright: ignore[reportIncompatibleMethodOverride]
-        ptr = ctypes.cast(self._ctypes, ctypes.c_void_p)
+        ptr = ctypes.cast(self._as_parameter_, ctypes.c_void_p)
         return ptr.value or _utils.unreachable()
+
+
+def _can_convert_dispatcher(
+    self: types.Dispatcher,
+    typingctx: context.Context,
+    other: types.Type,
+) -> Conversion | None:
+    if conversion := _try_convert_dispatcher(self, typingctx, other):
+        return conversion
+    if (
+        isinstance(other, types.ExternalFunctionPointer)
+        and other.cconv is None  # pyright: ignore[reportUnknownMemberType]
+    ):
+        dispatcher = cast("registry.CPUDispatcher", self.dispatcher)
+        try:
+            dispatcher.get_compile_result(other.sig)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+        except errors.NumbaError:
+            pass
+        else:
+            return Conversion.safe
+    return None
+
+
+def _can_convert_function_pointer(
+    self: types.ExternalFunctionPointer,
+    typingctx: context.Context,
+    other: types.Type,
+) -> Conversion | None:
+    if conversion := _try_convert_function_pointer(self, typingctx, other):
+        return conversion
+    if (
+        isinstance(other, types.ExternalFunctionPointer)
+        and self.sig == other.sig  # pyright: ignore[reportUnknownMemberType]
+        and self.cconv == other.cconv  # pyright: ignore[reportUnknownMemberType]
+    ):
+        return Conversion.safe
+    return None
+
+
+def _can_convert_function_type(
+    self: types.FunctionType,
+    typingctx: context.Context,
+    other: types.Type,
+) -> Conversion | None:
+    if conversion := _try_convert_function_type(self, typingctx, other):
+        return conversion
+    if isinstance(other, types.ExternalFunctionPointer):
+        self = self.get_precise()
+        if self.signature == other.sig and self.cconv == other.cconv:  # pyright: ignore[reportUnknownMemberType]
+            return Conversion.safe
+    return None
+
+
+@imputils.lower_cast(types.Dispatcher, types.ExternalFunctionPointer)  # pyright: ignore[reportUnknownMemberType]
+def _(
+    context: cpu.CPUContext,
+    builder: "ir.IRBuilder",
+    fromty: types.Dispatcher,
+    toty: types.ExternalFunctionPointer,
+    val: "ir.Value",
+) -> "ir.Instruction":
+    ftype = types.FunctionType(toty.sig)  # pyright: ignore[reportUnknownArgumentType]
+    ftype.cconv = toty.cconv  # pyright: ignore[reportUnknownMemberType]
+    val = lower_cast_dispatcher_to_function_type(  # pyright: ignore[reportUnknownVariableType]
+        context, builder, fromty, ftype, val)
+    return _lower_cast_function_type_to_function_pointer(
+        context, builder, ftype, toty, val)  # pyright: ignore[reportUnknownArgumentType]
+
+
+@imputils.lower_cast(  # pyright: ignore[reportUnknownMemberType]
+    types.ExternalFunctionPointer,
+    types.ExternalFunctionPointer,
+)
+def _(
+    _context: cpu.CPUContext,
+    _builder: "ir.IRBuilder",
+    _fromty: types.ExternalFunctionPointer,
+    _toty: types.ExternalFunctionPointer,
+    val: "ir.Value",
+) -> "ir.Value":
+    return val
+
+
+@imputils.lower_cast(types.FunctionType, types.ExternalFunctionPointer)  # pyright: ignore[reportUnknownMemberType]
+def _lower_cast_function_type_to_function_pointer(
+    context: cpu.CPUContext,
+    builder: "ir.IRBuilder",
+    fromty: types.FunctionType,
+    toty: types.ExternalFunctionPointer,
+    val: "ir.Value",
+) -> "ir.Instruction":
+    ptrty = cast("ir.Type", context.get_function_pointer_type(toty))  # pyright: ignore[reportUnknownMemberType]
+    struct_cls = cast(
+        "type[cgutils.ValueStructProxy]",
+        cgutils.create_struct_proxy(fromty),  # pyright: ignore[reportUnknownMemberType]
+    )
+    struct = struct_cls(context, builder, value=val)
+    return builder.bitcast(struct.c_addr, ptrty)  # pyright: ignore[reportReturnType, reportUnknownArgumentType, reportUnknownMemberType]
+
+
+_try_convert_dispatcher = types.Dispatcher.can_convert_to  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+_try_convert_function_pointer = types.ExternalFunctionPointer.can_convert_to  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+_try_convert_function_type = types.FunctionType.can_convert_to  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+types.Dispatcher.can_convert_to = _can_convert_dispatcher  # pyright: ignore[reportAttributeAccessIssue]
+types.ExternalFunctionPointer.can_convert_to = _can_convert_function_pointer  # pyright: ignore[reportAttributeAccessIssue]
+types.FunctionType.can_convert_to = _can_convert_function_type  # pyright: ignore[reportAttributeAccessIssue]

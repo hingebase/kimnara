@@ -13,6 +13,7 @@
 # permissions and limitations under the License.
 
 __all__ = [
+    "call_cfunc_in_numba",
     "test_logging_capi",
 ]
 
@@ -21,6 +22,18 @@ import importlib.metadata
 import sys
 
 import kimnara as kn
+
+
+@kn.cfunc(nopython=True)
+def _simple_cfunc() -> int:
+    return 42
+
+
+# This function would become uncacheable if `_simple_cfunc` was a
+# `numba.cfunc`
+@kn.func(nopython=True)
+def call_cfunc_in_numba() -> int:
+    return _simple_cfunc()
 
 
 def test_logging_capi(logger: object) -> None:

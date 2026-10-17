@@ -106,6 +106,7 @@ class NumbaFunc(_Func[_T], _common.Dispatchable):
             fastmath=fastmath,  # pyright: ignore[reportArgumentType]
             forceinline=forceinline,
             inline=inline,
+            no_cfunc_wrapper=True,
             nogil=nogil,
             parallel=bool(parallel),
             pipeline_class=pipeline_class,

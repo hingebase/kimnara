@@ -23,7 +23,6 @@ __all__ = [
 ]
 
 import abc
-import collections
 import functools
 import inspect
 import itertools
@@ -37,16 +36,10 @@ import pint.registry_helpers
 import pydantic
 import pydantic_core
 from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    ccallback,
     codegen,
-    compiler,
-    registry,
 )
 from numba.core.dispatcher import (  # pyright: ignore[reportMissingTypeStubs]
     Dispatcher,
-)
-from numba.core.funcdesc import (  # pyright: ignore[reportMissingTypeStubs]
-    FunctionDescriptor,
 )
 from numba.np.ufunc import (  # pyright: ignore[reportMissingTypeStubs]
     ufuncbuilder,
@@ -86,32 +79,14 @@ class Dispatchable:
     @dispatcher.setter
     def dispatcher(
         self,
-        value: Dispatcher | ccallback.CFunc | ufuncbuilder.UFuncDispatcher,
+        value: Dispatcher | ufuncbuilder.UFuncDispatcher,
     ) -> None:
         if isinstance(value, Dispatcher):
             self._dispatcher = value
             return
         self._dispatcher = new = Dispatcher.__new__(Dispatcher)
-        if isinstance(value, ufuncbuilder.UFuncDispatcher):
-            new.overloads = value.overloads  # pyright: ignore[reportAttributeAccessIssue]
-            new.py_func = value.py_func  # pyright: ignore[reportUnknownMemberType]
-            return
-        # ruff: disable[private-member-access]
-        key = value._sig  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownMemberType, reportUnknownVariableType]
-        cres = value._cache.load_overload(  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownMemberType, reportUnknownVariableType]
-            key,
-            registry.cpu_target.target_context,  # pyright: ignore[reportUnknownMemberType]
-        )
-        if not cres:
-            fndesc = FunctionDescriptor.__new__(FunctionDescriptor)
-            fndesc.mangled_name = str(value.native_name).removeprefix("cfunc.")  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-            cres = compiler.compile_result(  # pyright: ignore[reportUnknownMemberType]
-                fndesc=fndesc,
-                library=value._library,  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownArgumentType, reportUnknownMemberType]
-            )
-        new.overloads = collections.OrderedDict([(key, cres)])  # pyright: ignore[reportUnknownArgumentType]
-        new.py_func = value._pyfunc  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownMemberType]
-        # ruff: enable[private-member-access]
+        new.overloads = value.overloads  # pyright: ignore[reportAttributeAccessIssue]
+        new.py_func = value.py_func  # pyright: ignore[reportUnknownMemberType]
 
     @no_type_check
     def inspect_asm(self) -> str:
