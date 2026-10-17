@@ -34,7 +34,7 @@ from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
 from numpy import complex64, float32
 from typing_extensions import TypeVar, overload
 
-from . import _lib
+from kimnara import _utils
 
 if TYPE_CHECKING:
     from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
@@ -44,7 +44,12 @@ if TYPE_CHECKING:
 if sys.version_info >= (3, 13):
     from math import fma as _fma
 else:
-    _fma = CFUNCTYPE(c_double, c_double, c_double, c_double)(("fma", _lib.c))
+    _fma = CFUNCTYPE(
+        c_double,
+        c_double,
+        c_double,
+        c_double,
+    )(("fma", _utils.libc))
 
 _Op = complex | float32 | complex64
 _T = TypeVar("_T", onp.ToJustFloat64, float32)
@@ -199,4 +204,4 @@ def _(  # ruff: ignore[too-many-return-statements]
             return None
 
 
-_fmaf = CFUNCTYPE(c_float, c_float, c_float, c_float)(("fmaf", _lib.c))
+_fmaf = CFUNCTYPE(c_float, c_float, c_float, c_float)(("fmaf", _utils.libc))

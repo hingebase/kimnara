@@ -38,7 +38,12 @@ def cdecl(
     *,
     function_name: str | None = None,
 ) -> _decl.Decl | Callable[[Callable[..., Any]], _decl.Decl]:
-    raise NotImplementedError
+    if callable(lib):
+        return _decl.cdecl(lib)
+
+    def decorator(wrapped: Callable[..., Any], /) -> _decl.Decl:
+        return _decl.cdecl(wrapped, lib, function_name)
+    return decorator
 
 
 def cydecl(

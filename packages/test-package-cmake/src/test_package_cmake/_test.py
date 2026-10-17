@@ -14,6 +14,8 @@
 
 __all__ = [
     "call_cfunc_in_numba",
+    "erf",
+    "erf_libm_numba",
     "erf_scipy_ctypes",
     "erf_scipy_numba",
     "test_logging_capi",
@@ -38,6 +40,15 @@ def _simple_cfunc() -> int:
 @kn.func(nopython=True)
 def call_cfunc_in_numba() -> int:
     return _simple_cfunc()
+
+
+@kn.cdecl
+def erf(x: np.float64) -> np.float64: ...
+
+
+@kn.func(nopython=True)
+def erf_libm_numba(x: float) -> float:
+    return erf(x)
 
 
 @kn.cydecl("scipy.special.cython_special")

@@ -19,6 +19,7 @@ __all__ = [
     "CacheWarning",
     "Error",
     "PerformanceWarning",
+    "RedefinitionError",
     "ValidationError",
 ]
 
@@ -43,6 +44,10 @@ class CacheWarning(UserWarning, Error):
 class PerformanceWarning(UserWarning, Error):
     """Performance-related issues that users should be aware of."""
 # ruff: enable[error-suffix-on-exception-name]
+
+
+class RedefinitionError(Error):
+    """An external function is redefined with a different signature."""
 
 
 class TypeInferenceError(Error):

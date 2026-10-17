@@ -27,6 +27,7 @@ __all__ = [
     "Mut",
     "Pad",
     "PerformanceWarning",
+    "RedefinitionError",
     "TypeInferenceError",
     "ValidationError",
     "array",
@@ -58,6 +59,7 @@ from .exceptions import (
     CacheWarning,
     Error,
     PerformanceWarning,
+    RedefinitionError,
     TypeInferenceError,
     ValidationError,
 )

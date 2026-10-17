@@ -16,6 +16,8 @@
 
 __all__ = [
     "call_cfunc_in_numba",
+    "erf",
+    "erf_libm_numba",
     "erf_scipy_ctypes",
     "erf_scipy_numba",
     "test_logging_capi",
@@ -23,6 +25,8 @@ __all__ = [
 
 from ._test import (
     call_cfunc_in_numba,
+    erf,
+    erf_libm_numba,
     erf_scipy_ctypes,
     erf_scipy_numba,
     test_logging_capi,

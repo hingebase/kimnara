@@ -26,6 +26,32 @@ from numba.core import caching  # pyright: ignore[reportMissingTypeStubs]
 
 
 @hypothesis.given(st.floats())
+def test_cdecl(x: float) -> None:
+    """Test `kn.cdecl`."""
+    actual = test_package_cmake.erf(x)
+    desired = math.erf(x)
+    np.testing.assert_equal(actual, desired, strict=True)
+
+    actual = test_package_cmake.erf_libm_numba(x)
+    np.testing.assert_equal(actual, desired, strict=True)
+
+    dispatcher = test_package_cmake.erf_libm_numba.dispatcher
+    # ruff: disable[private-member-access]
+    cache = dispatcher._cache  # pyright: ignore[reportPrivateUsage]
+    assert isinstance(cache, caching.FunctionCache)
+    if dispatcher._cache_hits:  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
+        assert not dispatcher._cache_misses  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
+    else:
+        assert dispatcher._cache_misses  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
+        llvm = test_package_cmake.erf_libm_numba.inspect_llvm()
+        assert "@erf" in llvm
+        asm = test_package_cmake.erf_libm_numba.inspect_asm()
+        prefix = "$_" if sys.platform == "darwin" else "$"
+        assert f"{prefix}erf" in asm
+    # ruff: enable[private-member-access]
+
+
+@hypothesis.given(st.floats())
 def test_cydecl(x: float) -> None:
     """Test `kn.cydecl`."""
     actual = test_package_cmake.erf_scipy_ctypes(x)

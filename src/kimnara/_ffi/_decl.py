@@ -12,32 +12,82 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["Decl", "cydecl"]
+__all__ = ["Decl", "cdecl", "cydecl"]
 
 import ctypes
 import functools
 import inspect
 import types
 from collections.abc import Callable
-from typing import TYPE_CHECKING, cast, no_type_check
+from typing import cast, no_type_check
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
+from llvmlite import binding, ir  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.types import Type  # pyright: ignore[reportMissingTypeStubs]
-from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
-    context,
-    templates,
+from numba.core.typing.context import (  # pyright: ignore[reportMissingTypeStubs]
+    Context,
 )
 from typing_extensions import Any, Protocol, Unpack
 
 import kimnara as kn
 from kimnara import _numba, _spec, _utils
 
-if TYPE_CHECKING:
-    from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
+_Intrinsic = kn.typing.Intrinsic[Unpack[tuple[ir.Value, ...]]]
+_MESSAGE = "Function {!r} has been defined with a different signature"
 
 
 class Decl(Protocol):
     def __call__(self, *args: object) -> Any: ...  # ruff: ignore[any-type]
+
+
+def cdecl(
+    wrapped: Callable[..., Any],
+    lib: str = "c",
+    function_name: str | None = None,
+) -> Decl:
+    dll = ctypes.cdll[lib] if "c" != lib != "m" else _utils.libc
+    if not function_name:
+        function_name = wrapped.__name__
+    pysig = inspect.signature(wrapped, eval_str=True)
+    argtypes, restype = _parse(pysig)
+    if cache := _cdecl_cache.get((dll._handle, function_name)):  # ruff: ignore[private-member-access]
+        cached_argtypes, cached_restype, cached_decl = cache
+        if cached_argtypes == argtypes and cached_restype == restype:
+            return cached_decl
+        raise kn.RedefinitionError(_MESSAGE.format(function_name))
+    if "c" != lib != "m":
+        binding.load_library_permanently(lib)  # pyright: ignore[reportUnknownMemberType]
+    sig = restype.to_numba()(*[arg.to_numba() for arg in argtypes])  # pyright: ignore[reportUnknownVariableType]
+    cfunc = ctypes.CFUNCTYPE(
+        restype.to_ctypes(),
+        *[arg.to_ctypes() or _utils.unreachable() for arg in argtypes],
+    )((function_name, dll))
+    signature_holder: Any = types.SimpleNamespace(
+        __signature__=pysig.replace(
+            parameters=[_typingctx, *pysig.parameters.values()],
+        ),
+    )
+
+    @functools.wraps(wrapped)
+    def wrapper(*args: object) -> object:
+        return cfunc(*args)
+
+    @numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
+    @functools.wraps(signature_holder, assigned=())
+    def intrinsic(_typingctx: Context, *_args: Type) -> _Intrinsic:
+        return sig, lambda context, builder, signature, args: _numba.call(  # pyright: ignore[reportUnknownVariableType]
+            function_name, context, builder, signature, args)
+
+    @numba.extending.overload(wrapper, strict=False)  # pyright: ignore[reportUnknownMemberType, reportUntypedFunctionDecorator]
+    @no_type_check
+    def _(*args: Type) -> object:
+        if len(args) == len(sig.args):
+            return lambda *args: intrinsic(*args)  # ruff: ignore[unnecessary-lambda]
+        return None
+
+    wrapper._as_parameter_ = cfunc  # pyright: ignore[reportAttributeAccessIssue]
+    _cdecl_cache[dll._handle, function_name] = argtypes, restype, wrapper  # ruff: ignore[private-member-access]
+    return wrapper
 
 
 def cydecl(
@@ -48,6 +98,13 @@ def cydecl(
     module_name = cast("str", getattr(module, "__name__", module))
     if not function_name:
         function_name = wrapped.__name__
+    pysig = inspect.signature(wrapped, eval_str=True)
+    argtypes, restype = _parse(pysig)
+    if cache := _cydecl_cache.get((module_name, function_name)):
+        cached_argtypes, cached_restype, cached_decl = cache
+        if cached_argtypes == argtypes and cached_restype == restype:
+            return cached_decl
+        raise kn.RedefinitionError(_MESSAGE.format(function_name))
     address = cast(
         "int",
         numba.extending.get_cython_function_address(  # pyright: ignore[reportUnknownMemberType]
@@ -55,23 +112,14 @@ def cydecl(
             function_name,
         ),
     )
-    pysig = inspect.signature(wrapped, eval_str=True)
-    argtypes, restype = _parse(pysig)
-    sig = cast(
-        "templates.Signature",
-        restype.to_numba()(*[arg.to_numba() for arg in argtypes]),
-    )
+    sig = restype.to_numba()(*[arg.to_numba() for arg in argtypes])  # pyright: ignore[reportUnknownVariableType]
     cfunc = ctypes.CFUNCTYPE(
         restype.to_ctypes(),
         *[arg.to_ctypes() or _utils.unreachable() for arg in argtypes],
     )(address)
-    typingctx = inspect.Parameter(
-        "typingctx",
-        inspect.Parameter.POSITIONAL_ONLY,
-    )
     signature_holder: Any = types.SimpleNamespace(
         __signature__=pysig.replace(
-            parameters=[typingctx, *pysig.parameters.values()],
+            parameters=[_typingctx, *pysig.parameters.values()],
         ),
     )
 
@@ -81,11 +129,8 @@ def cydecl(
 
     @numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
     @functools.wraps(signature_holder, assigned=())
-    def intrinsic(
-        _typingctx: context.Context,
-        *_args: Type,
-    ) -> "kn.typing.Intrinsic[Unpack[tuple[ir.Value, ...]]]":
-        return (
+    def intrinsic(_typingctx: Context, *_args: Type) -> _Intrinsic:
+        return (  # pyright: ignore[reportUnknownVariableType]
             sig,
             lambda context, builder, signature, args: _numba.call(
                 # TODO(): Retrieve the address at most once utilizing
@@ -116,10 +161,13 @@ def cydecl(
         return None
 
     wrapper._as_parameter_ = cfunc  # pyright: ignore[reportAttributeAccessIssue]
+    _cydecl_cache[module_name, function_name] = argtypes, restype, wrapper
     return wrapper
 
 
-def _parse(pysig: inspect.Signature) -> tuple[list[_spec.Type], _spec.Type]:
+def _parse(
+    pysig: inspect.Signature,
+) -> tuple[tuple[_spec.Type, ...], _spec.Type]:
     ctx = _spec.TypingContext(align=kn.A, allow_scalar=True)
     args: list[_spec.Type] = []
     for v in pysig.parameters.values():
@@ -136,4 +184,15 @@ def _parse(pysig: inspect.Signature) -> tuple[list[_spec.Type], _spec.Type]:
         )
         args.append(arg)
     ctx = ctx._replace(allow_none=True)
-    return args, ctx.infer_with_diagnostics(pysig.return_annotation)
+    return tuple(args), ctx.infer_with_diagnostics(pysig.return_annotation)
+
+
+_cdecl_cache: dict[
+    tuple[int, str],
+    tuple[tuple[_spec.Type, ...], _spec.Type, Decl],
+] = {}
+_cydecl_cache: dict[
+    tuple[str, str],
+    tuple[tuple[_spec.Type, ...], _spec.Type, Decl],
+] = {}
+_typingctx = inspect.Parameter("typingctx", inspect.Parameter.POSITIONAL_ONLY)
