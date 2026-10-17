@@ -15,7 +15,7 @@
 __all__ = ["BaseDequantifier", "BaseUnit", "is_quantity"]
 
 import abc
-import datetime
+import datetime as dt
 import functools
 from typing import Generic, TypeGuard
 
@@ -154,9 +154,9 @@ def _quantify(value: object) -> object:
     return value
 
 
-@_quantify.register(datetime.timedelta)
+@_quantify.register(dt.timedelta)
 @_quantify.register(np.timedelta64)
-def _(value: datetime.timedelta | np.timedelta64) -> NumpyQuantity[np.float64]:
+def _(value: dt.timedelta | np.timedelta64) -> NumpyQuantity[np.float64]:
     return kn.quantity(value)
 
 

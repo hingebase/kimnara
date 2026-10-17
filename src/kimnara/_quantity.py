@@ -14,7 +14,7 @@
 
 __all__ = ["quantity"]
 
-import datetime
+import datetime as dt
 import functools
 from typing import TYPE_CHECKING, cast
 
@@ -65,7 +65,7 @@ def quantity(
 ) -> NumpyQuantity[np.int64]: ...
 @overload
 def quantity(
-    value: op.JustFloat | datetime.timedelta | np.timedelta64,
+    value: op.JustFloat | dt.timedelta | np.timedelta64,
     units: str | None = ...,
 ) -> NumpyQuantity[np.float64]: ...
 @overload
@@ -129,9 +129,9 @@ def _(value: complex, units: str | None) -> PlainQuantity[Any]:
 
 
 @_quantity.register
-def _(value: datetime.timedelta, units: str | None) -> PlainQuantity[Any]:
+def _(value: dt.timedelta, units: str | None) -> PlainQuantity[Any]:
     # https://github.com/pandas-dev/pandas/issues/46819
-    total_seconds = value / datetime.timedelta(seconds=1)
+    total_seconds = value / dt.timedelta(seconds=1)
     quantity = _Quantity(total_seconds, "s")
     if units is not None:
         quantity.ito(units)  # pyright: ignore[reportUnknownMemberType]
