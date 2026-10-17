@@ -15,12 +15,14 @@
 """A package built with Kimnara."""
 
 __all__ = [
+    "call_cfunc_in_numba",
     "erf_scipy_ctypes",
     "erf_scipy_numba",
     "test_logging_capi",
 ]
 
 from ._test import (
+    call_cfunc_in_numba,
     erf_scipy_ctypes,
     erf_scipy_numba,
     test_logging_capi,

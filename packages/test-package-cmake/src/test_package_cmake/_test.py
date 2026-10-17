@@ -13,6 +13,7 @@
 # permissions and limitations under the License.
 
 __all__ = [
+    "call_cfunc_in_numba",
     "erf_scipy_ctypes",
     "erf_scipy_numba",
     "test_logging_capi",
@@ -25,6 +26,18 @@ import sys
 import numpy as np
 
 import kimnara as kn
+
+
+@kn.cfunc(nopython=True)
+def _simple_cfunc() -> int:
+    return 42
+
+
+# This function would become uncacheable if `_simple_cfunc` was a
+# `numba.cfunc`
+@kn.func(nopython=True)
+def call_cfunc_in_numba() -> int:
+    return _simple_cfunc()
 
 
 @kn.cydecl("scipy.special.cython_special")

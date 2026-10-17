@@ -15,7 +15,7 @@
 """Test `kn.quantity`."""
 
 import contextlib
-import datetime
+import datetime as dt
 import math
 from contextlib import AbstractContextManager
 from typing import TypeGuard, cast
@@ -84,7 +84,7 @@ def test_datetime_timedelta() -> None:
         "hours",
         "weeks",
     ):
-        value = datetime.timedelta(**{key: 1})
+        value = dt.timedelta(**{key: 1})
         assert math.isclose(kn.quantity(value, key[:-1]).magnitude, 1)
 
 

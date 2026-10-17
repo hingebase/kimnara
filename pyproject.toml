@@ -9,7 +9,8 @@ requires = [
     # https://docs.astral.sh/uv/reference/cli/#uv-pip-install--no-build-isolation
     "intel-openmp ==2023.2.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
     "intel-openmp ==2024.1.0; sys_platform == 'linux' and platform_machine == 'x86_64' or sys_platform == 'win32' and platform_machine == 'AMD64'",
-    "tbb-devel ==2021.10.0; platform_machine == 'AMD64' or platform_machine == 'x86_64'",
+    "tbb-devel ==2021.9.0; sys_platform == 'darwin' and platform_machine == 'x86_64'",
+    "tbb-devel ==2022.2.0; sys_platform == 'linux' and platform_machine == 'x86_64' or sys_platform == 'win32' and platform_machine == 'AMD64'",
 ]
 build-backend = "scikit_build_core.build"
 
@@ -126,7 +127,12 @@ select = ["ALL"]
 max-doc-length = 72
 
 [tool.ruff.lint.pylint]
-allow-dunder-method-names = ["_as_parameter_", "__name__", "_repr_svg_"]
+allow-dunder-method-names = [
+    "_as_parameter_",
+    "__name__",
+    "_numba_type_",
+    "_repr_svg_",
+]
 
 [tool.scikit-build]
 build-dir = "build/{wheel_tag}"

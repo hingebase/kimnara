@@ -20,8 +20,15 @@ import sys
 
 import numpy as np
 import scipy
+import test_package_cmake
 
 import kimnara as kn
+
+
+def test_call_cfunc_in_numba() -> None:
+    """`kn.cfunc` objects should be callable from Numba."""
+    expected = 42
+    assert test_package_cmake.call_cfunc_in_numba() == expected
 
 
 def test_qsort() -> None:
