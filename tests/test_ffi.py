@@ -20,9 +20,12 @@ import sys
 import hypothesis
 import hypothesis.strategies as st
 import numpy as np
+import pytest
 import scipy.special
 import test_package_cmake
 from numba.core import caching  # pyright: ignore[reportMissingTypeStubs]
+
+import kimnara as kn
 
 
 @hypothesis.given(st.floats())
@@ -49,6 +52,19 @@ def test_cdecl(x: float) -> None:
         prefix = "$_" if sys.platform == "darwin" else "$"
         assert f"{prefix}erf" in asm
     # ruff: enable[private-member-access]
+
+    with pytest.raises(kn.RedefinitionError):
+        @kn.cdecl("c")
+        def erf(x: np.float32) -> np.float64: ...
+
+    with pytest.raises(kn.RedefinitionError):
+        @kn.cdecl("m")
+        def erf(arg: np.float64) -> np.float32: ...
+
+    @kn.cdecl
+    def erf(arg: np.float64) -> np.float64: ...
+
+    assert erf is test_package_cmake.erf
 
 
 @hypothesis.given(st.floats())
@@ -78,3 +94,18 @@ def test_cydecl(x: float) -> None:
         assert f"{prefix}.const.__pyx_capi__" in asm
         assert f"{prefix}PyCapsule_GetPointer" in asm
     # ruff: enable[private-member-access]
+
+    with pytest.raises(kn.RedefinitionError):
+        @kn.cydecl("scipy.special.cython_special")
+        def __pyx_fuse_1erf(
+            arg: np.float64,
+            skip_dispatch: np.uint32,
+        ) -> np.float64: ...
+
+    @kn.cydecl("scipy.special.cython_special")
+    def __pyx_fuse_1erf(
+            arg: np.float64,
+            skip_dispatch: np.int32,
+        ) -> np.float64: ...
+
+    assert __pyx_fuse_1erf is test_package_cmake.erf_cydecl

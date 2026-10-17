@@ -15,6 +15,7 @@
 __all__ = [
     "call_cfunc_in_numba",
     "erf",
+    "erf_cydecl",
     "erf_libm_numba",
     "erf_scipy_ctypes",
     "erf_scipy_numba",
@@ -51,17 +52,17 @@ def erf_libm_numba(x: float) -> float:
     return erf(x)
 
 
-@kn.cydecl("scipy.special.cython_special")
-def __pyx_fuse_1erf(x: np.float64, skip_dispatch: np.int32) -> np.float64: ...
+@kn.cydecl("scipy.special.cython_special", function_name="__pyx_fuse_1erf")
+def erf_cydecl(x: np.float64, skip_dispatch: np.int32) -> np.float64: ...
 
 
 def erf_scipy_ctypes(x: float) -> float:
-    return __pyx_fuse_1erf(x, 1)
+    return erf_cydecl(x, 1)
 
 
 @kn.func(nopython=True)
 def erf_scipy_numba(x: np.float64) -> np.float64:
-    return __pyx_fuse_1erf(x, 1)
+    return erf_cydecl(x, 1)
 
 
 def test_logging_capi(logger: object) -> None:
