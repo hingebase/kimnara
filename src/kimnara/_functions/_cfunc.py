@@ -201,54 +201,30 @@ class PyCFunc(_CFunc[PythonT], types.WrapperAddressProtocol):
         return ptr.value or _utils.unreachable()
 
 
-def _can_convert_dispatcher(
-    self: types.Dispatcher,
-    typingctx: context.Context,
-    other: types.Type,
-) -> Conversion | None:
-    if conversion := _try_convert_dispatcher(self, typingctx, other):
-        return conversion
-    if (
-        isinstance(other, types.ExternalFunctionPointer)
-        and other.cconv is None  # pyright: ignore[reportUnknownMemberType]
-    ):
-        dispatcher = cast("registry.CPUDispatcher", self.dispatcher)
-        try:
-            dispatcher.get_compile_result(other.sig)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-        except errors.NumbaError:
-            pass
-        else:
-            return Conversion.safe
-    return None
-
-
-def _can_convert_function_pointer(
+def _can_convert_from(
     self: types.ExternalFunctionPointer,
     typingctx: context.Context,
     other: types.Type,
 ) -> Conversion | None:
-    if conversion := _try_convert_function_pointer(self, typingctx, other):
+    if conversion := _super_can_convert_from(self, typingctx, other):
         return conversion
-    if (
-        isinstance(other, types.ExternalFunctionPointer)
-        and self.sig == other.sig  # pyright: ignore[reportUnknownMemberType]
-        and self.cconv == other.cconv  # pyright: ignore[reportUnknownMemberType]
-    ):
-        return Conversion.safe
-    return None
-
-
-def _can_convert_function_type(
-    self: types.FunctionType,
-    typingctx: context.Context,
-    other: types.Type,
-) -> Conversion | None:
-    if conversion := _try_convert_function_type(self, typingctx, other):
-        return conversion
-    if isinstance(other, types.ExternalFunctionPointer):
-        self = self.get_precise()
-        if self.signature == other.sig and self.cconv == other.cconv:  # pyright: ignore[reportUnknownMemberType]
+    match other:
+        case types.Dispatcher(dispatcher=registry.CPUDispatcher() as disp):
+            if self.cconv is None:  # pyright: ignore[reportUnknownMemberType]
+                try:
+                    disp.get_compile_result(self.sig)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+                except errors.NumbaError:
+                    pass
+                else:
+                    return Conversion.safe
+        case types.ExternalFunctionPointer(sig=self.sig, cconv=self.cconv):  # pyright: ignore[reportUnknownMemberType]
             return Conversion.safe
+        case types.FunctionType():
+            other = other.get_precise()
+            if self.sig == other.signature and self.cconv == other.cconv:  # pyright: ignore[reportUnknownMemberType]
+                return Conversion.safe
+        case _:
+            pass
     return None
 
 
@@ -299,9 +275,5 @@ def _lower_cast_function_type_to_function_pointer(
     return builder.bitcast(struct.c_addr, ptrty)  # pyright: ignore[reportReturnType, reportUnknownArgumentType, reportUnknownMemberType]
 
 
-_try_convert_dispatcher = types.Dispatcher.can_convert_to  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-_try_convert_function_pointer = types.ExternalFunctionPointer.can_convert_to  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-_try_convert_function_type = types.FunctionType.can_convert_to  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-types.Dispatcher.can_convert_to = _can_convert_dispatcher  # pyright: ignore[reportAttributeAccessIssue]
-types.ExternalFunctionPointer.can_convert_to = _can_convert_function_pointer  # pyright: ignore[reportAttributeAccessIssue]
-types.FunctionType.can_convert_to = _can_convert_function_type  # pyright: ignore[reportAttributeAccessIssue]
+_super_can_convert_from = types.ExternalFunctionPointer.can_convert_from  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+types.ExternalFunctionPointer.can_convert_from = _can_convert_from  # pyright: ignore[reportAttributeAccessIssue]
