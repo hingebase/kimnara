@@ -19,11 +19,13 @@ __all__ = [
     "function_base",
     "is_editable",
     "isclass",
+    "libc",
     "num",
     "unreachable",
 ]
 
 import copyreg
+import ctypes
 import functools
 import importlib.metadata
 import json
@@ -183,3 +185,7 @@ function_base: _FunctionBase = getattr(
     np.lib,
     "_function_base_impl" if NUMPY_GE_2_0 else "function_base",
 )
+if sys.platform == "win32":
+    libc = ctypes.cdll.ucrtbase
+else:
+    libc = ctypes.CDLL(None)
