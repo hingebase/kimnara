@@ -62,6 +62,7 @@ NumbaT = TypeVar(
     np.float32, np.float64, np.complex64, np.complex128,
     bool, int, float, complex, None,
 )
+_Pointer = types.CPointer | types.RawPointer
 _T = TypeVar("_T")
 
 if sys.version_info >= (3, 14):
@@ -228,6 +229,18 @@ def _can_convert_from(
     return None
 
 
+def _can_convert_to(
+    self: types.NoneType,
+    typingctx: context.Context,
+    other: types.Type,
+) -> Conversion | None:
+    if conversion := _super_can_convert_to(self, typingctx, other):
+        return conversion
+    if isinstance(other, _Pointer):
+        return Conversion.safe
+    return None
+
+
 @imputils.lower_cast(types.Dispatcher, types.ExternalFunctionPointer)  # pyright: ignore[reportUnknownMemberType]
 def _(
     context: cpu.CPUContext,
@@ -275,5 +288,19 @@ def _lower_cast_function_type_to_function_pointer(
     return builder.bitcast(struct.c_addr, ptrty)  # pyright: ignore[reportReturnType, reportUnknownArgumentType, reportUnknownMemberType]
 
 
+@imputils.lower_cast(types.NoneType, types.CPointer)  # pyright: ignore[reportUnknownMemberType]
+@imputils.lower_cast(types.NoneType, types.RawPointer)  # pyright: ignore[reportUnknownMemberType]
+def _(
+    context: cpu.CPUContext,
+    _builder: "ir.IRBuilder",
+    _fromty: types.NoneType,
+    toty: types.CPointer | types.RawPointer,
+    _val: "ir.Value",
+) -> "ir.Value":
+    return context.get_constant_null(toty)  # pyright: ignore[reportUnknownMemberType]
+
+
 _super_can_convert_from = types.ExternalFunctionPointer.can_convert_from  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+_super_can_convert_to = types.NoneType.can_convert_to  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 types.ExternalFunctionPointer.can_convert_from = _can_convert_from  # pyright: ignore[reportAttributeAccessIssue]
+types.NoneType.can_convert_to = _can_convert_to  # pyright: ignore[reportAttributeAccessIssue]
