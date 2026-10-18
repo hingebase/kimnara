@@ -211,7 +211,10 @@ def _can_convert_from(
         return conversion
     match other:
         case types.Dispatcher(dispatcher=registry.CPUDispatcher() as disp):
-            if self.cconv is None:  # pyright: ignore[reportUnknownMemberType]
+            if self.cconv is None and not disp.targetoptions.get(  # pyright: ignore[reportUnknownMemberType]
+                "no_cfunc_wrapper",
+                False,
+            ):
                 try:
                     disp.get_compile_result(self.sig)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
                 except errors.NumbaError:
