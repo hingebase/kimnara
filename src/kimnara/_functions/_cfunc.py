@@ -27,9 +27,11 @@ from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
     compiler,
     cpu,
     errors,
-    imputils,
     registry,
     types,
+)
+from numba.core.imputils import (  # pyright: ignore[reportMissingTypeStubs]
+    lower_cast,  # pyright: ignore[reportUnknownVariableType]
 )
 from numba.core.typeconv.castgraph import (  # pyright: ignore[reportMissingTypeStubs]
     Conversion,
@@ -244,7 +246,7 @@ def _can_convert_to(
     return None
 
 
-@imputils.lower_cast(types.Dispatcher, types.ExternalFunctionPointer)  # pyright: ignore[reportUnknownMemberType]
+@lower_cast(types.Dispatcher, types.ExternalFunctionPointer)
 def _(
     context: cpu.CPUContext,
     builder: "ir.IRBuilder",
@@ -260,10 +262,7 @@ def _(
         context, builder, ftype, toty, val)  # pyright: ignore[reportUnknownArgumentType]
 
 
-@imputils.lower_cast(  # pyright: ignore[reportUnknownMemberType]
-    types.ExternalFunctionPointer,
-    types.ExternalFunctionPointer,
-)
+@lower_cast(types.ExternalFunctionPointer, types.ExternalFunctionPointer)
 def _(
     _context: cpu.CPUContext,
     _builder: "ir.IRBuilder",
@@ -274,7 +273,7 @@ def _(
     return val
 
 
-@imputils.lower_cast(types.FunctionType, types.ExternalFunctionPointer)  # pyright: ignore[reportUnknownMemberType]
+@lower_cast(types.FunctionType, types.ExternalFunctionPointer)
 def _lower_cast_function_type_to_function_pointer(
     context: cpu.CPUContext,
     builder: "ir.IRBuilder",
@@ -291,9 +290,9 @@ def _lower_cast_function_type_to_function_pointer(
     return builder.bitcast(struct.c_addr, ptrty)  # pyright: ignore[reportReturnType, reportUnknownArgumentType, reportUnknownMemberType]
 
 
-@imputils.lower_cast(types.NoneType, types.CPointer)  # pyright: ignore[reportUnknownMemberType]
-@imputils.lower_cast(types.NoneType, types.ExternalFunctionPointer)  # pyright: ignore[reportUnknownMemberType]
-@imputils.lower_cast(types.NoneType, types.RawPointer)  # pyright: ignore[reportUnknownMemberType]
+@lower_cast(types.NoneType, types.CPointer)
+@lower_cast(types.NoneType, types.ExternalFunctionPointer)
+@lower_cast(types.NoneType, types.RawPointer)
 def _(
     context: cpu.CPUContext,
     _builder: "ir.IRBuilder",
