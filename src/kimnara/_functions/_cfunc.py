@@ -62,7 +62,7 @@ NumbaT = TypeVar(
     np.float32, np.float64, np.complex64, np.complex128,
     bool, int, float, complex, None,
 )
-_Pointer = types.CPointer | types.RawPointer
+_Pointer = types.CPointer | types.ExternalFunctionPointer | types.RawPointer
 _T = TypeVar("_T")
 
 if sys.version_info >= (3, 14):
@@ -289,12 +289,13 @@ def _lower_cast_function_type_to_function_pointer(
 
 
 @imputils.lower_cast(types.NoneType, types.CPointer)  # pyright: ignore[reportUnknownMemberType]
+@imputils.lower_cast(types.NoneType, types.ExternalFunctionPointer)  # pyright: ignore[reportUnknownMemberType]
 @imputils.lower_cast(types.NoneType, types.RawPointer)  # pyright: ignore[reportUnknownMemberType]
 def _(
     context: cpu.CPUContext,
     _builder: "ir.IRBuilder",
     _fromty: types.NoneType,
-    toty: types.CPointer | types.RawPointer,
+    toty: _Pointer,
     _val: "ir.Value",
 ) -> "ir.Value":
     return context.get_constant_null(toty)  # pyright: ignore[reportUnknownMemberType]
