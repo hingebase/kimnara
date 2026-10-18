@@ -19,7 +19,6 @@ from collections.abc import Callable
 from typing import no_type_check
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
-from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import types  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.typing.context import (  # pyright: ignore[reportMissingTypeStubs]
     Context,
@@ -50,20 +49,17 @@ def _intrinsic(_: Context) -> "kn.typing.Intrinsic[()]":
             [
                 context.insert_unique_const(  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
                     builder.module,  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-                    ".flagp",
-                    ir.Constant(
-                        context.get_argument_type(types.ulong),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
-                        0x10000010,
-                    ),
+                    ".const.flagp",
+                    context.get_constant(types.ulong, 0x10000010),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
                 ),
-                ir.Constant(context.get_argument_type(types.intc), 0x10),  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+                context.get_constant(types.intc, 0x10),  # pyright: ignore[reportUnknownMemberType]
             ],
         ) if sys.platform == "win32" else _lib.call(
             "feraiseexcept",
             context,
             builder,
             types.intc(types.intc),  # pyright: ignore[reportUnknownArgumentType]
-            [ir.Constant(context.get_argument_type(types.intc), 1)],  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+            [context.get_constant(types.intc, 1)],  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
         ),
     )
 
