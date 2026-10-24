@@ -14,12 +14,19 @@
 
 __all__ = [
     "call_cfunc_in_numba",
+    "erf",
+    "erf_cydecl",
+    "erf_libm_numba",
+    "erf_scipy_ctypes",
+    "erf_scipy_numba",
     "test_logging_capi",
 ]
 
 import ctypes
 import importlib.metadata
 import sys
+
+import numpy as np
 
 import kimnara as kn
 
@@ -34,6 +41,28 @@ def _simple_cfunc() -> int:
 @kn.func(nopython=True)
 def call_cfunc_in_numba() -> int:
     return _simple_cfunc()
+
+
+@kn.cdecl
+def erf(x: np.float64) -> np.float64: ...
+
+
+@kn.func(nopython=True)
+def erf_libm_numba(x: float) -> float:
+    return erf(x)
+
+
+@kn.cydecl("scipy.special.cython_special", function_name="__pyx_fuse_1erf")
+def erf_cydecl(x: np.float64, skip_dispatch: np.int32) -> np.float64: ...
+
+
+def erf_scipy_ctypes(x: float) -> float:
+    return erf_cydecl(x, 1)
+
+
+@kn.func(nopython=True)
+def erf_scipy_numba(x: np.float64) -> np.float64:
+    return erf_cydecl(x, 1)
 
 
 def test_logging_capi(logger: object) -> None:

@@ -27,11 +27,16 @@ __all__ = [
     "Mut",
     "Pad",
     "PerformanceWarning",
+    "RedefinitionError",
     "TypeInferenceError",
     "ValidationError",
     "array",
     "asarray",
+    "ccall",
+    "cdecl",
     "cfunc",
+    "cycall",
+    "cydecl",
     "empty",
     "func",
     "gufunc",
@@ -45,6 +50,7 @@ from . import logging as logging
 from . import ops as ops
 from . import threading as threading
 from . import typing as typing
+from ._ffi import ccall, cdecl, cycall, cydecl
 from ._functions import cfunc, func, gufunc, ufunc
 from ._quantity import quantity
 from ._types import AVX, AVX512, SSE, A, Alignment, C, F, Pad
@@ -53,6 +59,7 @@ from .exceptions import (
     CacheWarning,
     Error,
     PerformanceWarning,
+    RedefinitionError,
     TypeInferenceError,
     ValidationError,
 )
