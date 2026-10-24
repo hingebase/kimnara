@@ -14,12 +14,17 @@
 
 __all__ = ["ccall", "cdecl", "cycall", "cydecl"]
 
+import ctypes
 import types
 from collections.abc import Callable
+from typing import cast
 
+import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from typing_extensions import Any, overload
 
-from . import _decl
+from kimnara import _utils
+
+from . import _call, _decl
 
 
 @overload
@@ -61,7 +66,11 @@ def ccall(
     lib: str = "c",
     function_name: str | None = None,
 ) -> Any:  # ruff: ignore[any-type]
-    raise NotImplementedError
+    op = _call.locate()
+    dll = ctypes.cdll[lib] if "c" != lib != "m" else _utils.libc
+    if not function_name:
+        function_name = op.frame.f_code.co_name
+    return _call.call(op, args, (function_name, dll))
 
 
 def cycall(
@@ -69,4 +78,12 @@ def cycall(
     module: types.ModuleType | str,
     function_name: str | None = None,
 ) -> Any:  # ruff: ignore[any-type]
-    raise NotImplementedError
+    op = _call.locate()
+    module_name = cast("str", getattr(module, "__name__", module))
+    if not function_name:
+        function_name = op.frame.f_code.co_name
+    address = numba.extending.get_cython_function_address(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        module_name,
+        function_name,
+    )
+    return _call.call(op, args, address)  # pyright: ignore[reportUnknownArgumentType]

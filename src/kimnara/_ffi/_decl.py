@@ -105,18 +105,15 @@ def cydecl(
         if cached_argtypes == argtypes and cached_restype == restype:
             return cached_decl
         raise kn.RedefinitionError(_MESSAGE.format(function_name))
-    address = cast(
-        "int",
-        numba.extending.get_cython_function_address(  # pyright: ignore[reportUnknownMemberType]
-            module_name,
-            function_name,
-        ),
+    address = numba.extending.get_cython_function_address(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        module_name,
+        function_name,
     )
     sig = restype.to_numba()(*[arg.to_numba() for arg in argtypes])  # pyright: ignore[reportUnknownVariableType]
     cfunc = ctypes.CFUNCTYPE(
         restype.to_ctypes(),
         *[arg.to_ctypes() or _utils.unreachable() for arg in argtypes],
-    )(address)
+    )(address)  # pyright: ignore[reportUnknownArgumentType]
     signature_holder: Any = types.SimpleNamespace(
         __signature__=pysig.replace(
             parameters=[_typingctx, *pysig.parameters.values()],
