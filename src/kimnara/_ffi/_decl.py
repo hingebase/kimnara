@@ -136,6 +136,9 @@ def cydecl(
                 # TODO(): Retrieve the address at most once utilizing
                 # C++11 local static variables
 
+                # cppyy.numba_ext cannot be used since it exposes C++
+                # functions as uncacheable pointers
+
                 # Before https://github.com/numba/numba/issues/7371
                 # we may need to ship pre-compiled LLVM IR like
                 # https://github.com/numba/numba/issues/2795#issuecomment-472013539
