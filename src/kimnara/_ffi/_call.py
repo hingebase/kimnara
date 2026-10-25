@@ -29,7 +29,7 @@ from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
 from typing_extensions import Any, TypeVar
 
 import kimnara as kn
-from kimnara import _utils
+from kimnara import _spec, _utils
 
 if sys.version_info >= (3, 14):
     try:
@@ -47,10 +47,9 @@ if sys.version_info >= (3, 14):
         _TO_CTYPES[types.complex64] = c_float_complex
         _TO_CTYPES[types.complex128] = c_double_complex
 
-# TODO(): support ast.Return
-_Inferable = ast.AnnAssign | ast.Expr
-
+_Inferable = ast.AnnAssign | ast.Expr  # | ast.Return
 _T = TypeVar("_T", bound="ctypes._CData")  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
+_Target = ast.Attribute | ast.Name
 
 
 def call(
@@ -69,11 +68,35 @@ def locate() -> executing.executing.Executing:
     node = op.node
     if not isinstance(node, ast.Call):
         message = "Cannot locate the caller"
+        if node:
+            message = f"{message}:\n{ast.unparse(node)}"
         raise kn.TypeInferenceError(message)
     if not isinstance(node.parent, _Inferable):
-        message = "Cannot infer the return type"
+        message = f"Cannot infer the return type:\n{ast.unparse(node.parent)}"
         raise kn.TypeInferenceError(message)
     return op
+
+
+@functools.singledispatch
+def _expr(node: ast.AST) -> str | ast.Expression:
+    message = f"Invalid annotation:\n{ast.unparse(node)}"
+    raise kn.TypeInferenceError(message)
+
+
+@_expr.register(ast.Attribute)
+@_expr.register(ast.Name)
+@_expr.register(ast.Subscript)
+def _(node: _Target | ast.Subscript) -> ast.Expression:
+    return ast.Expression(node)
+
+
+@_expr.register
+def _(node: ast.Constant) -> str:
+    value = node.value
+    if not isinstance(value, str):
+        message = f"Invalid annotation:\n{ast.unparse(node)}"
+        raise kn.TypeInferenceError(message)
+    return value
 
 
 def _restype(
@@ -81,7 +104,14 @@ def _restype(
 ) -> type["ctypes._CData"] | None:  # pyright: ignore[reportPrivateUsage]
     node = op.node.parent
     if isinstance(node, ast.AnnAssign):
-        raise NotImplementedError
+        if not isinstance(node.target, _Target):
+            message = f"Invalid statement:\n{ast.unparse(node)}"
+            raise kn.TypeInferenceError(message)
+        expr = _expr(node.annotation)
+        code = compile(expr, op.source.filename, "eval")
+        ann = eval(code, op.frame.f_globals)  # ruff: ignore[suspicious-eval-usage]
+        ctx = _spec.TypingContext(align=kn.A, allow_scalar=True)
+        return ctx.infer(ann).to_ctypes()
     return None
 
 
