@@ -13,8 +13,10 @@
 # permissions and limitations under the License.
 
 __all__ = [
+    "TypeofContext",
     "call",
     "get_cython_function_address",
 ]
 
 from ._ffi import call, get_cython_function_address
+from ._types import TypeofContext

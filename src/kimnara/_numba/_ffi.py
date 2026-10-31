@@ -96,7 +96,7 @@ def _call(
         fnty,
         name,
     )
-    return builder.call(fn, args)  # pyright: ignore[reportUnknownMemberType]
+    return builder.call(builder.bitcast(fn, fnty.as_pointer()), args)  # pyright: ignore[reportUnknownMemberType]
 
 
 @numba.extending.overload(  # pyright: ignore[reportUnknownMemberType, reportUntypedFunctionDecorator]

@@ -96,3 +96,7 @@ def _default_function_name(code: types.CodeType) -> str:
         message = "Cannot infer the function name"
         raise kn.TypeInferenceError(message)
     return code.co_name
+
+
+numba.extending.overload(ccall, strict=False)(_call.c)  # pyright: ignore[reportUnknownMemberType]
+numba.extending.overload(cycall, strict=False)(_call.cython)  # pyright: ignore[reportUnknownMemberType]

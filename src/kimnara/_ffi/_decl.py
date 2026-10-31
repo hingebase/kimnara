@@ -22,17 +22,17 @@ from collections.abc import Callable
 from typing import cast, no_type_check
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
-from llvmlite import binding, ir  # pyright: ignore[reportMissingTypeStubs]
+from llvmlite import binding  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.types import Type  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.typing.context import (  # pyright: ignore[reportMissingTypeStubs]
     Context,
 )
-from typing_extensions import Any, Protocol, Unpack
+from typing_extensions import Any, Protocol
 
 import kimnara as kn
 from kimnara import _numba, _spec, _utils
+from kimnara._typing import VarArgsIntrinsic
 
-_Intrinsic = kn.typing.Intrinsic[Unpack[tuple[ir.Value, ...]]]
 _MESSAGE = "Function {!r} has been defined with a different signature"
 
 
@@ -74,7 +74,7 @@ def cdecl(
 
     @numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
     @functools.wraps(signature_holder, assigned=())
-    def intrinsic(_typingctx: Context, *_args: Type) -> _Intrinsic:
+    def intrinsic(_typingctx: Context, *_args: Type) -> VarArgsIntrinsic:
         return sig, lambda context, builder, signature, args: _numba.call(  # pyright: ignore[reportUnknownVariableType]
             function_name, context, builder, signature, args)
 
@@ -126,7 +126,7 @@ def cydecl(
 
     @numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
     @functools.wraps(signature_holder, assigned=())
-    def intrinsic(_typingctx: Context, *_args: Type) -> _Intrinsic:
+    def intrinsic(_typingctx: Context, *_args: Type) -> VarArgsIntrinsic:
         return (  # pyright: ignore[reportUnknownVariableType]
             sig,
             lambda context, builder, signature, args: _numba.call(
