@@ -89,8 +89,8 @@ py314np23 = ["abi3", "py314", "np23", "cf"]
 py314np23nb063 = ["abi3", "py314", "np23", "nb063"]
 py314np24 = ["abi3", "py314", "np24", "cf"]
 py314np24nb064 = ["abi3", "py314", "np24", "nb064"]
-py314np25 = ["abi3", "py314", "np25", "cf"]
 py314np25nb067 = ["abi3", "py314", "np25", "nb067"]
+py315np25 = ["abi3", "py315", "np25", "cf"]
 
 [feature]
 # One variant per directory, see
@@ -117,6 +117,10 @@ nb062 = { dependencies = { numba = "==0.62.1" } }
 [feature.py314]
 platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
 dependencies = { python-gil = "3.14.*" }
+
+[feature.py315]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
+dependencies = { python-gil = "3.15.*" }
 
 [feature.np24]
 platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
@@ -276,8 +280,8 @@ test = [
     { task = "pytest", environment = "py314np23nb063" },
     { task = "pytest", environment = "py314np24" },
     { task = "pytest", environment = "py314np24nb064" },
-    { task = "pytest", environment = "py314np25" },
     { task = "pytest", environment = "py314np25nb067" },
+    { task = "pytest", environment = "py315np25" },
 ]
 
 [feature.tests.target.osx-64.tasks]

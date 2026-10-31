@@ -34,7 +34,7 @@ def invalid() -> int:
     raise kn.ValidationError(message)
 
 
-@numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
+@numba.extending.intrinsic  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
 @no_type_check
 def _intrinsic(_: Context) -> "kn.typing.Intrinsic[()]":
     return (

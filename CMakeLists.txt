@@ -44,7 +44,7 @@ check_ipo_supported()
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION ON)
 
 find_package(
-    Python 3.10.0...<3.15.0
+    Python 3.10.0...<3.16.0
     REQUIRED Interpreter Development.Module ${SKBUILD_SABI_COMPONENT}
 )
 
