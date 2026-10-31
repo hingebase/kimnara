@@ -51,16 +51,16 @@ if sys.version_info >= (3, 14):
         from ctypes import c_double_complex, c_float_complex
 
         from numba.core.typing.ctypes_utils import (  # pyright: ignore[reportMissingTypeStubs]
-            _FROM_CTYPES,  # ruff: ignore[import-private-name]
-            _TO_CTYPES,  # ruff: ignore[import-private-name]
+            _FROM_CTYPES,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]  # ruff: ignore[import-private-name]
+            _TO_CTYPES,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]  # ruff: ignore[import-private-name]
         )
     except ImportError:
         pass
     else:
-        _FROM_CTYPES[c_float_complex] = types.complex64
-        _FROM_CTYPES[c_double_complex] = types.complex128
-        _TO_CTYPES[types.complex64] = c_float_complex
-        _TO_CTYPES[types.complex128] = c_double_complex
+        _FROM_CTYPES[c_float_complex] = types.complex64  # pyright: ignore[reportArgumentType]
+        _FROM_CTYPES[c_double_complex] = types.complex128  # pyright: ignore[reportArgumentType]
+        _TO_CTYPES[types.complex64] = c_float_complex  # pyright: ignore[reportArgumentType]
+        _TO_CTYPES[types.complex128] = c_double_complex  # pyright: ignore[reportArgumentType]
 
 _Inferable = ast.AnnAssign | ast.Expr  # | ast.Return
 _T = TypeVar("_T", bound="ctypes._CData")  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]

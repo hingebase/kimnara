@@ -63,10 +63,13 @@ def test_custom() -> None:
         assert numba_get_thread_id() == _DUMMY_THREAD_ID
 
 
-def test_np_vectorize(subtests: pytest.Subtests) -> None:
+def test_np_vectorize(
+    rng: np.random.Generator,
+    subtests: pytest.Subtests,
+) -> None:
     """Test direct use of `kn.threading.*NumPyVectorize` objects."""
     n = 6
-    x = np.random.default_rng().random((n, 100))
+    x = rng.random((n, 100))
 
     desired = np.vectorize(np.add.reduce, signature="(n)->()")(x)
     for vectorize in [
