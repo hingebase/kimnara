@@ -31,10 +31,7 @@ import numpy as np
 import numpy.typing as npt
 import optype as op
 import optype.numpy as onp
-from numba.np.ufunc import (  # pyright: ignore[reportMissingTypeStubs]
-    dufunc,
-    ufuncbuilder,
-)
+from numba.np.ufunc import dufunc, ufuncbuilder  # pyright: ignore[reportMissingTypeStubs]
 from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
 from typing_extensions import (

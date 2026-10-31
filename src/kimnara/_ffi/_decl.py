@@ -24,9 +24,7 @@ from typing import cast, no_type_check
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from llvmlite import binding  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.types import Type  # pyright: ignore[reportMissingTypeStubs]
-from numba.core.typing.context import (  # pyright: ignore[reportMissingTypeStubs]
-    Context,
-)
+from numba.core.typing.context import Context  # pyright: ignore[reportMissingTypeStubs]
 from typing_extensions import Any, Protocol
 
 import kimnara as kn

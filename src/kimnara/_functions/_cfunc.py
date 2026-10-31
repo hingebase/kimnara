@@ -22,24 +22,10 @@ from typing import TYPE_CHECKING, ClassVar, Literal, cast
 
 import numba  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    cgutils,
-    compiler,
-    cpu,
-    errors,
-    registry,
-    types,
-)
-from numba.core.imputils import (  # pyright: ignore[reportMissingTypeStubs]
-    lower_cast,  # pyright: ignore[reportUnknownVariableType]
-)
-from numba.core.typeconv.castgraph import (  # pyright: ignore[reportMissingTypeStubs]
-    Conversion,
-)
-from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
-    context,
-    templates,
-)
+from numba.core import cgutils, compiler, cpu, errors, registry, types  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.imputils import lower_cast  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
+from numba.core.typeconv.castgraph import Conversion  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.typing import context, templates  # pyright: ignore[reportMissingTypeStubs]
 from numba.experimental.function_type import (  # pyright: ignore[reportMissingTypeStubs]
     lower_cast_dispatcher_to_function_type,  # pyright: ignore[reportUnknownVariableType]
 )

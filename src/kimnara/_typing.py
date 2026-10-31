@@ -37,10 +37,7 @@ from typing import TYPE_CHECKING, Literal, TypeAlias
 import numpy as np
 import numpy.typing as npt
 import optype.numpy as onp
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    cpu_options,
-    ir,
-)
+from numba.core import cpu_options, ir  # pyright: ignore[reportMissingTypeStubs]
 from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
 from typing_extensions import Any, TypeAliasType, TypedDict, TypeVar, Unpack

@@ -21,16 +21,9 @@ from typing import TYPE_CHECKING, cast, no_type_check
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 import optype.numpy as onp
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    cgutils,
-    cpu,
-    types,
-)
+from numba.core import cgutils, cpu, types  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.types import scalars  # pyright: ignore[reportMissingTypeStubs]
-from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
-    context,
-    templates,
-)
+from numba.core.typing import context, templates  # pyright: ignore[reportMissingTypeStubs]
 from numpy import complex64, float32
 from typing_extensions import TypeVar, overload
 

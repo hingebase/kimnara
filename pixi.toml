@@ -224,23 +224,23 @@ outputs = ["build/compile_commands.json"]
 channels = ["conda-forge", "https://prefix.dev/github-releases"]
 
 [feature.tests.target.linux.dependencies]
-ruff = ">=0.16.9"
-ryl = ">=0.22.0"
-tombi = ">=1.7.0"
+ruff = ">=0.17.3"
+ryl = ">=0.27.0"
+tombi = ">=1.9.8"
 
 [feature.tests.target.osx-64.dependencies]
-ruff = { version = ">=0.16.7", channel = "https://prefix.dev/github-releases" }
-tombi = { version = ">=1.5.5", channel = "https://prefix.dev/github-releases" }
+ruff = { version = ">=0.17.3", channel = "https://prefix.dev/github-releases" }
+tombi = { version = ">=1.9.7", channel = "https://prefix.dev/github-releases" }
 
 [feature.tests.target.osx-arm64.dependencies]
-ruff = ">=0.16.9"
-ryl = ">=0.22.0"
-tombi = ">=1.7.0"
+ruff = ">=0.17.3"
+ryl = ">=0.27.0"
+tombi = ">=1.9.8"
 
 [feature.tests.target.win-64.dependencies]
-ruff = ">=0.16.9"
-ryl = ">=0.22.0"
-tombi = ">=1.7.0"
+ruff = ">=0.17.3"
+ryl = ">=0.27.0"
+tombi = ">=1.9.8"
 
 [feature.tests.tasks]
 test = [

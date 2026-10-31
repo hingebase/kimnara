@@ -24,13 +24,8 @@ from typing import Literal, cast
 import numpy as np
 from llvmlite import binding, ir  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import cgutils  # pyright: ignore[reportMissingTypeStubs]
-from numba.core.cgutils import (  # pyright: ignore[reportMissingTypeStubs]
-    get_or_insert_function,  # pyright: ignore[reportUnknownVariableType]
-)
-from numba.np.ufunc import (  # pyright: ignore[reportMissingTypeStubs]
-    parallel,
-    workqueue,  # pyright: ignore[reportAttributeAccessIssue, reportUnknownVariableType]
-)
+from numba.core.cgutils import get_or_insert_function  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
+from numba.np.ufunc import parallel, workqueue  # pyright: ignore[reportAttributeAccessIssue, reportMissingTypeStubs, reportUnknownVariableType]
 from typing_extensions import override
 
 import kimnara as kn

@@ -20,13 +20,8 @@ from typing import TYPE_CHECKING, ForwardRef, cast, get_origin, no_type_check
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    bytecode,
-    types,
-)
-from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
-    context,
-)
+from numba.core import bytecode, types  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.typing import context  # pyright: ignore[reportMissingTypeStubs]
 from typing_extensions import evaluate_forward_ref
 
 import kimnara as kn

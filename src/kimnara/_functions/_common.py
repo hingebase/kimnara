@@ -35,15 +35,9 @@ import numpy as np
 import pint.registry_helpers
 import pydantic
 import pydantic_core
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    codegen,
-)
-from numba.core.dispatcher import (  # pyright: ignore[reportMissingTypeStubs]
-    Dispatcher,
-)
-from numba.np.ufunc import (  # pyright: ignore[reportMissingTypeStubs]
-    ufuncbuilder,
-)
+from numba.core import codegen  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.dispatcher import Dispatcher  # pyright: ignore[reportMissingTypeStubs]
+from numba.np.ufunc import ufuncbuilder  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
 from typing_extensions import (
     Any,
