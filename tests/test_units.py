@@ -35,7 +35,10 @@ MISSING = Sentinel("MISSING")
     not llvmlite.binding.get_host_cpu_features().get("fma"),  # pyright: ignore[reportUnknownMemberType]
     reason="The monkey patch is not applicable",
 )
-def test_converters(subtests: pytest.Subtests) -> None:
+def test_converters(
+    rng: np.random.Generator,
+    subtests: pytest.Subtests,
+) -> None:
     """Our monkey patch should be in compliance with Pint.
 
     In `kn._spec._numpy._units._converters` we replace the default
@@ -53,7 +56,6 @@ def test_converters(subtests: pytest.Subtests) -> None:
         for attr in "scale", "offset", "logbase", "logfactor":
             assert getattr(new, attr, MISSING) == getattr(old, attr, MISSING)
 
-    rng = np.random.default_rng(np.random.Philox())
     with subtests.test("Real non-multiplicative quantities"):
         _real_non_multiplicative_quantities(ureg, default, rng)
     with subtests.test("Complex non-multiplicative quantities"):

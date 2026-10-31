@@ -27,11 +27,12 @@ __all__ = [
     "Scalar",
     "ShapeT",
     "UFuncKwargs",
+    "VarArgsIntrinsic",
 ]
 
 import sys
 from collections.abc import Callable
-from typing import Literal, TypeAlias
+from typing import TYPE_CHECKING, Literal, TypeAlias
 
 import numpy as np
 import numpy.typing as npt
@@ -42,7 +43,12 @@ from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
 )
 from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
-from typing_extensions import Any, TypeAliasType, TypedDict, TypeVar
+from typing_extensions import Any, TypeAliasType, TypedDict, TypeVar, Unpack
+
+if TYPE_CHECKING:
+    from llvmlite.ir import Value  # pyright: ignore[reportMissingTypeStubs]
+
+    import kimnara as kn
 
 if sys.version_info >= (3, 14):
     _Number = np.number
@@ -102,6 +108,7 @@ FastMathOptions: TypeAlias = """
     | set[_FastMathFlags]
     | dict[_FastMathFlags, bool]
     | cpu_options.FastMathOptions"""
+VarArgsIntrinsic: TypeAlias = "kn.typing.Intrinsic[Unpack[tuple[Value, ...]]]"
 
 
 class UFuncKwargs(TypedDict, total=False):

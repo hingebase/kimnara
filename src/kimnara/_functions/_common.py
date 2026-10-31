@@ -135,7 +135,7 @@ class Inferable(abc.ABC, Generic[_T]):
         for v in self.sig.parameters.values():
             if v.POSITIONAL_ONLY is not v.kind is not v.POSITIONAL_OR_KEYWORD:
                 message = "kwargs and varargs are disallowed"
-                raise TypeError(message)
+                raise kn.TypeInferenceError(message)
             if v.default is not v.empty:
                 message = "default parameter values are unsupported yet"
                 raise NotImplementedError(message)

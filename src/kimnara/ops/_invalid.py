@@ -25,8 +25,7 @@ from numba.core.typing.context import (  # pyright: ignore[reportMissingTypeStub
 )
 
 import kimnara as kn
-
-from . import _lib
+from kimnara import _numba
 
 
 def invalid() -> int:
@@ -40,7 +39,7 @@ def invalid() -> int:
 def _intrinsic(_: Context) -> "kn.typing.Intrinsic[()]":
     return (
         types.intc(),
-        lambda context, builder, _signature, _args: _lib.call(
+        lambda context, builder, _signature, _args: _numba.call(
             # In MSVC, `feraiseexcept` was implemented as a inline
             # function whose symbol doesn't exist in UCRT libraries
             "fesetexceptflag",
@@ -55,7 +54,7 @@ def _intrinsic(_: Context) -> "kn.typing.Intrinsic[()]":
                 ),
                 context.get_constant(types.intc, 0x10),
             ],
-        ) if sys.platform == "win32" else _lib.call(
+        ) if sys.platform == "win32" else _numba.call(
             "feraiseexcept",
             context,
             builder,
