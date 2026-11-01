@@ -27,14 +27,13 @@ from collections.abc import Generator
 from typing import TYPE_CHECKING, NoReturn
 
 import pytest
+from nodejs_wheel import executable
 
 if TYPE_CHECKING:
     from _typeshed import StrPath
 
 if sys.platform == "win32":
-    from contextlib import (
-        nullcontext as _astral_context,  # pyright: ignore[reportAssignmentType]
-    )
+    from contextlib import nullcontext as _astral_context  # pyright: ignore[reportAssignmentType]
 else:
     @contextlib.contextmanager
     def _astral_context(monkeypatch: pytest.MonkeyPatch) -> Generator[object]:
@@ -52,6 +51,12 @@ else:
 
 def test_basedpyright(monkeypatch: pytest.MonkeyPatch) -> None:
     """Type checking with basedpyright."""
+    if (
+        os.getenv("PIXI_PROJECT_NAME") == "kimnara"
+        and sys.platform == "win32"
+        and sys.version_info >= (3, 15)
+    ):
+        executable.ROOT_DIR = os.environ["CONDA_PREFIX"]
     argv = [
         "basedpyright",
         "--pythonpath", sys.executable,

@@ -20,9 +20,7 @@ from typing import no_type_check
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import types  # pyright: ignore[reportMissingTypeStubs]
-from numba.core.typing.context import (  # pyright: ignore[reportMissingTypeStubs]
-    Context,
-)
+from numba.core.typing.context import Context  # pyright: ignore[reportMissingTypeStubs]
 
 import kimnara as kn
 from kimnara import _numba
@@ -34,7 +32,7 @@ def invalid() -> int:
     raise kn.ValidationError(message)
 
 
-@numba.extending.intrinsic  # pyright: ignore[reportUnknownMemberType]
+@numba.extending.intrinsic  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
 @no_type_check
 def _intrinsic(_: Context) -> "kn.typing.Intrinsic[()]":
     return (

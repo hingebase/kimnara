@@ -16,7 +16,4 @@
 
 __all__ = ["get_library", "get_pointer"]
 
-from ._extending import (
-    get_library,
-    get_pointer,  # pyright: ignore[reportUnknownVariableType]
-)
+from ._extending import get_library, get_pointer  # pyright: ignore[reportUnknownVariableType]

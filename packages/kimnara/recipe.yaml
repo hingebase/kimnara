@@ -64,7 +64,9 @@ requirements:
     - numba >=0.57.0,<2.0.0
     - if: osx and x86_64
       then: numba <0.63.0
-    - numpy >=1.24.0,<3.0.0
+    - if: match(python, ">=3.12.0")
+      then: numpy >=1.26.4,<3.0.0
+      else: numpy >=1.24.0,<3.0.0
     - numpy-allocator >=1.2.1,<2.0.0
     - numpy-typing-compat >=20250818.1.23
     - if: match(python, ">=3.12.0")
@@ -85,13 +87,12 @@ requirements:
     - if: match(python, "3.11.*")
       then:
         - matplotlib-base <=3.10.9 [when="numpy 1.24.*"]
+        - scipy <=1.16.3 [when="numpy <1.26.4"]
         - shapely <=2.1.2 [when="numpy <1.26.0"]
     - if: match(python, "<3.12.0")
       then:
         - pandas-stubs !=2.0.3.230814 [when="numpy 1.24.*"]
         - pandas-stubs !=2.1.1.230928 [when="numpy <1.26.0"]
-    - if: match(python, ">=3.11.0")
-      then: scipy <=1.16.3 [when="numpy <1.26.4"]
   run_exports:
     - ${{ pin_subpackage(name, upper_bound="x.x.x") }}
 

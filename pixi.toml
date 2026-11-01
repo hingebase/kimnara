@@ -46,7 +46,7 @@ basedpyright = ">=1.39.10"
 hypothesis = ">=6.155.7"
 pandas-stubs = ">=1.4.2,<4.0.0"
 scipy-stubs = ">=1.14.1,<2.0.0"
-pytest = ">=9.1.1"
+pytest = ">=9.2.0"
 uv = ">=0.10.2"
 
 # For each minor version of NumPy, the convex hull of compatible minor
@@ -89,8 +89,8 @@ py314np23 = ["abi3", "py314", "np23", "cf"]
 py314np23nb063 = ["abi3", "py314", "np23", "nb063"]
 py314np24 = ["abi3", "py314", "np24", "cf"]
 py314np24nb064 = ["abi3", "py314", "np24", "nb064"]
-py314np25 = ["abi3", "py314", "np25", "cf"]
 py314np25nb067 = ["abi3", "py314", "np25", "nb067"]
+py315np25 = ["abi3", "py315", "np25", "cf"]
 
 [feature]
 # One variant per directory, see
@@ -117,6 +117,10 @@ nb062 = { dependencies = { numba = "==0.62.1" } }
 [feature.py314]
 platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
 dependencies = { python-gil = "3.14.*" }
+
+[feature.py315]
+platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
+dependencies = { python-gil = "3.15.*" }
 
 [feature.np24]
 platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
@@ -220,23 +224,23 @@ outputs = ["build/compile_commands.json"]
 channels = ["conda-forge", "https://prefix.dev/github-releases"]
 
 [feature.tests.target.linux.dependencies]
-ruff = ">=0.16.9"
-ryl = ">=0.22.0"
-tombi = ">=1.7.0"
+ruff = ">=0.17.3"
+ryl = ">=0.27.0"
+tombi = ">=1.9.8"
 
 [feature.tests.target.osx-64.dependencies]
-ruff = { version = ">=0.16.7", channel = "https://prefix.dev/github-releases" }
-tombi = { version = ">=1.5.5", channel = "https://prefix.dev/github-releases" }
+ruff = { version = ">=0.17.3", channel = "https://prefix.dev/github-releases" }
+tombi = { version = ">=1.9.7", channel = "https://prefix.dev/github-releases" }
 
 [feature.tests.target.osx-arm64.dependencies]
-ruff = ">=0.16.9"
-ryl = ">=0.22.0"
-tombi = ">=1.7.0"
+ruff = ">=0.17.3"
+ryl = ">=0.27.0"
+tombi = ">=1.9.8"
 
 [feature.tests.target.win-64.dependencies]
-ruff = ">=0.16.9"
-ryl = ">=0.22.0"
-tombi = ">=1.7.0"
+ruff = ">=0.17.3"
+ryl = ">=0.27.0"
+tombi = ">=1.9.8"
 
 [feature.tests.tasks]
 test = [
@@ -276,8 +280,8 @@ test = [
     { task = "pytest", environment = "py314np23nb063" },
     { task = "pytest", environment = "py314np24" },
     { task = "pytest", environment = "py314np24nb064" },
-    { task = "pytest", environment = "py314np25" },
     { task = "pytest", environment = "py314np25nb067" },
+    { task = "pytest", environment = "py315np25" },
 ]
 
 [feature.tests.target.osx-64.tasks]

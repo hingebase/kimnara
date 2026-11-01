@@ -19,16 +19,8 @@ from typing import TYPE_CHECKING, cast, no_type_check
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    cgutils,
-    cpu,
-    pythonapi,
-    types,
-)
-from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
-    context,
-    templates,
-)
+from numba.core import cgutils, cpu, pythonapi, types  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.typing import context, templates  # pyright: ignore[reportMissingTypeStubs]
 
 if TYPE_CHECKING:
     import kimnara as kn

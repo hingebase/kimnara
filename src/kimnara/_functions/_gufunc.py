@@ -33,11 +33,7 @@ import numpy as np
 import numpy.typing as npt
 import optype as op
 import optype.numpy as onp
-from numba.np.ufunc import (  # pyright: ignore[reportMissingTypeStubs]
-    gufunc,
-    sigparse,
-    ufuncbuilder,
-)
+from numba.np.ufunc import gufunc, sigparse, ufuncbuilder  # pyright: ignore[reportMissingTypeStubs]
 from numpy_typing_compat import NUMPY_GE_2_0
 from pint.facets.numpy.quantity import NumpyQuantity
 from typing_extensions import Any, TypeVar, Unpack, overload, override

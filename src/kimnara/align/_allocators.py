@@ -22,9 +22,7 @@ from typing_extensions import CapsuleType
 from . import _mimalloc
 
 if not TYPE_CHECKING:
-    from numpy_allocator import (
-        type as _AllocatorMeta,  # ruff: ignore[lowercase-imported-as-non-lowercase]
-    )
+    from numpy_allocator import type as _AllocatorMeta  # ruff: ignore[lowercase-imported-as-non-lowercase]
 else:
     from _typeshed import Unused
     from numpy.typing import NDArray

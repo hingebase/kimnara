@@ -21,12 +21,8 @@ from typing import TYPE_CHECKING, Annotated
 
 import optype.numpy as onp
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
-from numba.core.cpu import (  # pyright: ignore[reportMissingTypeStubs]
-    CPUContext,
-)
-from numba.core.typing.templates import (  # pyright: ignore[reportMissingTypeStubs]
-    Signature,
-)
+from numba.core.cpu import CPUContext  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.typing.templates import Signature  # pyright: ignore[reportMissingTypeStubs]
 from typing_extensions import Any, Protocol, TypeVar, TypeVarTuple, Unpack
 
 from . import _spec

@@ -18,10 +18,7 @@ from collections.abc import Callable
 from typing import Literal, cast
 
 import numba  # pyright: ignore[reportMissingTypeStubs]
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    compiler,
-    registry,
-)
+from numba.core import compiler, registry  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
 from typing_extensions import Any, TypeVar, overload, override
 

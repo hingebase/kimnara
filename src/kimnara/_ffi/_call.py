@@ -27,19 +27,8 @@ from typing import cast, no_type_check
 import executing
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from llvmlite import binding  # pyright: ignore[reportMissingTypeStubs]
-from numba.core import (  # pyright: ignore[reportMissingTypeStubs]
-    bytecode,
-    ir,
-    registry,
-    typeinfer,
-    types,
-)
-from numba.core.typing import (  # pyright: ignore[reportMissingTypeStubs]
-    context,
-    ctypes_utils,
-    templates,
-    typeof,
-)
+from numba.core import bytecode, ir, registry, typeinfer, types  # pyright: ignore[reportMissingTypeStubs]
+from numba.core.typing import context, ctypes_utils, templates, typeof  # pyright: ignore[reportMissingTypeStubs]
 from typing_extensions import Any, TypeVar
 
 import kimnara as kn
@@ -50,10 +39,7 @@ if sys.version_info >= (3, 14):
     try:
         from ctypes import c_double_complex, c_float_complex
 
-        from numba.core.typing.ctypes_utils import (  # pyright: ignore[reportMissingTypeStubs]
-            _FROM_CTYPES,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]  # ruff: ignore[import-private-name]
-            _TO_CTYPES,  # pyright: ignore[reportPrivateUsage, reportUnknownVariableType]  # ruff: ignore[import-private-name]
-        )
+        from numba.core.typing.ctypes_utils import _FROM_CTYPES, _TO_CTYPES  # pyright: ignore[reportMissingTypeStubs, reportPrivateUsage, reportUnknownVariableType]  # ruff: ignore[import-private-name]
     except ImportError:
         pass
     else:

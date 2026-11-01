@@ -36,9 +36,7 @@ from typing_extensions import Any
 import kimnara as kn
 
 if TYPE_CHECKING:
-    from numba.core.typing.templates import (  # pyright: ignore[reportMissingTypeStubs]
-        Signature,
-    )
+    from numba.core.typing.templates import Signature  # pyright: ignore[reportMissingTypeStubs]
 
 
 def test_input_validation() -> None:
