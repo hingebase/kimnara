@@ -67,7 +67,8 @@ def test_basedpyright(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.skipif(
-    os.getenv("PIXI_PROJECT_NAME") == "kimnara",
+    os.getenv("PIXI_PROJECT_NAME") == "kimnara"
+        and os.getenv("PIXI_ENVIRONMENT_NAME", "default") != "default",
     reason="It's unnecessary to run clangd-tidy for each Python environment",
 )
 def test_clangd_tidy(monkeypatch: pytest.MonkeyPatch) -> None:
