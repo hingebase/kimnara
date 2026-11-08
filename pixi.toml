@@ -232,15 +232,18 @@ clang-tools = { workspace = true }
 clangd-tidy = { version = ">=1.1.1", channel = "conda-pypi" }
 
 [feature.tests.target.linux.dependencies]
+clang-23 = "*"
 ruff = { workspace = true }
 ryl = { workspace = true }
 tombi = { workspace = true }
 
 [feature.tests.target.osx-64.dependencies]
+clang-21 = "*"
 ruff = { version = ">=0.17.3", channel = "https://prefix.dev/github-releases" }
 tombi = { version = ">=1.10.0", channel = "https://prefix.dev/github-releases" }
 
 [feature.tests.target.osx-arm64.dependencies]
+clang-23 = "*"
 ruff = { workspace = true }
 ryl = { workspace = true }
 tombi = { workspace = true }
