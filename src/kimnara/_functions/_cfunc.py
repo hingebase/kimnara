@@ -204,6 +204,16 @@ def _can_convert_to(
     return None
 
 
+def _ensure_can_convert(
+    typingctx: context.Context,
+    fromty: types.Type,
+    toty: types.Type,
+) -> None:
+    if not typingctx.can_convert(fromty, toty):  # pyright: ignore[reportUnknownMemberType]
+        message = "Cannot convert"
+        raise errors.NumbaNotImplementedError(message)
+
+
 @lower_cast(types.Dispatcher, types.ExternalFunctionPointer)
 def _(
     context: cpu.CPUContext,
@@ -212,6 +222,7 @@ def _(
     toty: types.ExternalFunctionPointer,
     val: "ir.Value",
 ) -> "ir.Instruction":
+    _ensure_can_convert(context.typing_context, fromty, toty)  # pyright: ignore[reportUnknownArgumentType]
     ftype = types.FunctionType(toty.sig)  # pyright: ignore[reportUnknownArgumentType]
     ftype.cconv = toty.cconv  # pyright: ignore[reportUnknownMemberType]
     val = lower_cast_dispatcher_to_function_type(  # pyright: ignore[reportUnknownVariableType]
@@ -222,12 +233,13 @@ def _(
 
 @lower_cast(types.ExternalFunctionPointer, types.ExternalFunctionPointer)
 def _(
-    _context: cpu.CPUContext,
-    _builder: "ir.IRBuilder",
-    _fromty: types.ExternalFunctionPointer,
-    _toty: types.ExternalFunctionPointer,
+    context: cpu.CPUContext,
+    _: "ir.IRBuilder",
+    fromty: types.ExternalFunctionPointer,
+    toty: types.ExternalFunctionPointer,
     val: "ir.Value",
 ) -> "ir.Value":
+    _ensure_can_convert(context.typing_context, fromty, toty)  # pyright: ignore[reportUnknownArgumentType]
     return val
 
 
@@ -239,6 +251,7 @@ def _lower_cast_function_type_to_function_pointer(
     toty: types.ExternalFunctionPointer,
     val: "ir.Value",
 ) -> "ir.Instruction":
+    _ensure_can_convert(context.typing_context, fromty, toty)  # pyright: ignore[reportUnknownArgumentType]
     ptrty = cast("ir.Type", context.get_function_pointer_type(toty))  # pyright: ignore[reportUnknownMemberType]
     struct_cls = cast(
         "type[cgutils.ValueStructProxy]",
@@ -254,10 +267,11 @@ def _lower_cast_function_type_to_function_pointer(
 def _(
     context: cpu.CPUContext,
     _builder: "ir.IRBuilder",
-    _fromty: types.NoneType,
+    fromty: types.NoneType,
     toty: _Pointer,
     _val: "ir.Value",
 ) -> "ir.Value":
+    _ensure_can_convert(context.typing_context, fromty, toty)  # pyright: ignore[reportUnknownArgumentType]
     return context.get_constant_null(toty)  # pyright: ignore[reportUnknownMemberType]
 
 
