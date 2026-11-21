@@ -12,7 +12,7 @@ build-backend = "scikit_build_core.build"
 name = "test-package-cmake"
 version = "0.0.3"
 description = "A package built with Kimnara"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = "Apache-2.0"
 dependencies = [
     "kimnara",
@@ -38,7 +38,7 @@ if.env.CONDA_BUILD = true
 cmake.args = ["-GNinja"]
 
 [[tool.scikit-build.overrides]]
-if = { abi-flags = "^[^t]*$", python-version = ">=3.12" }
+if.abi-flags = "^[^t]*$"
 wheel.py-api = "cp312"
 
 [tool.uv]
