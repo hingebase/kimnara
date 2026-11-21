@@ -15,9 +15,11 @@
 __all__ = ["TypingContext"]
 
 import builtins
+import collections.abc
 import sys
 import types
 import typing
+import warnings
 from collections.abc import Sequence
 from typing import get_args, get_origin
 
@@ -26,7 +28,7 @@ import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import numpy.typing as npt
 from numpy_typing_compat import NUMPY_GE_2_0
-from typing_extensions import Any, override
+from typing_extensions import Any, Never, override
 from typing_inspection import introspection, typing_objects
 
 import kimnara as kn
@@ -43,7 +45,7 @@ class TypingContext(_generic.TypingContext):
     __slots__ = ()
 
     @override
-    def infer(self, annotation: object) -> _spec.Type:  # ruff: ignore[complex-structure]
+    def infer(self, annotation: object) -> _spec.Type:  # ruff: ignore[complex-structure, too-many-branches, too-many-return-statements]
         inspected = self.parse(annotation)
         match inspected.type:
             case types.NoneType | None:
@@ -56,22 +58,39 @@ class TypingContext(_generic.TypingContext):
                 inspected = inspected._replace(type=np.float64)
             case builtins.int:
                 inspected = inspected._replace(type=np.int64)
+            case kn.typing.ArrayCTypes:
+                inspected = inspected._replace(type=kn.typing.CPointer[Never])
             case typing.Tuple:  # ruff: ignore[non-pep585-annotation]
                 message = "Incomplete type: typing.Tuple without args"
                 raise kn.TypeInferenceError(message)
             case _:
                 pass
         tp = inspected.type
+        if typing_objects.is_never(tp):
+            return _generic.NeverType(inspected, self)
+        if typing_objects.is_noreturn(tp):
+            message = "typing.Never is preferred over typing.NoReturn"
+            if sys.version_info < (3, 11):
+                message = message.replace("typing", "typing_extensions", 1)
+            warnings.warn(message, stacklevel=2)
+            return _generic.NeverType(inspected, self)
         if _utils.isclass(tp) and issubclass(tp, np.generic):
             return _base.ScalarType(inspected, self)
         match get_origin(tp):
             case builtins.tuple:
                 return _generic.TupleType(inspected, self)
+            case collections.abc.Callable:  # pyright: ignore[reportUnknownMemberType]
+                return _generic.FunctionType(inspected, self)
+            case kn.typing.CPointer:
+                return _generic.PointerType(inspected, self)
             case np.ndarray:
                 return _ArrayType(inspected, self)
             case origin:
                 if introspection.is_union_origin(origin):
-                    return _generic.UnionType(inspected, self)
+                    if self.allow_optional and not self.allow_pointer:
+                        return _generic.OptionalType(inspected, self)  # pyright: ignore[reportAbstractUsage]
+                    if self.allow_pointer and not self.allow_optional:
+                        return _generic.PointerType(inspected, self)
         message = f"Cannot infer the runtime type from {_utils.base_repr(tp)}"
         raise kn.TypeInferenceError(message)
 
@@ -114,10 +133,12 @@ class TypingContext(_generic.TypingContext):
             case _:
                 message = "Too many dtype arguments"
                 raise kn.TypeInferenceError(message)
-        readonly = self.readonly
         for x in arg.metadata:
             if x is _spec.MUTABLE:
                 readonly = False
+                break
+        else:
+            readonly = self.readonly
         return unit.dtype(arg.type), readonly
 
     def get_ndim(self, shape: object) -> int | None:

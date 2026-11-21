@@ -232,7 +232,11 @@ def _restype_ctypes(
         expr = _expr(node.annotation)
         code = compile(expr, op.source.filename, "eval")
         ann = eval(code, op.frame.f_globals)  # ruff: ignore[suspicious-eval-usage]
-        ctx = _spec.TypingContext(align=kn.A, allow_scalar=True)
+        ctx = _spec.TypingContext(
+            align=kn.A,
+            allow_pointer=True,
+            allow_scalar=True,
+        )
         return ctx.infer(ann).to_ctypes()
     return None
 
@@ -280,7 +284,11 @@ def _(
     code = compile(expr, filename, "eval")
     module = cast("ModuleType", func_id.module)  # pyright: ignore[reportAttributeAccessIssue]
     ann = eval(code, vars(module))  # ruff: ignore[suspicious-eval-usage]
-    ctx = _spec.TypingContext(align=kn.A, allow_scalar=True)
+    ctx = _spec.TypingContext(
+        align=kn.A,
+        allow_pointer=True,
+        allow_scalar=True,
+    )
     return ctx.infer(ann).to_numba()
 
 

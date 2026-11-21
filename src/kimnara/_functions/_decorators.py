@@ -152,10 +152,7 @@ class _NumbaParallelUFuncDecorator(Protocol):
 
 
 @overload
-def cfunc(
-    wrapped: Callable[..., _cfunc.PythonT],
-    /,
-) -> _cfunc.PyCFunc[_cfunc.PythonT]: ...
+def cfunc(wrapped: Callable[..., object], /) -> _cfunc.PyCFunc: ...
 
 @overload
 def cfunc(
@@ -168,10 +165,7 @@ def cfunc(
     nopython: Literal[False] = ...,
     parallel: Literal[False] = ...,
     pipeline_class: None = ...,
-) -> Callable[
-    [Callable[..., _cfunc.PythonT]],
-    _cfunc.PyCFunc[_cfunc.PythonT],
-]: ...
+) -> Callable[[Callable[..., object]], _cfunc.PyCFunc]: ...
 
 @overload
 def cfunc(
@@ -185,10 +179,7 @@ def cfunc(
     nopython: Literal[True],
     parallel: bool | str = ...,
     pipeline_class: type[compiler.CompilerBase] | None = None,
-) -> Callable[
-    [Callable[..., _cfunc.NumbaT]],
-    _cfunc.NumbaCFunc[_cfunc.NumbaT],
-]: ...
+) -> Callable[[Callable[..., object]], _cfunc.NumbaCFunc]: ...
 
 
 def cfunc(  # ruff: ignore[too-many-arguments]
@@ -210,10 +201,7 @@ def cfunc(  # ruff: ignore[too-many-arguments]
     if not nopython:
         return _cfunc.PyCFunc
 
-    def wrapper(
-        wrapped: Callable[..., _cfunc.NumbaT],
-        /,
-    ) -> _cfunc.NumbaCFunc[_cfunc.NumbaT]:
+    def wrapper(wrapped: Callable[..., object], /) -> _cfunc.NumbaCFunc:
         return _cfunc.NumbaCFunc(
             wrapped,
             boundscheck=boundscheck,

@@ -166,7 +166,11 @@ def cydecl(
 def _parse(
     pysig: inspect.Signature,
 ) -> tuple[tuple[_spec.Type, ...], _spec.Type]:
-    ctx = _spec.TypingContext(align=kn.A, allow_scalar=True)
+    ctx = _spec.TypingContext(
+        align=kn.A,
+        allow_pointer=True,
+        allow_scalar=True,
+    )
     args: list[_spec.Type] = []
     for v in pysig.parameters.values():
         if v.POSITIONAL_ONLY is not v.kind is not v.POSITIONAL_OR_KEYWORD:

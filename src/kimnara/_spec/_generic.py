@@ -12,16 +12,26 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["NoneType", "TupleType", "TypingContext", "UnionType"]
+__all__ = [
+    "FunctionType",
+    "NeverType",
+    "NoneType",
+    "OptionalType",
+    "PointerType",
+    "TupleType",
+    "TypingContext",
+]
 
 import abc
 import builtins
+import ctypes
 import sys
 from collections.abc import Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
     ForwardRef,
     Literal,
+    NoReturn,
     cast,
     get_args,
     get_origin,
@@ -43,7 +53,7 @@ from typing_extensions import (
 from typing_inspection import introspection, typing_objects
 
 import kimnara as kn
-from kimnara import _spec
+from kimnara import _spec, _utils
 
 if TYPE_CHECKING:
     from _typeshed import SupportsGetItem
@@ -53,8 +63,10 @@ class TypingContext(NamedTuple):
     align: "kn.Alignment"
     allow_align: frozenset["kn.Alignment"] = frozenset()
     allow_array: bool = False
+    allow_never: bool = False
     allow_none: bool = False
     allow_optional: bool | Literal["units"] = False
+    allow_pointer: bool = False
     allow_scalar: bool = False
     allow_tuple: bool | Literal["nested"] = False
     allow_units: bool = False
@@ -111,6 +123,70 @@ class TypingContext(NamedTuple):
         annotation: object,
     ) -> tuple[introspection.InspectedAnnotation, ...]:
         return tuple(map(cls.parse, get_args(annotation)))
+
+
+class FunctionType(_spec.Type):
+    __slots__ = ("_argtypes", "_restype")
+
+    @override
+    def __init__(
+        self,
+        annotation: introspection.InspectedAnnotation,
+        ctx: TypingContext,
+    ) -> None:
+        if not ctx.allow_pointer:
+            message = "Pointer is unsupported in this context"
+            raise kn.TypeInferenceError(message)
+        argtypes, restype = get_args(annotation.type)
+        ctx = _spec.TypingContext(
+            align=kn.A,
+            allow_pointer=True,
+            allow_scalar=True,
+        )
+        self._argtypes = tuple(map(ctx.infer, argtypes))
+        self._restype = ctx._replace(allow_none=True).infer(restype)
+
+    @override
+    def to_ctypes(self) -> type["ctypes._CFunctionType"]:  # pyright: ignore[reportPrivateUsage]
+        return ctypes.CFUNCTYPE(
+            self._restype.to_ctypes(),
+            *[t.to_ctypes() or _utils.unreachable() for t in self._argtypes],
+        )
+
+    @override
+    def to_numba(self) -> numba.core.types.ExternalFunctionPointer:
+        sig = self._restype.to_numba()(*[t.to_numba() for t in self._argtypes])  # pyright: ignore[reportUnknownVariableType]
+        return numba.core.types.ExternalFunctionPointer(sig, None)  # pyright: ignore[reportUnknownArgumentType]
+
+    @override
+    def to_python(self) -> NoReturn:
+        raise NotImplementedError
+
+
+class NeverType(_spec.Type):
+    __slots__ = ()
+
+    @override
+    def __init__(
+        self,
+        annotation: introspection.InspectedAnnotation,
+        ctx: TypingContext,
+    ) -> None:
+        if not ctx.allow_never:
+            message = "Never and NoReturn are unsupported in this context"
+            raise kn.TypeInferenceError(message)
+
+    @override
+    def to_ctypes(self) -> None:
+        pass
+
+    @override
+    def to_numba(self) -> NoReturn:
+        raise NotImplementedError
+
+    @override
+    def to_python(self) -> NoReturn:
+        raise NotImplementedError
 
 
 class NoneType(_spec.Type):
@@ -202,7 +278,7 @@ class TupleType(_spec.Type):
         return tuple(units) if any(units) else None
 
 
-class UnionType(_spec.Type):
+class OptionalType(_spec.Type):
     __slots__ = ("_type",)
 
     @override
@@ -259,6 +335,95 @@ class UnionType(_spec.Type):
 
     # `.to_units()` is only called for return types, where
     # optional types cannot have units
+
+
+class PointerType(_spec.Type):
+    __slots__ = ("pointee", "readonly")
+
+    @override
+    def __init__(
+        self,
+        annotation: introspection.InspectedAnnotation,
+        ctx: TypingContext,
+    ) -> None:
+        if not ctx.allow_pointer:
+            message = "Pointer is unsupported in this context"
+            raise kn.TypeInferenceError(message)
+        tp = annotation.type
+        if get_origin(tp) is kn.typing.CPointer:
+            self._from_cpointer(tp)
+        else:
+            self._from_union(annotation)
+
+    @override
+    def to_ctypes(self) -> type["ctypes._PointerLike"]:  # pyright: ignore[reportPrivateUsage]
+        return ctypes.POINTER(self.pointee.to_ctypes())
+
+    @override
+    def to_numba(
+        self,
+    ) -> numba.core.types.CPointer | numba.core.types.RawPointer:
+        dtype = self.pointee
+        if isinstance(dtype, NeverType):
+            return numba.core.types.voidptr
+        ptr = numba.core.types.CPointer(dtype.to_numba())
+        if self.readonly:
+            ptr.mutable = False
+        return ptr
+
+    @override
+    def to_python(self) -> NoReturn:
+        raise NotImplementedError
+
+    def _from_cpointer(self, tp: object) -> None:
+        ctx = _spec.TypingContext(
+            align=kn.A,
+            allow_never=True,
+            allow_pointer=True,
+            allow_scalar=True,
+        )
+        [arg] = ctx.parse_args(tp)
+        for x in arg.metadata:
+            if x is _spec.MUTABLE:
+                self.readonly = False
+                break
+        else:
+            self.readonly = True
+        self.pointee = ctx.infer(arg.type)
+
+    def _from_union(
+        self,
+        annotation: introspection.InspectedAnnotation,
+    ) -> None:
+        ctx = _spec.TypingContext(align=kn.A, allow_pointer=True)
+        dtype = None
+        self.readonly = True
+        for arg in map(ctx.infer, get_args(annotation.type)):
+            match arg:
+                case FunctionType():
+                    message = "Cannot type Union that is not an Optional"
+                    raise kn.TypeInferenceError(message)
+                case PointerType():
+                    if not arg.readonly:
+                        self.readonly = False
+                    pointee = arg.pointee
+                    if not isinstance(pointee, NeverType):
+                        if dtype is None:
+                            dtype = pointee
+                        elif dtype != pointee:
+                            message = (
+                                f"Types conflict: CPointer[{dtype.to_numba()}]"
+                                f", CPointer[{pointee.to_numba()}]"
+                            )
+                            raise kn.TypeInferenceError(message)
+                case _:
+                    _utils.unreachable()
+        # `kn.typing.CPointer` is covariant, so
+        # `CPointer[T] | CPointer[Never]` is equivalent to `CPointer[T]`
+        self.pointee = dtype or NeverType(
+            annotation,
+            ctx._replace(allow_never=True),
+        )
 
 
 def _expand_type_alias(annotation: object) -> object:
