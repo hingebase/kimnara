@@ -42,40 +42,33 @@ def test_methods() -> None:
     for ufunc in _reorderable_nb, _reorderable_py:
         accumulated = ufunc.accumulate(x)
         assert isinstance(accumulated, NumpyQuantity)
-        np.testing.assert_array_equal(
-            accumulated.magnitude, desired0, strict=True)
+        np.testing.assert_array_equal(accumulated.m, desired0, strict=True)
         accumulated = ufunc.accumulate(x, axis=1)
         assert isinstance(accumulated, NumpyQuantity)
-        np.testing.assert_array_equal(
-            accumulated.magnitude, desired1, strict=True)
+        np.testing.assert_array_equal(accumulated.m, desired1, strict=True)
 
         reduced = ufunc.reduce(x)
         assert isinstance(reduced, NumpyQuantity)
-        np.testing.assert_array_equal(
-            reduced.magnitude, desired0[2], strict=True)
+        np.testing.assert_array_equal(reduced.m, desired0[2], strict=True)
         reduced = ufunc.reduce(x, axis=1)
         assert isinstance(reduced, NumpyQuantity)
-        np.testing.assert_array_equal(
-            reduced.magnitude, desired1[:, 2], strict=True)
+        np.testing.assert_array_equal(reduced.m, desired1[:, 2], strict=True)
         for axis in (0, 1), None:
             reduced = ufunc.reduce(x, axis)
             assert isinstance(reduced, NumpyQuantity)
-            np.testing.assert_equal(reduced.magnitude, 36)
+            np.testing.assert_equal(reduced.magnitude, 36, strict=False)
 
         reduced = ufunc.reduceat(x, [0, 0])
         assert isinstance(reduced, NumpyQuantity)
-        np.testing.assert_array_equal(
-            reduced.magnitude, desired0[::2], strict=True)
+        np.testing.assert_array_equal(reduced.m, desired0[::2], strict=True)
         reduced = ufunc.reduceat(x, [0, 0], axis=1)
         assert isinstance(reduced, NumpyQuantity)
-        np.testing.assert_array_equal(
-            reduced.magnitude, desired1[:, ::2], strict=True)
+        np.testing.assert_array_equal(reduced.m, desired1[:, ::2], strict=True)
 
         out = ufunc(x[0], x[:, 0])
         assert isinstance(out, NumpyQuantity)
         assert onp.is_array_1d(out.magnitude, np.int64)
-        np.testing.assert_array_equal(
-            out.magnitude, np.diag(desired2), strict=True)
+        np.testing.assert_array_equal(out.m, np.diag(desired2), strict=True)
 
         outer = ufunc.outer(x[0], x[:, 0], order="F")
         assert isinstance(outer, NumpyQuantity)
@@ -130,8 +123,7 @@ def test_multi_output() -> None:
     assert onp.is_array_2d(actual_rem.magnitude, np.int64)
     assert actual_rem.magnitude.flags.f_contiguous
     np.testing.assert_array_equal(actual_quot, desired_quot, strict=True)
-    np.testing.assert_array_equal(
-        actual_rem.magnitude, desired_rem, strict=True)
+    np.testing.assert_array_equal(actual_rem.m, desired_rem, strict=True)
 
 
 @kn.ufunc

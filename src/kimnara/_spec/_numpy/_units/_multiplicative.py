@@ -17,13 +17,12 @@ __all__ = ["MultiplicativeUnit"]
 import ctypes
 import dataclasses
 import math
-from typing import cast
+from typing import Any, cast, override
 
 import numpy as np
 import optype as op
 import pint
 import pydantic_core
-from typing_extensions import Any, override
 
 import kimnara as kn
 from kimnara import _spec, _utils
@@ -72,10 +71,10 @@ class _MultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
                 pad_value=dequantifier.pad_value,
             )
         elif isinstance(base, np.ndarray):
-            out = np.require(base, requirements=("A", "E"))  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            out = np.require(base, requirements=("A", "E"))
         else:
             out = base
-        return dequantifier.postprocess(out, base)  # pyright: ignore[reportUnknownArgumentType]
+        return dequantifier.postprocess(out, base)
 
     @property
     @override
@@ -176,7 +175,7 @@ def _init() -> None:
         _types.append(types)
 
 
-_func: dict[type[np.number[Any]], np.ufunc] = {}
+_func: dict[type[np.number], np.ufunc] = {}
 _name: list[bytes] = []
 _types: list[bytes] = []
 _init()

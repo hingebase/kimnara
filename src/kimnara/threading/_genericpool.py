@@ -27,11 +27,10 @@ import sysconfig
 import threading
 import warnings
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any, Literal, NoReturn, Protocol
+from typing import TYPE_CHECKING, Any, Literal, NoReturn, Protocol, Unpack
 
 import numpy as np
 import numpy.typing as npt
-from typing_extensions import Unpack
 
 import kimnara as kn
 from kimnara import _utils
@@ -111,7 +110,7 @@ class NumPyVectorize(np.vectorize, abc.ABC):
         null = contextlib.nullcontext()
 
         def wrapper(i: int) -> None:
-            index = np.unravel_index(i, broadcast_shape)  # pyright: ignore[reportUnknownMemberType]
+            index = np.unravel_index(i, broadcast_shape)
             results = func(*(arg[index] for arg in args))
 
             if not isinstance(results, tuple):

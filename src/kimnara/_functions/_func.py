@@ -12,15 +12,14 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = ["NumbaFunc", "OutputT", "OutputsT", "PyFunc"]
+__all__ = ["NumbaFunc", "Output", "Outputs", "PyFunc"]
 
 from collections.abc import Callable
-from typing import Literal, cast
+from typing import Literal, cast, overload, override
 
 import numba  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import compiler, registry  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
-from typing_extensions import Any, TypeVar, overload, override
 
 import kimnara as kn
 from kimnara import _spec
@@ -29,29 +28,28 @@ from kimnara._typing import (
     CustomInliningRule,
     FastMathOptions,
     Input,
-    Output,
     Scalar,
 )
+from kimnara._typing import Output as _Output
 
 from . import _common
 
-_RawOutputs = complex | ArrayLike[Scalar] | None | tuple["_RawOutputs", ...]
-_T = TypeVar("_T")
+type _RawOutputs = complex | ArrayLike[Scalar] | tuple[_RawOutputs, ...] | None
 
 # Numba will convert NumPy scalars to Python scalars on output
 # Python functions will forward the return value as-is
-_WrappedOutputs = complex | Output | None | tuple["_WrappedOutputs", ...]
+type _WrappedOutputs = complex | _Output | tuple[_WrappedOutputs, ...] | None
 
-OutputT = TypeVar("OutputT", bound=complex | ArrayLike[Scalar] | None)
-OutputsT = TypeVar("OutputsT", bound=tuple[_RawOutputs, ...])
+type Output = complex | ArrayLike[Scalar] | None
+type Outputs = tuple[_RawOutputs, ...]
 
 
-class _Func(_common.Validator[_T]):
+class _Func[T](_common.Validator[T]):
     _func: Callable[..., object]
 
     def __init__(
         self,
-        wrapped: Callable[..., _T],
+        wrapped: Callable[..., T],
         *,
         align: "str | kn.Alignment" = "A",
         pad_value: AnyComplex | None = None,
@@ -59,26 +57,26 @@ class _Func(_common.Validator[_T]):
         self.infer(wrapped, align=align, pad_value=pad_value)
 
     @overload
-    def __call__(
-        self: "_Func[OutputT]",
-        *args: Input[Any, Any] | None,
-    ) -> complex | Output | None: ...
+    def __call__[O: Output](
+        self: "_Func[O]",
+        *args: Input | None,
+    ) -> complex | _Output | None: ...
 
     @overload
-    def __call__(
-        self: "_Func[OutputsT]",
-        *args: Input[Any, Any] | None,
+    def __call__[O: Outputs](
+        self: "_Func[O]",
+        *args: Input | None,
     ) -> tuple[_WrappedOutputs, ...]: ...
 
-    def __call__(self, *args: Input[Any, Any] | None) -> object:
+    def __call__(self, *args: Input | None) -> object:
         return self._func(*args)
 
 
-class NumbaFunc(_Func[_T], _common.Dispatchable):
+class NumbaFunc[T](_Func[T], _common.Dispatchable):
     @override
     def __init__(
         self,
-        wrapped: Callable[..., _T],
+        wrapped: Callable[..., T],
         *,
         align: "str | kn.Alignment" = "A",
         boundscheck: bool | None = None,
@@ -153,11 +151,11 @@ class NumbaFunc(_Func[_T], _common.Dispatchable):
         )
 
 
-class PyFunc(_Func[_T]):
+class PyFunc[T](_Func[T]):
     @override
     def __init__(
         self,
-        wrapped: Callable[..., _T],
+        wrapped: Callable[..., T],
         *,
         align: "str | kn.Alignment" = "A",
         pad_value: AnyComplex | None = None,

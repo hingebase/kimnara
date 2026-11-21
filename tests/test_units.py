@@ -15,16 +15,16 @@
 """Test unit conversion."""
 
 import math
-from typing import cast
+from typing import Any, cast
 
 import llvmlite.binding  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import optype.numpy as onp
 import pint.facets
 import pytest
-from typing_extensions import Any, Sentinel
+from typing_extensions import Sentinel
 
-_UnitRegistry = pint.registry.GenericUnitRegistry[
+type _UnitRegistry = pint.registry.GenericUnitRegistry[
     pint.facets.plain.PlainQuantity[Any],
     pint.Unit,
 ]
@@ -75,12 +75,12 @@ def _real_non_multiplicative_quantities(
         desired = ureg.Quantity(x, from_).m_as(to)  # pyright: ignore[reportUnknownMemberType]
         assert onp.is_array_1d(actual, np.float64)
         assert onp.is_array_1d(desired, np.float64)
-        np.testing.assert_allclose(actual, desired)
+        np.testing.assert_allclose(actual, desired, strict=True)
         actual = default.Quantity(desired, to).m_as(from_)  # pyright: ignore[reportUnknownMemberType]
         desired = ureg.Quantity(desired, to).m_as(from_)  # pyright: ignore[reportUnknownMemberType]
         assert onp.is_array_1d(actual, np.float64)
         assert onp.is_array_1d(desired, np.float64)
-        np.testing.assert_allclose(actual, desired, atol=atol)
+        np.testing.assert_allclose(actual, desired, atol=atol, strict=True)
 
     x = x.astype(np.float32)
     # Much more tolerance is required for float32
@@ -98,7 +98,8 @@ def _real_non_multiplicative_quantities(
             desired = quantity.m_as(to)  # pyright: ignore[reportUnknownMemberType]
         assert onp.is_array_1d(actual, np.float32)
         assert onp.is_array_1d(desired, np.float32)
-        np.testing.assert_allclose(actual, desired, rtol=1e-5, atol=atol)
+        np.testing.assert_allclose(
+            actual, desired, rtol=1e-5, atol=atol, strict=True)
         actual = default.Quantity(desired, to).m_as(from_)  # pyright: ignore[reportUnknownMemberType]
         quantity = ureg.Quantity(desired, to)
         if to == "dBm":
@@ -108,7 +109,8 @@ def _real_non_multiplicative_quantities(
             desired = quantity.m_as(from_)  # pyright: ignore[reportUnknownMemberType]
         assert onp.is_array_1d(actual, np.float32)
         assert onp.is_array_1d(desired, np.float32)
-        np.testing.assert_allclose(actual, desired, rtol=1e-5, atol=atol)
+        np.testing.assert_allclose(
+            actual, desired, rtol=1e-5, atol=atol, strict=True)
 
 
 def _complex_non_multiplicative_quantities(
@@ -128,12 +130,12 @@ def _complex_non_multiplicative_quantities(
     desired = ureg.Quantity(x, "W").m_as("dBm")  # pyright: ignore[reportUnknownMemberType]
     assert onp.is_array_1d(actual, np.complex128)
     assert onp.is_array_1d(desired, np.complex128)
-    np.testing.assert_allclose(actual, desired)
+    np.testing.assert_allclose(actual, desired, strict=True)
     actual = default.Quantity(desired, "dBm").m_as("W")  # pyright: ignore[reportUnknownMemberType]
     desired = ureg.Quantity(desired, "dBm").m_as("W")  # pyright: ignore[reportUnknownMemberType]
     assert onp.is_array_1d(actual, np.complex128)
     assert onp.is_array_1d(desired, np.complex128)
-    np.testing.assert_allclose(actual, desired)
+    np.testing.assert_allclose(actual, desired, strict=True)
 
     x = x.astype(np.complex64)
     actual = default.Quantity(x, "W").m_as("dBm")  # pyright: ignore[reportUnknownMemberType]
@@ -142,11 +144,13 @@ def _complex_non_multiplicative_quantities(
     desired = quantity.magnitude
     assert onp.is_array_1d(actual, np.complex64)
     assert onp.is_array_1d(desired, np.complex64)
-    np.testing.assert_allclose(actual, desired, rtol=1e-5, atol=3e-6)
+    np.testing.assert_allclose(
+        actual, desired, rtol=1e-5, atol=3e-6, strict=True)
     actual = default.Quantity(desired, "dBm").m_as("W")  # pyright: ignore[reportUnknownMemberType]
     quantity = ureg.Quantity(desired, "dBm")
     quantity.ito("W")  # pyright: ignore[reportUnknownMemberType]
     desired = quantity.magnitude
     assert onp.is_array_1d(actual, np.complex64)
     assert onp.is_array_1d(desired, np.complex64)
-    np.testing.assert_allclose(actual, desired, rtol=1e-5, atol=3e-6)
+    np.testing.assert_allclose(
+        actual, desired, rtol=1e-5, atol=3e-6, strict=True)

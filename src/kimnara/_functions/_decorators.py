@@ -15,11 +15,11 @@
 __all__ = ["cfunc", "func", "gufunc", "ufunc"]
 
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal, Protocol, overload
 
+import optype.numpy as onp
 from numba.core import compiler  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
-from typing_extensions import Any, Protocol, TypeVar, overload
 
 from kimnara._typing import CustomInliningRule, FastMathOptions
 
@@ -28,127 +28,126 @@ from . import _cfunc, _func, _gufunc, _ufunc
 if TYPE_CHECKING:
     import kimnara as kn
 
-_GUFuncAlignment: TypeAlias = """str | Literal[
+type _GUFuncAlignment = str | Literal[
     kn.Alignment.A,
     kn.Alignment.C,
     kn.Alignment.SSE,
     kn.Alignment.AVX,
     kn.Alignment.AVX512,
     kn.Alignment.MKL,
-]"""
-_T = TypeVar("_T")
+]
 
 
 class _PyFuncDecorator(Protocol):
     # Split into two overloads so that `NonTuple | tuple[Any, ...]`
     # won't be accepted
     @overload
-    def __call__(
+    def __call__[T: _func.Output](
         self,
-        wrapped: Callable[..., _func.OutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _func.PyFunc[_func.OutputT]: ...
+    ) -> _func.PyFunc[T]: ...
 
     @overload
-    def __call__(
+    def __call__[T: _func.Outputs](
         self,
-        wrapped: Callable[..., _func.OutputsT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _func.PyFunc[_func.OutputsT]: ...
+    ) -> _func.PyFunc[T]: ...
 
 
 class _NumbaFuncDecorator(Protocol):
     @overload
-    def __call__(
+    def __call__[T: _func.Output](
         self,
-        wrapped: Callable[..., _func.OutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _func.NumbaFunc[_func.OutputT]: ...
+    ) -> _func.NumbaFunc[T]: ...
 
     @overload
-    def __call__(
+    def __call__[T: _func.Outputs](
         self,
-        wrapped: Callable[..., _func.OutputsT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _func.NumbaFunc[_func.OutputsT]: ...
+    ) -> _func.NumbaFunc[T]: ...
 
 
 class _PyGUFuncDecorator(Protocol):
     @overload
-    def __call__(
+    def __call__[T: _gufunc.BooleanOutput](
         self,
-        wrapped: Callable[..., _gufunc.BooleanOutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _gufunc.PyGUFunc[_gufunc.BooleanOutputT]: ...
+    ) -> _gufunc.PyGUFunc[T]: ...
 
     @overload
-    def __call__(
+    def __call__[T: _gufunc.Output](
         self,
-        wrapped: Callable[..., _gufunc.OutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _gufunc.PyGUFunc[_gufunc.OutputT]: ...
+    ) -> _gufunc.PyGUFunc[T]: ...
 
     @overload
-    def __call__(
+    def __call__[T: _gufunc.Outputs](
         self,
-        wrapped: Callable[..., _gufunc.OutputsT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _gufunc.PyGUFunc[_gufunc.OutputsT]: ...
+    ) -> _gufunc.PyGUFunc[T]: ...
 
 
 class _PyUFuncDecorator(Protocol):
     @overload
-    def __call__(
+    def __call__[T: onp.ToJustBool](
         self,
-        wrapped: Callable[..., _ufunc.BooleanOutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _ufunc.PyUFunc[_ufunc.BooleanOutputT]: ...
+    ) -> _ufunc.PyUFunc[T]: ...
 
     @overload
-    def __call__(
+    def __call__[T: _ufunc.Output](
         self,
-        wrapped: Callable[..., _ufunc.OutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _ufunc.PyUFunc[_ufunc.OutputT]: ...
+    ) -> _ufunc.PyUFunc[T]: ...
 
     @overload
-    def __call__(
+    def __call__[T: _ufunc.Outputs](
         self,
-        wrapped: Callable[..., _ufunc.OutputsT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _ufunc.PyUFunc[_ufunc.OutputsT]: ...
+    ) -> _ufunc.PyUFunc[T]: ...
 
 
 class _NumbaUFuncDecorator(Protocol):
     @overload
-    def __call__(
+    def __call__[T: onp.ToJustBool](
         self,
-        wrapped: Callable[..., _ufunc.BooleanOutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _ufunc.NumbaUFunc[_ufunc.BooleanOutputT]: ...
+    ) -> _ufunc.NumbaUFunc[T]: ...
 
     @overload
-    def __call__(
+    def __call__[T: _ufunc.Output](
         self,
-        wrapped: Callable[..., _ufunc.OutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _ufunc.NumbaUFunc[_ufunc.OutputT]: ...
+    ) -> _ufunc.NumbaUFunc[T]: ...
 
 
 class _NumbaParallelUFuncDecorator(Protocol):
     @overload
-    def __call__(
+    def __call__[T: onp.ToJustBool](
         self,
-        wrapped: Callable[..., _ufunc.BooleanOutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _ufunc.NumbaParallelUFunc[_ufunc.BooleanOutputT]: ...
+    ) -> _ufunc.NumbaParallelUFunc[T]: ...
 
     @overload
-    def __call__(
+    def __call__[T: _ufunc.Output](
         self,
-        wrapped: Callable[..., _ufunc.OutputT],
+        wrapped: Callable[..., T],
         /,
-    ) -> _ufunc.NumbaParallelUFunc[_ufunc.OutputT]: ...
+    ) -> _ufunc.NumbaParallelUFunc[T]: ...
 
 
 @overload
@@ -217,16 +216,16 @@ def cfunc(  # ruff: ignore[too-many-arguments]
 
 
 @overload
-def func(
-    wrapped: Callable[..., _func.OutputT],
+def func[T: _func.Output](
+    wrapped: Callable[..., T],
     /,
-) -> _func.PyFunc[_func.OutputT]: ...
+) -> _func.PyFunc[T]: ...
 
 @overload
-def func(
-    wrapped: Callable[..., _func.OutputsT],
+def func[T: _func.Outputs](
+    wrapped: Callable[..., T],
     /,
-) -> _func.PyFunc[_func.OutputsT]: ...
+) -> _func.PyFunc[T]: ...
 
 @overload
 def func(
@@ -282,17 +281,11 @@ def func(  # ruff: ignore[too-many-arguments]
     if wrapped:
         return _func.PyFunc(wrapped)
     if not nopython:
-        def pyfunc(
-            wrapped: Callable[..., _T],
-            /,
-        ) -> _func.PyFunc[_T]:
+        def pyfunc[T](wrapped: Callable[..., T], /) -> _func.PyFunc[T]:
             return _func.PyFunc(wrapped, align=align, pad_value=pad_value)
         return pyfunc
 
-    def wrapper(
-        wrapped: Callable[..., _T],
-        /,
-    ) -> _func.NumbaFunc[_T]:
+    def wrapper[T](wrapped: Callable[..., T], /) -> _func.NumbaFunc[T]:
         return _func.NumbaFunc(
             wrapped,
             align=align,
@@ -362,10 +355,7 @@ def gufunc(  # ruff: ignore[too-many-arguments]
     parallel: bool | str = False,
 ) -> Callable[..., Any]:
     if not nopython:
-        def pygufunc(
-            wrapped: Callable[..., _T],
-            /,
-        ) -> _gufunc.PyGUFunc[_T]:
+        def pygufunc[T](wrapped: Callable[..., T], /) -> _gufunc.PyGUFunc[T]:
             return _gufunc.PyGUFunc(
                 wrapped,
                 signature,
@@ -409,22 +399,22 @@ def gufunc(  # ruff: ignore[too-many-arguments]
 
 
 @overload
-def ufunc(
-    wrapped: Callable[..., _ufunc.BooleanOutputT],
+def ufunc[T: onp.ToJustBool](
+    wrapped: Callable[..., T],
     /,
-) -> _ufunc.PyUFunc[_ufunc.BooleanOutputT]: ...
+) -> _ufunc.PyUFunc[T]: ...
 
 @overload
-def ufunc(
-    wrapped: Callable[..., _ufunc.OutputT],
+def ufunc[T: _ufunc.Output](
+    wrapped: Callable[..., T],
     /,
-) -> _ufunc.PyUFunc[_ufunc.OutputT]: ...
+) -> _ufunc.PyUFunc[T]: ...
 
 @overload
-def ufunc(
-    wrapped: Callable[..., _ufunc.OutputsT],
+def ufunc[T: _ufunc.Outputs](
+    wrapped: Callable[..., T],
     /,
-) -> _ufunc.PyUFunc[_ufunc.OutputsT]: ...
+) -> _ufunc.PyUFunc[T]: ...
 
 @overload
 def ufunc(
@@ -476,10 +466,10 @@ def ufunc(  # ruff: ignore[too-many-arguments]
     if not nopython:
         match identity:
             case "reorderable" | None:
-                def pyufunc(
-                    wrapped: Callable[..., _T],
+                def pyufunc[T](
+                    wrapped: Callable[..., T],
                     /,
-                ) -> _ufunc.PyUFunc[_T]:
+                ) -> _ufunc.PyUFunc[T]:
                     return _ufunc.PyUFunc(wrapped, identity=identity)
                 return pyufunc
             case _:
@@ -487,10 +477,10 @@ def ufunc(  # ruff: ignore[too-many-arguments]
                 raise ValueError(message)
 
     if not parallel:
-        def numba_ufunc(
-            wrapped: Callable[..., _T],
+        def numba_ufunc[T](
+            wrapped: Callable[..., T],
             /,
-        ) -> _ufunc.NumbaUFunc[_T]:
+        ) -> _ufunc.NumbaUFunc[T]:
             return _ufunc.NumbaUFunc(
                 wrapped,
                 boundscheck=boundscheck,
@@ -500,10 +490,10 @@ def ufunc(  # ruff: ignore[too-many-arguments]
             )
         return numba_ufunc
 
-    def wrapper(
-        wrapped: Callable[..., _T],
+    def wrapper[T](
+        wrapped: Callable[..., T],
         /,
-    ) -> _ufunc.NumbaParallelUFunc[_T]:
+    ) -> _ufunc.NumbaParallelUFunc[T]:
         return _ufunc.NumbaParallelUFunc(
             wrapped,
             boundscheck=boundscheck,

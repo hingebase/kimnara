@@ -19,14 +19,13 @@ import dataclasses
 import types
 import warnings
 from contextlib import AbstractContextManager
-from typing import Literal, cast
+from typing import Literal, cast, override
 
 import numpy as np
 from llvmlite import binding, ir  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import cgutils  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.cgutils import get_or_insert_function  # pyright: ignore[reportMissingTypeStubs, reportUnknownVariableType]
 from numba.np.ufunc import parallel, workqueue  # pyright: ignore[reportAttributeAccessIssue, reportMissingTypeStubs, reportUnknownVariableType]
-from typing_extensions import override
 
 import kimnara as kn
 

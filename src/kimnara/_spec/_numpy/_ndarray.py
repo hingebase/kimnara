@@ -16,19 +16,17 @@ __all__ = ["TypingContext"]
 
 import builtins
 import collections.abc
-import sys
+import inspect
 import types
 import typing
 import warnings
 from collections.abc import Sequence
-from typing import get_args, get_origin
+from typing import Any, Never, get_args, get_origin, override
 
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import numpy.typing as npt
-from numpy_typing_compat import NUMPY_GE_2_0
-from typing_extensions import Any, Never, override
 from typing_inspection import introspection, typing_objects
 
 import kimnara as kn
@@ -38,7 +36,7 @@ from kimnara._typing import Scalar
 
 from . import _base, _units
 
-_NPY_MAXDIMS = 64 if NUMPY_GE_2_0 else 32
+_NPY_MAXDIMS = 64
 
 
 class TypingContext(_generic.TypingContext):
@@ -70,11 +68,9 @@ class TypingContext(_generic.TypingContext):
             return _generic.NeverType(inspected, self)
         if typing_objects.is_noreturn(tp):
             message = "typing.Never is preferred over typing.NoReturn"
-            if sys.version_info < (3, 11):
-                message = message.replace("typing", "typing_extensions", 1)
             warnings.warn(message, stacklevel=2)
             return _generic.NeverType(inspected, self)
-        if _utils.isclass(tp) and issubclass(tp, np.generic):
+        if inspect.isclass(tp) and issubclass(tp, np.generic):
             return _base.ScalarType(inspected, self)
         match get_origin(tp):
             case builtins.tuple:
@@ -155,9 +151,6 @@ class TypingContext(_generic.TypingContext):
             case [arg, builtins.Ellipsis]:
                 self._check_dim(0, self.parse(arg))
                 return self._default_ndim()
-            case [()] if sys.version_info < (3, 11):
-                # https://github.com/python/cpython/issues/91137
-                ndim = 0
             case args:
                 ndim = len(args)
                 if ndim > _NPY_MAXDIMS:

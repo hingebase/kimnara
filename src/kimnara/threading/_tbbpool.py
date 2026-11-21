@@ -16,8 +16,7 @@ __all__ = ["TBBNumPyVectorize", "tbb_available"]
 
 import weakref
 from collections.abc import Callable
-
-from typing_extensions import override
+from typing import override
 
 from . import _genericpool, register_custom_backend
 

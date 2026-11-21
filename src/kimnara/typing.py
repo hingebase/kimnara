@@ -16,32 +16,25 @@
 
 __all__ = ["CPointer", "Intrinsic", "Mut", "Pointer"]
 
+import types
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Annotated
+from typing import Annotated, Any, Protocol
 
 import optype.numpy as onp
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.cpu import CPUContext  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.typing.templates import Signature  # pyright: ignore[reportMissingTypeStubs]
-from typing_extensions import Any, Protocol, TypeVar, TypeVarTuple, Unpack
+from numpy._core._internal import _ctypes  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[import-private-name]
+from typing_extensions import TypeVar
 
 from . import _spec
-from ._typing import SCT
+from ._typing import SCT, Scalar
 
-if TYPE_CHECKING:
-    import numpy as np
+_T_co = TypeVar("_T_co", bound="Scalar | CPointer[Any]", covariant=True)
 
-_T_co = TypeVar(
-    "_T_co",
-    bound="np.number[Any] | np.bool_ | CPointer[Any]",
-    covariant=True,
-)
-_Ts = TypeVarTuple("_Ts")
-
-
-class ArrayCTypes(Protocol):
-    @property
-    def data(self) -> int: ...
+if not hasattr(_ctypes, "__class_getitem__"):
+    _ctypes.__class_getitem__ = classmethod(types.GenericAlias)  # pyright: ignore[reportAttributeAccessIssue]
+ArrayCTypes = _ctypes[int]
 
 
 class CPointer(Protocol[_T_co]):
@@ -63,10 +56,10 @@ class CPointer(Protocol[_T_co]):
         """Store an element to the pointer at specified offset."""
 
 
-Intrinsic = tuple[
+type Intrinsic[*Ts] = tuple[
     Signature,
     Callable[
-        [CPUContext, ir.IRBuilder, Signature, tuple[Unpack[_Ts]]],
+        [CPUContext, ir.IRBuilder, Signature, tuple[*Ts]],
         ir.Value | None,
     ],
 ]

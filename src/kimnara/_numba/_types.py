@@ -14,8 +14,9 @@
 
 __all__ = ["TypeofContext"]
 
+from typing import Protocol
+
 from numba.core.typing import typeof  # pyright: ignore[reportMissingTypeStubs]
-from typing_extensions import Protocol
 
 
 class TypeofContext(Protocol):

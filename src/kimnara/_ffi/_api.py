@@ -18,10 +18,9 @@ import ctypes
 import inspect
 import types
 from collections.abc import Callable
-from typing import cast
+from typing import Any, cast, overload
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
-from typing_extensions import Any, overload
 
 import kimnara as kn
 from kimnara import _utils

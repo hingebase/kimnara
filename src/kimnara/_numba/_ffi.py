@@ -19,7 +19,7 @@ from typing import TYPE_CHECKING, cast, no_type_check
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
-from numba.core import cgutils, cpu, pythonapi, types  # pyright: ignore[reportMissingTypeStubs]
+from numba.core import cgutils, cpu, types  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.typing import context, templates  # pyright: ignore[reportMissingTypeStubs]
 
 if TYPE_CHECKING:
@@ -51,7 +51,7 @@ def get_cython_function_address(
     c_module_name = context.insert_const_string(builder.module, module_name)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
     pyapi = context.get_python_api(builder)  # pyright: ignore[reportUnknownMemberType]
     gil_state = cast("ir.Instruction", pyapi.gil_ensure())
-    module = _import_module(pyapi, c_module_name)  # TODO(): #24
+    module = cast("ir.Instruction", pyapi.import_module(c_module_name))  # pyright: ignore[reportUnknownMemberType]
     pyx_capi = cast(
         "ir.Instruction",
         pyapi.object_getattr_string(module, "__pyx_capi__"),  # pyright: ignore[reportUnknownMemberType]
@@ -94,18 +94,6 @@ def _call(
         name,
     )
     return builder.call(builder.bitcast(fn, fnty.as_pointer()), args)  # pyright: ignore[reportUnknownMemberType]
-
-
-@no_type_check
-def _import_module(
-    pyapi: pythonapi.PythonAPI,
-    module_name: ir.Value,
-) -> ir.Instruction:
-    try:
-        method = pyapi.import_module
-    except AttributeError:
-        method = pyapi.import_module_noblock
-    return method(module_name)
 
 
 @numba.extending.overload(  # pyright: ignore[reportUnknownMemberType, reportUntypedFunctionDecorator]

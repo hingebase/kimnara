@@ -17,22 +17,17 @@
 import ctypes
 import math
 import os
-import sys
 import time
 import warnings
 from collections.abc import Callable
-from typing import NoReturn, cast
+from typing import NoReturn, cast, override
 
 import numba.core.registry  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import numpy.typing as npt
 import pytest
-from typing_extensions import override
 
 import kimnara as kn
-
-if sys.version_info < (3, 11):
-    from exceptiongroup import ExceptionGroup
 
 _DUMMY_THREAD_ID = 42
 
@@ -111,7 +106,7 @@ def test_np_vectorize(
                         w.file,
                         w.line,
                     )
-            np.testing.assert_array_equal(actual, desired)
+            np.testing.assert_array_equal(actual, desired, strict=True)
 
         if issubclass(vectorize, kn.threading.OpenMPNumPyVectorize):
             with subtests.test(
@@ -119,12 +114,7 @@ def test_np_vectorize(
                 vectorize=vectorize,
             ):
                 throw = vectorize(_raise, signature="(n)->()")
-                with pytest.raises(
-                    ExceptionGroup,
-                    check=lambda eg: len(eg.exceptions) == n and all(
-                        isinstance(e, _ExpectedError) for e in eg.exceptions
-                    ),
-                ):
+                with pytest.RaisesGroup(*[_ExpectedError] * n):
                     throw(x)
         else:
             with subtests.test(

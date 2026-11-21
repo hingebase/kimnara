@@ -12,19 +12,21 @@
 # implied. See the License for the specific language governing
 # permissions and limitations under the License.
 
-__all__ = [
-    "BooleanOutputT",
-    "NumbaParallelUFunc",
-    "NumbaUFunc",
-    "OutputT",
-    "OutputsT",
-    "PyUFunc",
-]
+__all__ = ["NumbaParallelUFunc", "NumbaUFunc", "Output", "Outputs", "PyUFunc"]
 
 import abc
 import inspect
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Generic, Literal, TypeAlias, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    SupportsIndex,
+    Unpack,
+    cast,
+    overload,
+    override,
+)
 
 import numba  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
@@ -34,128 +36,106 @@ import optype.numpy as onp
 from numba.np.ufunc import dufunc, ufuncbuilder  # pyright: ignore[reportMissingTypeStubs]
 from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
-from typing_extensions import (
-    Any,
-    Sentinel,
-    SupportsIndex,
-    TypeVar,
-    Unpack,
-    overload,
-    override,
-)
+from typing_extensions import Sentinel, TypeVar
 
 import kimnara as kn
 from kimnara import _spec
 from kimnara._typing import (
     ArrayLike,
-    AtLeast1DT,
     FastMathOptions,
     Input,
     Number,
-    NumberT,
-    NumericT,
-    Output,
-    Outputs,
+    Numeric,
     Scalar,
-    ShapeT,
     UFuncKwargs,
 )
+from kimnara._typing import Output as _Output
+from kimnara._typing import Outputs as _Outputs
 
 from . import _common
 
 if TYPE_CHECKING:
     from kimnara._spec._numpy._base import ScalarType
 
-_InputAtLeast1D: TypeAlias = """
+type Output = op.JustInt | op.JustFloat | op.JustComplex | Number
+type Outputs = tuple[complex | Scalar, ...]
+type _InputAtLeast1D = (
     np.ndarray[onp.AtLeast1D, np.dtype[Scalar]]
-    | PlainQuantity[np.ndarray[onp.AtLeast1D, np.dtype[Number]]]"""
-_N = TypeVar("_N")
-_NumberT = TypeVar(
-    "_NumberT",
-    np.int8, np.int16, np.int32, np.int64, np.intp,
-    np.uint8, np.uint16, np.uint32, np.uint64, np.uintp,
-    np.float32, np.float64, np.complex64, np.complex128,
+    | PlainQuantity[np.ndarray[onp.AtLeast1D, np.dtype[Number]]]
 )
-_Output = NumericT | NumpyQuantity[NumericT]
-_ReduceAtShapeT = TypeVar(
-    "_ReduceAtShapeT",
+type _MaybeQuantity[T: Numeric] = T | NumpyQuantity[T]
+_ShapeT = TypeVar(
+    "_ShapeT",
     tuple[int],
     tuple[int, int],
     tuple[int, int, int],
     tuple[int, int, int, int],
-    tuple[int, int, int, int, Unpack[tuple[int, ...]]],
-    tuple[int, int, int, Unpack[tuple[int, ...]]],
-    tuple[int, int, Unpack[tuple[int, ...]]],
-    tuple[int, Unpack[tuple[int, ...]]],
+    tuple[int, int, int, int, *tuple[int, ...]],
+    tuple[int, int, int, *tuple[int, ...]],
+    tuple[int, int, *tuple[int, ...]],
+    tuple[int, *tuple[int, ...]],
 )
-_ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...])
-_T = TypeVar("_T")
-
-BooleanOutputT = TypeVar("BooleanOutputT", bound=onp.ToJustBool)
-OutputT = TypeVar(
-    "OutputT",
-    bound=op.JustInt | op.JustFloat | op.JustComplex | Number,
-)
-OutputsT = TypeVar("OutputsT", bound=tuple[complex | Scalar, ...])
+_BooleanOutputT = TypeVar("_BooleanOutputT", bound=onp.ToJustBool)
+_OutputT = TypeVar("_OutputT", bound=Output)
 
 MISSING = Sentinel("MISSING")
 
 
-class _UFunc(_common.BaseUFuncWrapper[_T]):
+class _UFunc[T](_common.BaseUFuncWrapper[T]):
     @property
     @override
     def signature(self) -> None:
         pass
 
     @overload
-    def __call__(
-        self: "_UFunc[BooleanOutputT]",
-        *args: Input[Any, Any],
+    def __call__[O: onp.ToJustBool](
+        self: "_UFunc[O]",
+        *args: Input,
         **kwargs: Unpack[UFuncKwargs],
     ) -> ArrayLike[np.bool_]: ...
 
     @overload
-    def __call__(
-        self: "_UFunc[OutputT]",
-        *args: Input[Any, Any],
+    def __call__[O: Output](
+        self: "_UFunc[O]",
+        *args: Input,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> _Output[ArrayLike[Number]]: ...
+    ) -> _MaybeQuantity[ArrayLike[Number]]: ...
 
     @overload
-    def __call__(
-        self: "_UFunc[OutputsT]",
-        *args: Input[Any, Any],
+    def __call__[O: Outputs](
+        self: "_UFunc[O]",
+        *args: Input,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> tuple[Output, ...]: ...
+    ) -> tuple[_Output, ...]: ...
 
     @override
     def __call__(
         self,
-        *args: Input[Any, Any],
+        *args: Input,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> Outputs:
+    ) -> _Outputs:
         wrapper = self.wrap_call(**kwargs)
         return self.validate_call(wrapper)(*args)
 
     @overload
-    def accumulate(
-        self: "_UFunc[BooleanOutputT]",
-        array: np.ndarray[AtLeast1DT, np.dtype[np.bool_]],
+    def accumulate[O: onp.ToJustBool, ShapeT: onp.AtLeast1D](
+        self: "_UFunc[O]",
+        array: np.ndarray[ShapeT, np.dtype[np.bool_]],
         /,
         axis: SupportsIndex = ...,
-    ) -> np.ndarray[AtLeast1DT, np.dtype[np.bool_]]: ...
+    ) -> np.ndarray[ShapeT, np.dtype[np.bool_]]: ...
 
     @overload
-    def accumulate(
-        self: "_UFunc[OutputT]",
-        array: np.ndarray[AtLeast1DT, np.dtype[Number]]
-            | PlainQuantity[np.ndarray[AtLeast1DT, np.dtype[NumberT]]],
+    def accumulate[O: Output, ShapeT: onp.AtLeast1D](
+        self: "_UFunc[O]",
+        array: np.ndarray[ShapeT, np.dtype[Number]]
+            | PlainQuantity[np.ndarray[ShapeT, np.dtype[Number]]],
         /,
         axis: SupportsIndex = ...,
-    ) -> _Output[np.ndarray[AtLeast1DT, np.dtype[Number]]]: ...
+    ) -> _MaybeQuantity[np.ndarray[ShapeT, np.dtype[Number]]]: ...
 
     def accumulate(
-        self: "_UFunc[BooleanOutputT] | _UFunc[OutputT]",
+        self: "_UFunc[Any]",
         array: _InputAtLeast1D,
         /,
         axis: SupportsIndex = 0,
@@ -165,8 +145,8 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         return self.validate_call(wrapper, alternative=True)(array)
 
     @overload
-    def reduce(
-        self: "_UFunc[BooleanOutputT]",
+    def reduce[O: onp.ToJustBool](
+        self: "_UFunc[O]",
         array: onp.ToJustBool | npt.NDArray[np.bool_],
         /,
         axis: SupportsIndex | Sequence[SupportsIndex] | None = ...,
@@ -177,20 +157,20 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
     ) -> ArrayLike[np.bool_]: ...
 
     @overload
-    def reduce(
-        self: "_UFunc[OutputT]",
-        array: Input[NumberT, ShapeT],
+    def reduce[O: Output](
+        self: "_UFunc[O]",
+        array: Input,
         /,
         axis: SupportsIndex | Sequence[SupportsIndex] | None = ...,
         *,
         keepdims: bool = ...,
         initial: object = ...,
         where: onp.ToJustBool | onp.ToJustBoolND | None = ...,
-    ) -> _Output[ArrayLike[Number]]: ...
+    ) -> _MaybeQuantity[ArrayLike[Number]]: ...
 
     def reduce(
         self,
-        array: Input[NumberT, ShapeT],
+        array: Input,
         /,
         axis: SupportsIndex | Sequence[SupportsIndex] | None = 0,
         *,
@@ -204,22 +184,22 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
 
     @overload
     def reduceat(
-        self: "_UFunc[BooleanOutputT]",
-        array: np.ndarray[_ReduceAtShapeT, np.dtype[np.bool_]],
+        self: "_UFunc[_BooleanOutputT]",
+        array: np.ndarray[_ShapeT, np.dtype[np.bool_]],
         /,
         indices: onp.ToJustIntStrict1D,
         axis: SupportsIndex = ...,
-    ) -> np.ndarray[_ReduceAtShapeT, np.dtype[np.bool_]]: ...
+    ) -> np.ndarray[_ShapeT, np.dtype[np.bool_]]: ...
 
     @overload
     def reduceat(
-        self: "_UFunc[OutputT]",
-        array: np.ndarray[_ReduceAtShapeT, np.dtype[Number]]
-            | PlainQuantity[np.ndarray[_ReduceAtShapeT, np.dtype[NumberT]]],
+        self: "_UFunc[_OutputT]",
+        array: np.ndarray[_ShapeT, np.dtype[Number]]
+            | PlainQuantity[np.ndarray[_ShapeT, np.dtype[Number]]],
         /,
         indices: onp.ToJustIntStrict1D,
         axis: SupportsIndex = ...,
-    ) -> _Output[np.ndarray[_ReduceAtShapeT, np.dtype[Number]]]: ...
+    ) -> _MaybeQuantity[np.ndarray[_ShapeT, np.dtype[Number]]]: ...
 
     def reduceat(
         self,
@@ -233,36 +213,36 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         return self.validate_call(wrapper, alternative=True)(array)
 
     @overload
-    def outer(
-        self: "_UFunc[BooleanOutputT]",
-        a: Input[NumberT, ShapeT],
-        b: Input[_NumberT, _ShapeT],
+    def outer[O: onp.ToJustBool](
+        self: "_UFunc[O]",
+        a: Input,
+        b: Input,
         /,
         **kwargs: Unpack[UFuncKwargs],
     ) -> ArrayLike[np.bool_]: ...
 
     @overload
-    def outer(
-        self: "_UFunc[OutputT]",
-        a: Input[NumberT, ShapeT],
-        b: Input[_NumberT, _ShapeT],
+    def outer[O: Output](
+        self: "_UFunc[O]",
+        a: Input,
+        b: Input,
         /,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> _Output[ArrayLike[Number]]: ...
+    ) -> _MaybeQuantity[ArrayLike[Number]]: ...
 
     @overload
-    def outer(
-        self: "_UFunc[OutputsT]",
-        a: Input[NumberT, ShapeT],
-        b: Input[_NumberT, _ShapeT],
+    def outer[O: Outputs](
+        self: "_UFunc[O]",
+        a: Input,
+        b: Input,
         /,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> tuple[Output, ...]: ...
+    ) -> tuple[_Output, ...]: ...
 
     def outer(
         self,
-        a: Input[NumberT, ShapeT],
-        b: Input[_NumberT, _ShapeT],
+        a: Input,
+        b: Input,
         /,
         **kwargs: Unpack[UFuncKwargs],
     ) -> object:
@@ -335,16 +315,16 @@ class _UFunc(_common.BaseUFuncWrapper[_T]):
         return inspect.Signature([arg], return_annotation=return_annotation)
 
 
-class _NumbaUFuncBase(_UFunc[_T], _common.UFuncWrapper[_T], Generic[_T, _N]):
+class _NumbaUFuncBase[T, N](_UFunc[T], _common.UFuncWrapper[T]):
     def __init__(  # ruff: ignore[too-many-arguments]
         self,
-        wrapped: Callable[..., _T],
+        wrapped: Callable[..., T],
         *,
         boundscheck: bool | None = None,
         cache: bool | None = None,
         fastmath: FastMathOptions = False,
         identity: Literal[0, 1, "reorderable"] | None = None,
-        parallel: _N = False,
+        parallel: N = False,
     ) -> None:
         self.infer(wrapped)
         argtypes = [arg.to_numba() for arg in self.argtypes]
@@ -432,17 +412,17 @@ class _NumbaUFuncBase(_UFunc[_T], _common.UFuncWrapper[_T], Generic[_T, _N]):
     @abc.abstractmethod
     def build(
         self,
-        decorator: Callable[[Callable[..., _T]], Any],
-        name: _N,
+        decorator: Callable[[Callable[..., T]], Any],
+        name: N,
     ) -> None:
         raise NotImplementedError
 
 
-class NumbaUFunc(_NumbaUFuncBase[_T, Literal[False]], _common.Dispatchable):
+class NumbaUFunc[T](_NumbaUFuncBase[T, Literal[False]], _common.Dispatchable):
     @override
     def build(
         self,
-        decorator: Callable[[Callable[..., _T]], dufunc.DUFunc],
+        decorator: Callable[[Callable[..., T]], dufunc.DUFunc],
         name: Literal[False],
     ) -> None:
         ufunc = decorator(self.__wrapped__)
@@ -453,21 +433,21 @@ class NumbaUFunc(_NumbaUFuncBase[_T, Literal[False]], _common.Dispatchable):
         self._ufunc = cast("np.ufunc", ufunc.ufunc)
 
 
-class NumbaParallelUFunc(_NumbaUFuncBase[_T, str | Literal[True]]):
+class NumbaParallelUFunc[T](_NumbaUFuncBase[T, str | Literal[True]]):
     @override
     def build(
         self,
-        decorator: Callable[[Callable[..., _T]], np.ufunc],
+        decorator: Callable[[Callable[..., T]], np.ufunc],
         name: str | Literal[True],
     ) -> None:
         with kn.threading.using_backend(name):
             self._ufunc = decorator(self.__wrapped__)
 
 
-class PyUFunc(_UFunc[_T]):
+class PyUFunc[T](_UFunc[T]):
     def __init__(
         self,
-        wrapped: Callable[..., _T],
+        wrapped: Callable[..., T],
         *,
         identity: Literal["reorderable"] | None = None,
     ) -> None:

@@ -22,17 +22,19 @@ __all__ = [
 import itertools
 import warnings
 from collections.abc import Sequence
-from typing import cast
+from typing import Any, cast, overload
 
 import numpy as np
 import numpy.typing as npt
 import optype.numpy as onp
 from optype.typing import AnyComplex
-from typing_extensions import Any, overload
+from typing_extensions import TypeVar
 
 import kimnara as kn
 from kimnara import _spec, _utils
-from kimnara._typing import SCT, AtLeast1DT, Scalar
+from kimnara._typing import SCT, Scalar
+
+_AtLeast1DT = TypeVar("_AtLeast1DT", bound=onp.AtLeast1D)
 
 _DTYPES = frozenset(map(np.dtype, (
     "fdFD"  # Floating and complex types
@@ -41,24 +43,25 @@ _DTYPES = frozenset(map(np.dtype, (
 )))
 
 
+# ruff: disable[non-pep695-generic-function]
 @overload
 def array(
-    a: np.ndarray[AtLeast1DT, np.dtype[Scalar]],
+    a: np.ndarray[_AtLeast1DT, np.dtype[Scalar]],
     dtype: type[SCT],
     *,
     copy: bool | None = ...,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
+) -> np.ndarray[_AtLeast1DT, np.dtype[SCT]]: ...
 @overload
 def array(
-    a: np.ndarray[AtLeast1DT, np.dtype[SCT]],
+    a: np.ndarray[_AtLeast1DT, np.dtype[SCT]],
     dtype: None = ...,
     *,
     copy: bool | None = ...,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
+) -> np.ndarray[_AtLeast1DT, np.dtype[SCT]]: ...
 def array(
     a: np.ndarray[onp.AtLeast1D, np.dtype[Any]],
     dtype: type[Scalar] | None = None,
@@ -99,10 +102,7 @@ def array(
         if np.iscomplexobj(a) and not issubclass(dtype, np.complexfloating):
             warnings.warn(
                 "Casting complex values to real discards the imaginary part",
-                category=cast(
-                    "type[RuntimeWarning]",
-                    getattr(np, "exceptions", np).ComplexWarning,  # pyright: ignore[reportAttributeAccessIssue]
-                ),
+                category=np.exceptions.ComplexWarning,
                 stacklevel=2,
             )
         arr[:] = a
@@ -113,38 +113,39 @@ def array(
 
 @overload
 def asarray(
-    a: np.ndarray[AtLeast1DT, np.dtype[Scalar]],
+    a: np.ndarray[_AtLeast1DT, np.dtype[Scalar]],
     dtype: type[SCT],
     *,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
+) -> np.ndarray[_AtLeast1DT, np.dtype[SCT]]: ...
 @overload
 def asarray(
-    a: np.ndarray[AtLeast1DT, np.dtype[SCT]],
+    a: np.ndarray[_AtLeast1DT, np.dtype[SCT]],
     dtype: None = ...,
     *,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
+) -> np.ndarray[_AtLeast1DT, np.dtype[SCT]]: ...
 def asarray(
-    a: np.ndarray[AtLeast1DT, np.dtype[Any]],
+    a: np.ndarray[_AtLeast1DT, np.dtype[Any]],
     dtype: type[Scalar] | None = None,
     *,
     align: "str | kn.Alignment" = "host",
     pad_value: AnyComplex | None = None,
-) -> np.ndarray[AtLeast1DT, np.dtype[Scalar]]:
+) -> np.ndarray[_AtLeast1DT, np.dtype[Scalar]]:
     return array(a, dtype, align=align, copy=None, pad_value=pad_value)
 
 
 @overload
 def empty(
-    shape: AtLeast1DT,
+    shape: _AtLeast1DT,
     dtype: type[SCT] = np.float64,
     *,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-) -> np.ndarray[AtLeast1DT, np.dtype[SCT]]: ...
+) -> np.ndarray[_AtLeast1DT, np.dtype[SCT]]: ...
+# ruff: enable[non-pep695-generic-function]
 @overload
 def empty(
     shape: int,
@@ -160,9 +161,7 @@ def empty(
     *,
     align: "str | kn.Alignment" = ...,
     pad_value: AnyComplex | None = ...,
-    # Cannot use `onp.AtLeast1D` here since the shape was invariant in
-    # numpy <2.1.0
-) -> npt.NDArray[SCT]: ...
+) -> np.ndarray[onp.AtLeast1D, np.dtype[SCT]]: ...
 def empty(
     shape: int | Sequence[int],
     dtype: type[Scalar] = np.float64,
@@ -187,7 +186,7 @@ def empty(
 
 
 def isaligned(
-    value: np.ndarray[AtLeast1DT, np.dtype[Scalar]],
+    value: np.ndarray[onp.AtLeast1D, np.dtype[Scalar]],
     align: "str | kn.Alignment",
 ) -> bool:
     _check_array_dtype_and_ndim(value)
@@ -236,7 +235,7 @@ def _empty(
 
 
 def _isaligned_simd(
-    value: np.ndarray[AtLeast1DT, np.dtype[Scalar]],
+    value: np.ndarray[onp.AtLeast1D, np.dtype[Scalar]],
     spec: _spec.Alignment,
 ) -> bool:
     multiple_of = spec.multiple_of

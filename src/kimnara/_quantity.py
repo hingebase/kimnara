@@ -16,7 +16,7 @@ __all__ = ["quantity"]
 
 import datetime as dt
 import functools
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast, overload
 
 import numpy as np
 import numpy.typing as npt
@@ -25,10 +25,9 @@ import optype.numpy as onp
 import xarray as xr
 from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
-from typing_extensions import Any, overload
 
 from kimnara import _spec, _utils
-from kimnara._typing import ArrayLike, NumericT, ShapeT
+from kimnara._typing import ArrayLike, Numeric
 
 if TYPE_CHECKING:
     from typing import type_check_only
@@ -44,20 +43,20 @@ _Quantity = _spec.ureg.Quantity
 
 
 @overload
-def quantity(
+def quantity[T: Numeric](
     # Using PlainQuantity for input annotations and NumpyQuantity for
     # output annotations
     # Use pint.Quantity directly once we require pint >=0.25.1
-    value: NumericT | PlainQuantity[NumericT],
+    value: T | PlainQuantity[T],
     units: str | None = ...,
-) -> NumpyQuantity[NumericT]: ...
+) -> NumpyQuantity[T]: ...
 @overload
-def quantity(
+def quantity[T: tuple[int, ...]](
     # np.timedelta64 is a subclass of np.signedinteger at runtime,
     # but not in the type stubs
-    value: np.ndarray[ShapeT, np.dtype[np.timedelta64]],
+    value: np.ndarray[T, np.dtype[np.timedelta64]],
     units: str | None = ...,
-) -> NumpyQuantity[np.ndarray[ShapeT, np.dtype[np.float64]]]: ...
+) -> NumpyQuantity[np.ndarray[T, np.dtype[np.float64]]]: ...
 @overload
 def quantity(
     value: op.JustInt,
@@ -91,8 +90,8 @@ def _(value: np.timedelta64, units: str | None) -> PlainQuantity[Any]:
     return _convert_timedelta(value, value, units)
 
 
-@_numpy_quantity.register(np.number)
-def _(value: np.number[Any], units: str | None) -> PlainQuantity[Any]:
+@_numpy_quantity.register
+def _(value: np.number, units: str | None) -> PlainQuantity[Any]:
     return _Quantity(value, units)
 
 
@@ -141,7 +140,7 @@ def _(value: dt.timedelta, units: str | None) -> PlainQuantity[Any]:
 @_quantity.register(PlainQuantity)
 def _(value: PlainQuantity[Any], units: str | None) -> PlainQuantity[Any]:
     # https://github.com/hgrecco/pint/issues/2207
-    if value._REGISTRY is not _spec.ureg:  # ruff: ignore[private-member-access]  # pyright: ignore[reportPrivateUsage, reportUnknownMemberType]
+    if value._REGISTRY is not _spec.ureg:  # ruff: ignore[private-member-access]  # pyright: ignore[reportPrivateUsage]
         message = "Cannot operate quantities of different registries"
         raise ValueError(message)
     value = _numpy_quantity(value.magnitude, value.units)

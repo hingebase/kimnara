@@ -16,12 +16,11 @@ __all__ = ["NonMultiplicativeDequantifier", "NonMultiplicativeUnit"]
 
 import ctypes
 import dataclasses
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, override
 
 import numpy as np
 import pint
 import pydantic_core
-from typing_extensions import Any, override
 
 import kimnara as kn
 from kimnara import _utils
@@ -158,7 +157,7 @@ def _init() -> None:
         _types.append(types)
 
 
-_func: dict[type[np.number[Any]], np.ufunc] = {}
+_func: dict[type[np.number], np.ufunc] = {}
 _name: list[bytes] = []
 _types: list[bytes] = []
 _init()

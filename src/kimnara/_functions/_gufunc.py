@@ -13,11 +13,11 @@
 # permissions and limitations under the License.
 
 __all__ = [
-    "BooleanOutputT",
+    "BooleanOutput",
     "NumbaGUFunc",
     "NumbaParallelGUFunc",
-    "OutputT",
-    "OutputsT",
+    "Output",
+    "Outputs",
     "PyGUFunc",
 ]
 
@@ -26,7 +26,15 @@ import contextlib
 import functools
 import inspect
 from collections.abc import Callable, Iterator, Sequence
-from typing import TYPE_CHECKING, Generic, Literal, cast
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    Unpack,
+    cast,
+    overload,
+    override,
+)
 
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
@@ -34,9 +42,7 @@ import numpy.typing as npt
 import optype as op
 import optype.numpy as onp
 from numba.np.ufunc import gufunc, sigparse, ufuncbuilder  # pyright: ignore[reportMissingTypeStubs]
-from numpy_typing_compat import NUMPY_GE_2_0
 from pint.facets.numpy.quantity import NumpyQuantity
-from typing_extensions import Any, TypeVar, Unpack, overload, override
 
 import kimnara as kn
 from kimnara import _spec, _utils
@@ -45,40 +51,27 @@ from kimnara._typing import (
     FastMathOptions,
     Input,
     Number,
-    Output,
-    Outputs,
     Scalar,
     UFuncKwargs,
 )
+from kimnara._typing import Output as _Output
+from kimnara._typing import Outputs as _Outputs
 
 from . import _common
 
 if TYPE_CHECKING:
     from kimnara._spec._numpy._base import ScalarType, Type
 
-_Output = complex | ArrayLike[Scalar]
-_T = TypeVar("_T")
-
-BooleanOutputT = TypeVar(
-    "BooleanOutputT",
-    bound=onp.ToJustBool | npt.NDArray[np.bool_],
-)
-OutputT = TypeVar(
-    "OutputT",
-    bound=op.JustInt | op.JustFloat | op.JustComplex | ArrayLike[Number],
-)
-OutputsT = TypeVar(
-    "OutputsT",
-    bound=tuple[_Output, _Output, Unpack[tuple[_Output, ...]]],
-)
-
-_COPY = cast("bool", None) if NUMPY_GE_2_0 else False
+type _Item = complex | ArrayLike[Scalar]
+type BooleanOutput = onp.ToJustBool | npt.NDArray[np.bool_]
+type Output = op.JustInt | op.JustFloat | op.JustComplex | ArrayLike[Number]
+type Outputs = tuple[_Item, _Item, *tuple[_Item, ...]]
 
 
-class _GUFunc(_common.UFuncCompiler[_T]):
+class _GUFunc[T](_common.UFuncCompiler[T]):
     def __init__(
         self,
-        wrapped: Callable[..., _T],
+        wrapped: Callable[..., T],
         signature: str,
         *,
         align: "str | kn.Alignment" = "A",
@@ -98,37 +91,37 @@ class _GUFunc(_common.UFuncCompiler[_T]):
     @overload
     def __call__(
         self: "_GUFunc[None]",
-        *args: Input[Any, Any],
+        *args: Input,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> Outputs: ...
+    ) -> _Outputs: ...
 
     @overload
-    def __call__(
-        self: "_GUFunc[BooleanOutputT]",
-        *args: Input[Any, Any],
+    def __call__[O: BooleanOutput](
+        self: "_GUFunc[O]",
+        *args: Input,
         **kwargs: Unpack[UFuncKwargs],
     ) -> ArrayLike[np.bool_]: ...
 
     @overload
-    def __call__(
-        self: "_GUFunc[OutputT]",
-        *args: Input[Any, Any],
+    def __call__[O: Output](
+        self: "_GUFunc[O]",
+        *args: Input,
         **kwargs: Unpack[UFuncKwargs],
     ) -> ArrayLike[Number] | NumpyQuantity[ArrayLike[Number]]: ...
 
     @overload
-    def __call__(
-        self: "_GUFunc[OutputsT]",
-        *args: Input[Any, Any],
+    def __call__[O: Outputs](
+        self: "_GUFunc[O]",
+        *args: Input,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> tuple[Output, ...]: ...
+    ) -> tuple[_Output, ...]: ...
 
     @override
     def __call__(
         self,
-        *args: Input[Any, Any],
+        *args: Input,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> Outputs:
+    ) -> _Outputs:
         if "where" in kwargs:
             message = (
                 f"{self.__name__}() got an unexpected keyword argument 'where'"
@@ -217,7 +210,7 @@ class _GUFunc(_common.UFuncCompiler[_T]):
         raise NotImplementedError
 
 
-class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_T]):
+class _NumbaGUFuncBase[T](_GUFunc[None], _common.UFuncWrapper[None]):
     @override
     def __init__(
         self,
@@ -229,7 +222,7 @@ class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_T]):
         cache: bool | None = None,
         fastmath: FastMathOptions = False,
         pad_value: op.typing.AnyComplex | None = None,
-        parallel: _T = False,
+        parallel: T = False,
     ) -> None:
         super().__init__(
             wrapped,
@@ -357,7 +350,7 @@ class _NumbaGUFuncBase(_GUFunc[None], _common.UFuncWrapper[None], Generic[_T]):
     def build(
         self,
         decorator: Callable[[Callable[..., None]], Any],
-        name: _T,
+        name: T,
     ) -> None:
         raise NotImplementedError
 
@@ -435,11 +428,11 @@ class NumbaParallelGUFunc(_NumbaGUFuncBase[str | Literal[True]]):
             self._ufunc = decorator(self.__wrapped__)
 
 
-class PyGUFunc(_GUFunc[_T]):
+class PyGUFunc[T](_GUFunc[T]):
     @override
     def __init__(
         self,
-        wrapped: Callable[..., _T],
+        wrapped: Callable[..., T],
         signature: str,
         *,
         align: "str | kn.Alignment" = "A",
@@ -516,7 +509,7 @@ class PyGUFunc(_GUFunc[_T]):
             @self.validate_call
             def wrapper(*args: ArrayLike[Scalar]) -> npt.NDArray[Scalar]:
                 out = ufunc(*args)
-                return np.array(out, copy=_COPY, order=order, subok=subok)
+                return np.array(out, copy=None, order=order, subok=subok)
         else:
             @self.validate_call
             def wrapper(
@@ -524,7 +517,7 @@ class PyGUFunc(_GUFunc[_T]):
             ) -> tuple[npt.NDArray[Scalar], ...]:
                 out = ufunc(*args)
                 return tuple(
-                    np.array(x, copy=_COPY, order=order, subok=subok)
+                    np.array(x, copy=None, order=order, subok=subok)
                     for x in out
                 )
         return wrapper

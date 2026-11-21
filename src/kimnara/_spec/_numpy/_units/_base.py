@@ -17,6 +17,7 @@ __all__ = ["BaseDequantifier", "BaseUnit", "is_quantity"]
 import abc
 import datetime as dt
 import functools
+import inspect
 from typing import Generic, TypeGuard
 
 import numpy as np
@@ -29,10 +30,10 @@ from pint.facets.numpy.quantity import NumpyQuantity
 
 import kimnara as kn
 from kimnara import _utils
-from kimnara._typing import SCT, ArrayLike, Number, NumericT, Scalar
+from kimnara._typing import SCT, ArrayLike, Number, Numeric, Scalar
 
 
-class BaseDequantifier(_utils.EqMixIn, abc.ABC, Generic[SCT]):
+class BaseDequantifier(_utils.EqMixIn, abc.ABC, Generic[SCT]):  # ruff: ignore[non-pep695-generic-class]
     __slots__ = ()
 
     def __call__(self, value: object) -> ArrayLike[SCT]:
@@ -96,7 +97,7 @@ class BaseDequantifier(_utils.EqMixIn, abc.ABC, Generic[SCT]):
         raise NotImplementedError
 
 
-class BaseUnit(abc.ABC, Generic[SCT]):
+class BaseUnit(abc.ABC, Generic[SCT]):  # ruff: ignore[non-pep695-generic-class]
     @abc.abstractmethod
     def dequantifier(
         self,
@@ -126,7 +127,7 @@ class BaseUnit(abc.ABC, Generic[SCT]):
                 return np.dtype(np.dtype(annotation).str).type
             case _:
                 if (
-                    _utils.isclass(annotation)
+                    inspect.isclass(annotation)
                     and issubclass(annotation, np.generic)
                 ):
                     message = f"Dtype {annotation} is unsupported"
@@ -144,7 +145,7 @@ def is_quantity(
     /,
 ) -> TypeGuard[NonMultiplicativeQuantity[ArrayLike[Number]]]:
     # The type of the magnitude has been forced by `_quantify`
-    return isinstance(x, pint.Quantity)  # pyright: ignore[reportUnknownMemberType]
+    return isinstance(x, pint.Quantity)
 
 
 @functools.singledispatch
@@ -154,14 +155,13 @@ def _quantify(value: object) -> object:
     return value
 
 
-@_quantify.register(dt.timedelta)
-@_quantify.register(np.timedelta64)
+@_quantify.register
 def _(value: dt.timedelta | np.timedelta64) -> NumpyQuantity[np.float64]:
     return kn.quantity(value)
 
 
 @_quantify.register(NumpyQuantity)
-def _(value: NumpyQuantity[NumericT]) -> NumpyQuantity[NumericT]:
+def _[T: Numeric](value: NumpyQuantity[T]) -> NumpyQuantity[T]:
     return kn.quantity(value)
 
 

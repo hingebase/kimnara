@@ -20,18 +20,17 @@ import dataclasses
 import decimal
 import fractions
 import math
-import operator
 import threading
 from collections.abc import Callable
+from typing import Any, Never, override
 
 import llvmlite.binding  # pyright: ignore[reportMissingTypeStubs]
 import numba.core.ccallback  # pyright: ignore[reportMissingTypeStubs]
 import numpy as np
 import optype.numpy as onp
-from numpy_typing_compat import NUMPY_GE_2_0
+from numpy._core._multiarray_umath import _UFUNC_API  # pyright: ignore[reportUnknownVariableType]  # ruff: ignore[import-private-name]
 from pint.facets.nonmultiplicative import definitions
 from pint.facets.plain import UnitDefinition
-from typing_extensions import Any, Never, override
 
 import kimnara as kn
 from kimnara import _spec, _utils
@@ -82,7 +81,7 @@ class _OffsetConverter(definitions.OffsetConverter):
     def from_reference(self, value: object, inplace: bool = False) -> Any:
         if isinstance(value, _DecimalLike):
             # https://github.com/hgrecco/pint/pull/2318
-            return super().from_reference(value, inplace)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            return super().from_reference(value, inplace)
         scale = 1. / self.scale
         offset = -self.offset / self.scale
         if inplace:
@@ -94,7 +93,7 @@ class _OffsetConverter(definitions.OffsetConverter):
     @override
     def to_reference(self, value: object, inplace: bool = False) -> Any:
         if isinstance(value, _DecimalLike):
-            return super().to_reference(value, inplace)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+            return super().to_reference(value, inplace)
         if inplace:
             _fma(value, self.scale, self.offset, value)
         else:
@@ -137,16 +136,13 @@ def _import_umath() -> Callable[
     [object, None, bytes, int, int, int, int, bytes, bytes, int],
     np.ufunc,
 ]:
-    ufunc_api = operator.attrgetter(
-        "_core._multiarray_umath._UFUNC_API" if NUMPY_GE_2_0 else "_UFUNC_API",
-    )
     # ruff: disable[non-lowercase-variable-in-function]
     PyCapsule_GetPointer = ctypes.PYFUNCTYPE(
         ctypes.POINTER(ctypes.c_void_p),
         ctypes.py_object,
         ctypes.c_char_p,
     )(("PyCapsule_GetPointer", ctypes.pythonapi))
-    PyUFunc_API = PyCapsule_GetPointer(ufunc_api(np), None)
+    PyUFunc_API = PyCapsule_GetPointer(_UFUNC_API, None)
     # ruff: enable[non-lowercase-variable-in-function]
     return ctypes.PYFUNCTYPE(
         ctypes.py_object,

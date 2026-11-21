@@ -15,7 +15,7 @@
 """Test kimnara.align API."""
 
 import secrets
-from typing import cast, no_type_check
+from typing import Any, cast, overload
 
 import hypothesis
 import hypothesis.strategies as st
@@ -24,8 +24,6 @@ import numpy as np
 import numpy.typing as npt
 import optype.numpy as onp
 import pytest
-from numpy_typing_compat import NUMPY_GE_2_0
-from typing_extensions import Any, overload
 
 import kimnara as kn
 
@@ -56,11 +54,11 @@ def test_constructors() -> None:
 
     a = kn.empty((2, 511), align="mkl", pad_value=1)
     assert not a.flags.c_contiguous
-    base = a.base  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    base = a.base
     assert base is not None
     assert base.flags.carray
     assert base.shape == (2, 520)
-    np.testing.assert_equal(base[:, 511:], 1)  # pyright: ignore[reportUnknownArgumentType]
+    np.testing.assert_equal(base[:, 511:], 1, strict=False)
     a[0] = range(1000, 1511)
     a[1] = range(2000, 2511)
     for align in _SIMD:
@@ -68,13 +66,13 @@ def test_constructors() -> None:
         b = kn.asarray(a, align=align, pad_value=1)
         assert not np.shares_memory(a, b)
         np.testing.assert_array_equal(a, b, strict=True)
-        base = b.base  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        base = b.base
         assert base is not None
         assert base.flags.carray
         assert base.shape == (2, 520 if align == kn.Alignment.MKL else 512)
 
     a = kn.empty(512, align=kn.Alignment.MKL)
-    assert a.base is None  # pyright: ignore[reportUnknownMemberType]
+    assert a.base is None
     assert a.shape == (512,)
     for align in kn.Alignment:
         assert kn.asarray(a, np.float64, align=align, pad_value=2) is a
@@ -131,7 +129,7 @@ def test_isaligned(n: int, dtype: str) -> None:
 
 
 @hypothesis.given(
-    st.integers(min_value=1, max_value=64 if NUMPY_GE_2_0 else 32),
+    st.integers(min_value=1, max_value=64),
     st.sampled_from(_TYPE_CODES),
 )
 def test_isaligned_empty(n: int, dtype: str) -> None:
@@ -189,20 +187,19 @@ def _exactly_aligned(nbytes: int) -> bool:
 def _numba_guvectorize_1d(
     x: npt.NDArray[np.float32],
     align: int,
-) -> npt.NDArray[np.bool_]: ...
+) -> np.bool_ | npt.NDArray[np.bool_]: ...
 
 @overload
 def _numba_guvectorize_1d(
     x: npt.NDArray[np.float64],
     align: int,
-) -> npt.NDArray[np.bool_]: ...
+) -> np.bool_ | npt.NDArray[np.bool_]: ...
 
 @numba.guvectorize(  # pyright: ignore[reportUnknownMemberType]
     ["(float32[:], intp, bool_[:])", "(float64[:], intp, bool_[:])"],
     "(n),()->()",
 )
-@no_type_check
-def _numba_guvectorize_1d(
+def _numba_guvectorize_1d(  # pyright: ignore[reportInconsistentOverload]
     x: onp.Array1D[np.float32 | np.float64],
     align: np.intp,
     out: onp.Array1D[np.bool_],
@@ -214,20 +211,19 @@ def _numba_guvectorize_1d(
 def _numba_guvectorize_2d(
     x: npt.NDArray[np.float32],
     align: int,
-) -> npt.NDArray[np.bool_]: ...
+) -> np.bool_ | npt.NDArray[np.bool_]: ...
 
 @overload
 def _numba_guvectorize_2d(
     x: npt.NDArray[np.float64],
     align: int,
-) -> npt.NDArray[np.bool_]: ...
+) -> np.bool_ | npt.NDArray[np.bool_]: ...
 
 @numba.guvectorize(  # pyright: ignore[reportUnknownMemberType]
     ["(float32[:, :], intp, bool_[:])", "(float64[:, :], intp, bool_[:])"],
     "(m,n),()->()",
 )
-@no_type_check
-def _numba_guvectorize_2d(
+def _numba_guvectorize_2d(  # pyright: ignore[reportInconsistentOverload]
     x: onp.Array2D[np.float32 | np.float64],
     align: np.intp,
     out: onp.Array1D[np.bool_],
