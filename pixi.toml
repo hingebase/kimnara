@@ -16,10 +16,10 @@ requires-pixi = ">=0.84.1"
 [workspace.dependencies]
 clang-tools = ">=21.1.0"
 kimnara = { path = "packages/kimnara" }
-ruff = ">=0.17.4"
-ryl = ">=0.29.0"
+ruff = ">=0.17.6"
+ryl = ">=0.30.0"
 spydlog = { path = "packages/spydlog" }
-tombi = ">=1.10.0"
+tombi = ">=1.11.3"
 
 [workspace.build-variants]
 python = ["3.12"]
@@ -145,7 +145,7 @@ nanobind = ">=2.12.0,<3.0.0"
 ninja = ">=1.11.1,<2.0.0"
 python = ">=3.12.0"
 spdlog = ">=1.16.0,<2.0.0"
-tbb-devel = ">=2021.6.0,<2024.0.0"
+tbb-devel = ">=2021.6.0,<=2023.1.0"
 
 [feature.clangd.target]
 linux-64 = { dependencies = { gxx_linux-64 = ">=16.2.0" } }
@@ -191,8 +191,8 @@ tombi = { workspace = true }
 
 [feature.tests.target.osx-64.dependencies]
 clang-21 = "*"
-ruff = { version = ">=0.17.3", channel = "https://prefix.dev/github-releases" }
-tombi = { version = ">=1.10.0", channel = "https://prefix.dev/github-releases" }
+ruff = { version = ">=0.17.6", channel = "https://prefix.dev/github-releases" }
+tombi = { version = ">=1.11.3", channel = "https://prefix.dev/github-releases" }
 
 [feature.tests.target.osx-arm64.dependencies]
 clang-23 = "*"
