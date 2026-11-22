@@ -23,7 +23,6 @@ import types
 import warnings
 from collections.abc import Iterable, Iterator, Sized
 from typing import (
-    TYPE_CHECKING,
     Any,
     NamedTuple,
     SupportsComplex,
@@ -42,9 +41,6 @@ from typing_extensions import Sentinel, TypeForm
 from typing_inspection import introspection
 
 from kimnara import _spec, _utils
-
-if TYPE_CHECKING:
-    from pint.facets.plain import PlainQuantity
 
 MUTABLE = Sentinel("MUTABLE")
 
@@ -129,7 +125,7 @@ class _Catch(contextlib.AbstractContextManager["_Catch", bool]):
 
 
 ureg = cast(
-    "pint.registry.GenericUnitRegistry[PlainQuantity[Any], pint.Unit]",
+    "pint.registry.GenericUnitRegistry[pint.Quantity, pint.Unit]",
     cast("pint.registry.ApplicationRegistry", metpy.units.units).get(),
 )
 dimensionless = ureg.dimensionless

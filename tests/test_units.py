@@ -71,13 +71,13 @@ def _real_non_multiplicative_quantities(
     x[0] = math.nan
     # It's just a bad idea to express a near-zero temperature in degF
     for from_, to, atol in [("K", "degF", 2e-14), ("W", "dBm", .0)]:
-        actual = default.Quantity(x, from_).m_as(to)  # pyright: ignore[reportUnknownMemberType]
-        desired = ureg.Quantity(x, from_).m_as(to)  # pyright: ignore[reportUnknownMemberType]
+        actual = default.Quantity(x, from_).m_as(to)
+        desired = ureg.Quantity(x, from_).m_as(to)
         assert onp.is_array_1d(actual, np.float64)
         assert onp.is_array_1d(desired, np.float64)
         np.testing.assert_allclose(actual, desired, strict=True)
-        actual = default.Quantity(desired, to).m_as(from_)  # pyright: ignore[reportUnknownMemberType]
-        desired = ureg.Quantity(desired, to).m_as(from_)  # pyright: ignore[reportUnknownMemberType]
+        actual = default.Quantity(desired, to).m_as(from_)
+        desired = ureg.Quantity(desired, to).m_as(from_)
         assert onp.is_array_1d(actual, np.float64)
         assert onp.is_array_1d(desired, np.float64)
         np.testing.assert_allclose(actual, desired, atol=atol, strict=True)
@@ -87,7 +87,7 @@ def _real_non_multiplicative_quantities(
     # Again, it's developers' responsibility to avoid storing tiny
     # numbers as float32
     for from_, to, atol in [("K", "degF", 3e-5), ("W", "dBm", 3e-6)]:
-        actual = default.Quantity(x, from_).m_as(to)  # pyright: ignore[reportUnknownMemberType]
+        actual = default.Quantity(x, from_).m_as(to)
         quantity = ureg.Quantity(x, from_)
         if to == "dBm":
             # LogarithmicConverter calls `np.log(builtins.float)`
@@ -95,18 +95,18 @@ def _real_non_multiplicative_quantities(
             quantity.ito(to)  # pyright: ignore[reportUnknownMemberType]
             desired = quantity.magnitude
         else:
-            desired = quantity.m_as(to)  # pyright: ignore[reportUnknownMemberType]
+            desired = quantity.m_as(to)
         assert onp.is_array_1d(actual, np.float32)
         assert onp.is_array_1d(desired, np.float32)
         np.testing.assert_allclose(
             actual, desired, rtol=1e-5, atol=atol, strict=True)
-        actual = default.Quantity(desired, to).m_as(from_)  # pyright: ignore[reportUnknownMemberType]
+        actual = default.Quantity(desired, to).m_as(from_)
         quantity = ureg.Quantity(desired, to)
         if to == "dBm":
             quantity.ito(from_)  # pyright: ignore[reportUnknownMemberType]
             desired = quantity.magnitude
         else:
-            desired = quantity.m_as(from_)  # pyright: ignore[reportUnknownMemberType]
+            desired = quantity.m_as(from_)
         assert onp.is_array_1d(actual, np.float32)
         assert onp.is_array_1d(desired, np.float32)
         np.testing.assert_allclose(
@@ -126,19 +126,19 @@ def _complex_non_multiplicative_quantities(
 
     # We omitted the test for OffsetConverter as there is no known
     # meaningful quantity to use
-    actual = default.Quantity(x, "W").m_as("dBm")  # pyright: ignore[reportUnknownMemberType]
-    desired = ureg.Quantity(x, "W").m_as("dBm")  # pyright: ignore[reportUnknownMemberType]
+    actual = default.Quantity(x, "W").m_as("dBm")
+    desired = ureg.Quantity(x, "W").m_as("dBm")
     assert onp.is_array_1d(actual, np.complex128)
     assert onp.is_array_1d(desired, np.complex128)
     np.testing.assert_allclose(actual, desired, strict=True)
-    actual = default.Quantity(desired, "dBm").m_as("W")  # pyright: ignore[reportUnknownMemberType]
-    desired = ureg.Quantity(desired, "dBm").m_as("W")  # pyright: ignore[reportUnknownMemberType]
+    actual = default.Quantity(desired, "dBm").m_as("W")
+    desired = ureg.Quantity(desired, "dBm").m_as("W")
     assert onp.is_array_1d(actual, np.complex128)
     assert onp.is_array_1d(desired, np.complex128)
     np.testing.assert_allclose(actual, desired, strict=True)
 
     x = x.astype(np.complex64)
-    actual = default.Quantity(x, "W").m_as("dBm")  # pyright: ignore[reportUnknownMemberType]
+    actual = default.Quantity(x, "W").m_as("dBm")
     quantity = ureg.Quantity(x, "W")
     quantity.ito("dBm")  # pyright: ignore[reportUnknownMemberType]
     desired = quantity.magnitude
@@ -146,7 +146,7 @@ def _complex_non_multiplicative_quantities(
     assert onp.is_array_1d(desired, np.complex64)
     np.testing.assert_allclose(
         actual, desired, rtol=1e-5, atol=3e-6, strict=True)
-    actual = default.Quantity(desired, "dBm").m_as("W")  # pyright: ignore[reportUnknownMemberType]
+    actual = default.Quantity(desired, "dBm").m_as("W")
     quantity = ureg.Quantity(desired, "dBm")
     quantity.ito("W")  # pyright: ignore[reportUnknownMemberType]
     desired = quantity.magnitude

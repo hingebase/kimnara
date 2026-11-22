@@ -160,8 +160,8 @@ def _(value: dt.timedelta | np.timedelta64) -> NumpyQuantity[np.float64]:
     return kn.quantity(value)
 
 
-@_quantify.register(NumpyQuantity)
-def _[T: Numeric](value: NumpyQuantity[T]) -> NumpyQuantity[T]:
+@_quantify.register(pint.Quantity)
+def _[T: Numeric](value: pint.Quantity[T]) -> NumpyQuantity[T]:
     return kn.quantity(value)
 
 

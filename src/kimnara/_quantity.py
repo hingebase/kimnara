@@ -22,12 +22,12 @@ import numpy as np
 import numpy.typing as npt
 import optype as op
 import optype.numpy as onp
+import pint
 import xarray as xr
 from pint.facets.numpy.quantity import NumpyQuantity
-from pint.facets.plain import PlainQuantity
 
 from kimnara import _spec, _utils
-from kimnara._typing import ArrayLike, Numeric
+from kimnara._typing import ArrayLike, Numeric, NumericInput
 
 if TYPE_CHECKING:
     from typing import type_check_only
@@ -44,10 +44,7 @@ _Quantity = _spec.ureg.Quantity
 
 @overload
 def quantity[T: Numeric](
-    # Using PlainQuantity for input annotations and NumpyQuantity for
-    # output annotations
-    # Use pint.Quantity directly once we require pint >=0.25.1
-    value: T | PlainQuantity[T],
+    value: NumericInput[T],
     units: str | None = ...,
 ) -> NumpyQuantity[T]: ...
 @overload
@@ -79,24 +76,24 @@ def quantity(value: object, units: str | None = None) -> object:
 
 
 @functools.singledispatch
-def _numpy_quantity(value: object, units: str | None) -> PlainQuantity[Any]:
+def _numpy_quantity(value: object, units: str | None) -> pint.Quantity:
     del units
     message = f"Cannot convert {_utils.base_repr(value)} to quantity"
     raise TypeError(message)
 
 
 @_numpy_quantity.register
-def _(value: np.timedelta64, units: str | None) -> PlainQuantity[Any]:
+def _(value: np.timedelta64, units: str | None) -> pint.Quantity:
     return _convert_timedelta(value, value, units)
 
 
 @_numpy_quantity.register
-def _(value: np.number, units: str | None) -> PlainQuantity[Any]:
+def _(value: np.number, units: str | None) -> pint.Quantity:
     return _Quantity(value, units)
 
 
 @_numpy_quantity.register(np.ndarray)
-def _(value: npt.NDArray[Any], units: str | None) -> PlainQuantity[Any]:
+def _(value: npt.NDArray[Any], units: str | None) -> pint.Quantity:
     dtype = value.dtype
     sctype = dtype.type
     if issubclass(sctype, np.timedelta64):
@@ -113,22 +110,22 @@ def _quantity(value: object, units: str | None) -> object:
 
 
 @_quantity.register(op.JustInt)
-def _(value: int, units: str | None) -> PlainQuantity[Any]:
+def _(value: int, units: str | None) -> pint.Quantity:
     return _Quantity(np.int64(value), units)
 
 
 @_quantity.register(op.JustFloat)
-def _(value: float, units: str | None) -> PlainQuantity[Any]:
+def _(value: float, units: str | None) -> pint.Quantity:
     return _Quantity(np.float64(value), units)
 
 
 @_quantity.register(op.JustComplex)
-def _(value: complex, units: str | None) -> PlainQuantity[Any]:
+def _(value: complex, units: str | None) -> pint.Quantity:
     return _Quantity(np.complex128(value), units)
 
 
 @_quantity.register
-def _(value: dt.timedelta, units: str | None) -> PlainQuantity[Any]:
+def _(value: dt.timedelta, units: str | None) -> pint.Quantity:
     # https://github.com/pandas-dev/pandas/issues/46819
     total_seconds = value / dt.timedelta(seconds=1)
     quantity = _Quantity(total_seconds, "s")
@@ -137,8 +134,8 @@ def _(value: dt.timedelta, units: str | None) -> PlainQuantity[Any]:
     return quantity
 
 
-@_quantity.register(PlainQuantity)
-def _(value: PlainQuantity[Any], units: str | None) -> PlainQuantity[Any]:
+@_quantity.register(pint.Quantity)
+def _(value: NumpyQuantity[Any], units: str | None) -> pint.Quantity:
     # https://github.com/hgrecco/pint/issues/2207
     if value._REGISTRY is not _spec.ureg:  # ruff: ignore[private-member-access]  # pyright: ignore[reportPrivateUsage]
         message = "Cannot operate quantities of different registries"
@@ -146,7 +143,7 @@ def _(value: PlainQuantity[Any], units: str | None) -> PlainQuantity[Any]:
     value = _numpy_quantity(value.magnitude, value.units)
     if units is None:
         return value
-    return value.to(units)  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    return value.to(units)  # pyright: ignore[reportUnknownMemberType]
 
 
 @_quantity.register(xr.DataArray)
@@ -162,7 +159,7 @@ def _convert_timedelta(
     value: ArrayLike[np.timedelta64],
     dtype: onp.AnyTimeDelta64DType,
     units: str | None,
-) -> PlainQuantity[Any]:
+) -> pint.Quantity:
     unit, count = np.datetime_data(dtype)
 
     # Cast NaTs to NaNs

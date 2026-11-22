@@ -30,7 +30,6 @@ import pint
 import pydantic
 import pytest
 from numba.core import types  # pyright: ignore[reportMissingTypeStubs]
-from pint.facets.numpy.quantity import NumpyQuantity
 
 import kimnara as kn
 
@@ -47,12 +46,12 @@ def test_input_validation() -> None:
     ):
         _optional_input_nb(quantity)
 
-    quantity = pint.UnitRegistry().Quantity(np.int64(1), "m")  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+    quantity = pint.UnitRegistry().Quantity(np.int64(1), "m")
     with pytest.raises(
         pydantic.ValidationError,
         match=r"\nx\n.+different registries \[type=value_error",
     ):
-        _optional_input_nb(quantity)  # pyright: ignore[reportUnknownArgumentType]
+        _optional_input_nb(quantity)
 
     quantity = kn.quantity(1, "s")
     with pytest.raises(
@@ -113,9 +112,9 @@ def test_nested_tuple_nb() -> None:
 
     return_values = _nested_tuple_nb()
     assert return_values[0] is None
-    assert isinstance(return_values[1], NumpyQuantity)
+    assert isinstance(return_values[1], pint.Quantity)
     assert onp.is_array_1d(return_values[2], np.int32)
-    assert isinstance(return_values[3], NumpyQuantity)
+    assert isinstance(return_values[3], pint.Quantity)
     tup = return_values[4]
     assert isinstance(tup, tuple)
     assert isinstance(tup[0], int)  # Converted by Numba
@@ -126,9 +125,9 @@ def test_nested_tuple_py() -> None:
     """Python func should be able to return nested tuples."""
     return_values = _nested_tuple_py()
     assert isinstance(return_values[0], np.uint16)  # pyright: ignore[reportArgumentType]
-    assert isinstance(return_values[1], NumpyQuantity)
+    assert isinstance(return_values[1], pint.Quantity)
     assert return_values[2] is None
-    assert isinstance(return_values[3], NumpyQuantity)
+    assert isinstance(return_values[3], pint.Quantity)
     tup = return_values[4]
     assert isinstance(tup, tuple)
     assert onp.is_array_1d(tup[0], np.complex64)

@@ -74,7 +74,7 @@ class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
         else:
             fast_path = False
             quantity = type(value)(magnitude.astype(dtype), value.units)
-            magnitude = quantity.m_as(self._unit)  # pyright: ignore[reportUnknownMemberType]
+            magnitude = quantity.m_as(self._unit)
         func = _func[dtype]
         if fast_path:
             out: npt.NDArray[NumberT] = func(magnitude, magnitude)

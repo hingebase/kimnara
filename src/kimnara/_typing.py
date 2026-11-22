@@ -21,6 +21,8 @@ __all__ = [
     "Number",
     "NumberT",
     "Numeric",
+    "NumericInput",
+    "NumericOutput",
     "Output",
     "Outputs",
     "Scalar",
@@ -55,6 +57,8 @@ NumberT = TypeVar(
     np.float32, np.float64, np.complex64, np.complex128,
 )
 type Numeric = ArrayLike[np.number]
+type NumericInput[T: Numeric] = T | PlainQuantity[T]
+type NumericOutput[T: Numeric] = T | NumpyQuantity[T]
 type Scalar = np.bool_ | Number
 SCT = TypeVar(
     "SCT",

@@ -42,7 +42,6 @@ import numpy.typing as npt
 import optype as op
 import optype.numpy as onp
 from numba.np.ufunc import gufunc, sigparse, ufuncbuilder  # pyright: ignore[reportMissingTypeStubs]
-from pint.facets.numpy.quantity import NumpyQuantity
 
 import kimnara as kn
 from kimnara import _spec, _utils
@@ -51,6 +50,7 @@ from kimnara._typing import (
     FastMathOptions,
     Input,
     Number,
+    NumericOutput,
     Scalar,
     UFuncKwargs,
 )
@@ -107,7 +107,7 @@ class _GUFunc[T](_common.UFuncCompiler[T]):
         self: "_GUFunc[O]",
         *args: Input,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> ArrayLike[Number] | NumpyQuantity[ArrayLike[Number]]: ...
+    ) -> NumericOutput[ArrayLike[Number]]: ...
 
     @overload
     def __call__[O: Outputs](

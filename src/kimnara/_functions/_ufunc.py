@@ -34,7 +34,6 @@ import numpy.typing as npt
 import optype as op
 import optype.numpy as onp
 from numba.np.ufunc import dufunc, ufuncbuilder  # pyright: ignore[reportMissingTypeStubs]
-from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
 from typing_extensions import Sentinel, TypeVar
 
@@ -45,7 +44,8 @@ from kimnara._typing import (
     FastMathOptions,
     Input,
     Number,
-    Numeric,
+    NumericInput,
+    NumericOutput,
     Scalar,
     UFuncKwargs,
 )
@@ -63,7 +63,6 @@ type _InputAtLeast1D = (
     np.ndarray[onp.AtLeast1D, np.dtype[Scalar]]
     | PlainQuantity[np.ndarray[onp.AtLeast1D, np.dtype[Number]]]
 )
-type _MaybeQuantity[T: Numeric] = T | NumpyQuantity[T]
 _ShapeT = TypeVar(
     "_ShapeT",
     tuple[int],
@@ -99,7 +98,7 @@ class _UFunc[T](_common.BaseUFuncWrapper[T]):
         self: "_UFunc[O]",
         *args: Input,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> _MaybeQuantity[ArrayLike[Number]]: ...
+    ) -> NumericOutput[ArrayLike[Number]]: ...
 
     @overload
     def __call__[O: Outputs](
@@ -128,11 +127,10 @@ class _UFunc[T](_common.BaseUFuncWrapper[T]):
     @overload
     def accumulate[O: Output, ShapeT: onp.AtLeast1D](
         self: "_UFunc[O]",
-        array: np.ndarray[ShapeT, np.dtype[Number]]
-            | PlainQuantity[np.ndarray[ShapeT, np.dtype[Number]]],
+        array: NumericInput[np.ndarray[ShapeT, np.dtype[Number]]],
         /,
         axis: SupportsIndex = ...,
-    ) -> _MaybeQuantity[np.ndarray[ShapeT, np.dtype[Number]]]: ...
+    ) -> NumericOutput[np.ndarray[ShapeT, np.dtype[Number]]]: ...
 
     def accumulate(
         self: "_UFunc[Any]",
@@ -166,7 +164,7 @@ class _UFunc[T](_common.BaseUFuncWrapper[T]):
         keepdims: bool = ...,
         initial: object = ...,
         where: onp.ToJustBool | onp.ToJustBoolND | None = ...,
-    ) -> _MaybeQuantity[ArrayLike[Number]]: ...
+    ) -> NumericOutput[ArrayLike[Number]]: ...
 
     def reduce(
         self,
@@ -194,12 +192,11 @@ class _UFunc[T](_common.BaseUFuncWrapper[T]):
     @overload
     def reduceat(
         self: "_UFunc[_OutputT]",
-        array: np.ndarray[_ShapeT, np.dtype[Number]]
-            | PlainQuantity[np.ndarray[_ShapeT, np.dtype[Number]]],
+        array: NumericInput[np.ndarray[_ShapeT, np.dtype[Number]]],
         /,
         indices: onp.ToJustIntStrict1D,
         axis: SupportsIndex = ...,
-    ) -> _MaybeQuantity[np.ndarray[_ShapeT, np.dtype[Number]]]: ...
+    ) -> NumericOutput[np.ndarray[_ShapeT, np.dtype[Number]]]: ...
 
     def reduceat(
         self,
@@ -228,7 +225,7 @@ class _UFunc[T](_common.BaseUFuncWrapper[T]):
         b: Input,
         /,
         **kwargs: Unpack[UFuncKwargs],
-    ) -> _MaybeQuantity[ArrayLike[Number]]: ...
+    ) -> NumericOutput[ArrayLike[Number]]: ...
 
     @overload
     def outer[O: Outputs](
