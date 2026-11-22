@@ -334,7 +334,7 @@ class OptionalType(_spec.Type):
 
 
 class PointerType(_spec.Type):
-    __slots__ = ("pointee", "readonly")
+    __slots__ = ("_pointee", "_readonly")
 
     @override
     def __init__(
@@ -345,81 +345,40 @@ class PointerType(_spec.Type):
         if not ctx.allow_pointer:
             message = "Pointer is unsupported in this context"
             raise kn.TypeInferenceError(message)
-        tp = annotation.type
-        if get_origin(tp) is kn.typing.CPointer:
-            self._from_cpointer(tp)
-        else:
-            self._from_union(annotation)
-
-    @override
-    def to_ctypes(self) -> type["ctypes._PointerLike"]:  # pyright: ignore[reportPrivateUsage]
-        return ctypes.POINTER(self.pointee.to_ctypes())
-
-    @override
-    def to_numba(
-        self,
-    ) -> numba.core.types.CPointer | numba.core.types.RawPointer:
-        dtype = self.pointee
-        if isinstance(dtype, NeverType):
-            return numba.core.types.voidptr
-        ptr = numba.core.types.CPointer(dtype.to_numba())
-        if self.readonly:
-            ptr.mutable = False
-        return ptr
-
-    @override
-    def to_python(self) -> NoReturn:
-        raise NotImplementedError
-
-    def _from_cpointer(self, tp: object) -> None:
         ctx = _spec.TypingContext(
             align=kn.A,
             allow_never=True,
             allow_pointer=True,
             allow_scalar=True,
         )
-        [arg] = ctx.parse_args(tp)
+        [arg] = ctx.parse_args(annotation.type)
         for x in arg.metadata:
             if x is _spec.MUTABLE:
-                self.readonly = False
+                self._readonly = False
                 break
         else:
-            self.readonly = True
-        self.pointee = ctx.infer(arg.type)
+            self._readonly = True
+        self._pointee = ctx.infer(arg.type)
 
-    def _from_union(
+    @override
+    def to_ctypes(self) -> type["ctypes._PointerLike"]:  # pyright: ignore[reportPrivateUsage]
+        return ctypes.POINTER(self._pointee.to_ctypes())
+
+    @override
+    def to_numba(
         self,
-        annotation: introspection.InspectedAnnotation,
-    ) -> None:
-        ctx = _spec.TypingContext(align=kn.A, allow_pointer=True)
-        dtype = None
-        self.readonly = True
-        for arg in map(ctx.infer, get_args(annotation.type)):
-            match arg:
-                case FunctionType():
-                    message = "Cannot type Union that is not an Optional"
-                    raise kn.TypeInferenceError(message)
-                case PointerType():
-                    if not arg.readonly:
-                        self.readonly = False
-                    pointee = arg.pointee
-                    if not isinstance(pointee, NeverType):
-                        if dtype is None:
-                            dtype = pointee
-                        elif dtype != pointee:
-                            message = (
-                                f"Types conflict: CPointer[{dtype.to_numba()}]"
-                                f", CPointer[{pointee.to_numba()}]"
-                            )
-                            raise kn.TypeInferenceError(message)
-                case _:
-                    _utils.unreachable()
-        # `kn.typing.CPointer` is covariant, so
-        # `CPointer[T] | CPointer[Never]` is equivalent to `CPointer[T]`
-        self.pointee = dtype or NeverType(
-            annotation,
-            ctx._replace(allow_never=True),
-        )
+    ) -> numba.core.types.CPointer | numba.core.types.RawPointer:
+        dtype = self._pointee
+        if isinstance(dtype, NeverType):
+            return numba.core.types.voidptr
+        ptr = numba.core.types.CPointer(dtype.to_numba())
+        if self._readonly:
+            ptr.mutable = False
+        return ptr
+
+    @override
+    def to_python(self) -> NoReturn:
+        raise NotImplementedError
 
 
 def _expand_type_alias(annotation: object) -> object:

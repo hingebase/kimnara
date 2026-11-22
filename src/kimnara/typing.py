@@ -14,9 +14,8 @@
 
 """Types useful in annotations."""
 
-__all__ = ["CPointer", "Intrinsic", "Mut", "Pointer"]
+__all__ = ["CPointer", "Intrinsic", "Mut"]
 
-import types
 from collections.abc import Callable
 from typing import Annotated, Any, Protocol
 
@@ -24,17 +23,12 @@ import optype.numpy as onp
 from llvmlite import ir  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.cpu import CPUContext  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.typing.templates import Signature  # pyright: ignore[reportMissingTypeStubs]
-from numpy._core._internal import _ctypes  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[import-private-name]
 from typing_extensions import TypeVar
 
 from . import _spec
 from ._typing import SCT, Scalar
 
 _T_co = TypeVar("_T_co", bound="Scalar | CPointer[Any]", covariant=True)
-
-if not hasattr(_ctypes, "__class_getitem__"):
-    _ctypes.__class_getitem__ = classmethod(types.GenericAlias)  # pyright: ignore[reportAttributeAccessIssue]
-ArrayCTypes = _ctypes[int]
 
 
 class CPointer(Protocol[_T_co]):
@@ -65,4 +59,3 @@ type Intrinsic[*Ts] = tuple[
 ]
 
 Mut = Annotated[SCT, _spec.MUTABLE]
-Pointer = CPointer[SCT] | ArrayCTypes

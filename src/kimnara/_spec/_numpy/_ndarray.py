@@ -21,7 +21,7 @@ import types
 import typing
 import warnings
 from collections.abc import Sequence
-from typing import Any, Never, get_args, get_origin, override
+from typing import Any, get_args, get_origin, override
 
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import numba.np.numpy_support  # pyright: ignore[reportMissingTypeStubs]
@@ -56,8 +56,6 @@ class TypingContext(_generic.TypingContext):
                 inspected = inspected._replace(type=np.float64)
             case builtins.int:
                 inspected = inspected._replace(type=np.int64)
-            case kn.typing.ArrayCTypes:
-                inspected = inspected._replace(type=kn.typing.CPointer[Never])
             case typing.Tuple:  # ruff: ignore[non-pep585-annotation]
                 message = "Incomplete type: typing.Tuple without args"
                 raise kn.TypeInferenceError(message)
@@ -83,10 +81,7 @@ class TypingContext(_generic.TypingContext):
                 return _ArrayType(inspected, self)
             case origin:
                 if introspection.is_union_origin(origin):
-                    if self.allow_optional and not self.allow_pointer:
-                        return _generic.OptionalType(inspected, self)  # pyright: ignore[reportAbstractUsage]
-                    if self.allow_pointer and not self.allow_optional:
-                        return _generic.PointerType(inspected, self)
+                    return _generic.OptionalType(inspected, self)
         message = f"Cannot infer the runtime type from {_utils.base_repr(tp)}"
         raise kn.TypeInferenceError(message)
 
