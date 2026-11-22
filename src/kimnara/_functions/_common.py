@@ -29,7 +29,17 @@ import itertools
 import linecache
 import warnings
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Generic, Literal, cast, no_type_check
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Literal,
+    LiteralString,
+    Protocol,
+    Unpack,
+    cast,
+    no_type_check,
+    override,
+)
 
 import numpy as np
 import pint.registry_helpers
@@ -39,14 +49,6 @@ from numba.core import codegen  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.dispatcher import Dispatcher  # pyright: ignore[reportMissingTypeStubs]
 from numba.np.ufunc import ufuncbuilder  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
-from typing_extensions import (
-    Any,
-    LiteralString,
-    Protocol,
-    TypeVar,
-    Unpack,
-    override,
-)
 
 import kimnara as kn
 from kimnara import _spec
@@ -57,8 +59,6 @@ if TYPE_CHECKING:
     from numpy import _CastingKind  # pyright: ignore[reportPrivateUsage]
 
     from kimnara._spec._numpy._base import ScalarType
-
-_T = TypeVar("_T")
 
 
 class _DisasmCFG(Protocol):
@@ -103,10 +103,10 @@ class Dispatchable:
         return llvm
 
 
-class Inferable(abc.ABC, Generic[_T]):
+class Inferable[T](abc.ABC):
     def infer(
         self,
-        wrapped: Callable[..., _T],
+        wrapped: Callable[..., T],
         *,
         align: "str | kn.Alignment" = "A",
         pad_value: AnyComplex | None = None,
@@ -163,7 +163,7 @@ class Inferable(abc.ABC, Generic[_T]):
         return self.__wrapped__.__name__
 
 
-class Validator(Inferable[_T]):
+class Validator[T](Inferable[T]):
     def alternative_signature(self) -> inspect.Signature:
         raise NotImplementedError
 
@@ -220,18 +220,18 @@ class Validator(Inferable[_T]):
         self,
         sig: inspect.Signature,
     ) -> Callable[[Callable[..., object]], Callable[..., object]]:
-        return pint.registry_helpers.wraps(  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
-            _spec.ureg,  # pyright: ignore[reportArgumentType]
+        return pint.registry_helpers.wraps(
+            _spec.ureg,
             ret=self.restype.to_units(),
             args=(None,) * len(sig.parameters),  # Handled by pydantic
         )
 
 
-class UFuncCompiler(Validator[_T]):
+class UFuncCompiler[T](Validator[T]):
     @override
     def infer(
         self,
-        wrapped: Callable[..., _T],
+        wrapped: Callable[..., T],
         *,
         align: "str | kn.Alignment" = "A",
         pad_value: AnyComplex | None = None,
@@ -286,15 +286,11 @@ class UFuncCompiler(Validator[_T]):
         raise NotImplementedError
 
     @abc.abstractmethod
-    def __call__(
-        self,
-        *args: Input[Any, Any],
-        **kwargs: Unpack[UFuncKwargs],
-    ) -> Outputs:
+    def __call__(self, *args: Input, **kwargs: Unpack[UFuncKwargs]) -> Outputs:
         raise NotImplementedError
 
 
-class BaseUFuncWrapper(UFuncCompiler[_T]):
+class BaseUFuncWrapper[T](UFuncCompiler[T]):
     _ufunc: np.ufunc
 
     @property
@@ -328,7 +324,7 @@ class BaseUFuncWrapper(UFuncCompiler[_T]):
         return self._ufunc.signature
 
 
-class UFuncWrapper(BaseUFuncWrapper[_T]):
+class UFuncWrapper[T](BaseUFuncWrapper[T]):
     @property
     @override
     def types(self) -> list[str]:
@@ -343,7 +339,7 @@ class UFuncWrapper(BaseUFuncWrapper[_T]):
         casting: "_CastingKind | None" = None,
         reduction: bool = False,
     ) -> tuple[np.dtype[Any], ...]:
-        return self._ufunc.resolve_dtypes(  # pyright: ignore[reportAttributeAccessIssue, reportUnknownMemberType, reportUnknownVariableType]
+        return self._ufunc.resolve_dtypes(
             dtypes,
             signature=signature,
             casting=casting,

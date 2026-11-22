@@ -37,11 +37,11 @@ def test_cdecl(x: float) -> None:
     actual = test_package_cmake.erf(x)
     desired = math.erf(x)
     # `actual == desired` fails on NaN
-    np.testing.assert_equal(actual, desired)
+    np.testing.assert_equal(actual, desired, strict=True)
 
     actual = test_package_cmake.erf_libm_numba(x)
     assert isinstance(actual, float)
-    np.testing.assert_equal(actual, desired)
+    np.testing.assert_equal(actual, desired, strict=True)
 
     dispatcher = test_package_cmake.erf_libm_numba.dispatcher
     # ruff: disable[private-member-access]
@@ -76,12 +76,12 @@ def test_cydecl(x: float) -> None:
     """Test `kn.cydecl`."""
     actual = test_package_cmake.erf_scipy_ctypes(x)
     desired = math.erf(x)
-    np.testing.assert_allclose(actual, desired, rtol=1e-14)
+    np.testing.assert_allclose(actual, desired, rtol=1e-14, strict=True)
 
     actual = test_package_cmake.erf_scipy_numba(x)
     assert isinstance(actual, float)
     desired = scipy.special.erf(x)
-    np.testing.assert_equal(actual, desired)
+    np.testing.assert_equal(actual, desired, strict=True)
 
     dispatcher = test_package_cmake.erf_scipy_numba.dispatcher
     # ruff: disable[private-member-access]
@@ -155,13 +155,13 @@ def test_cycall(
     # scipy.linalg.cython_lapack expects Fortran-ordered arrays
     actual = test_package_cmake.lstsq_ctypes(a.T, b)
     assert onp.is_array_1d(actual, np.float64)
-    np.testing.assert_allclose(actual, desired, rtol=1e-14)
+    np.testing.assert_allclose(actual, desired, rtol=1e-14, strict=True)
 
     # The arrays are copied internally to meet align="mkl"
     # We don't have to copy them ourselves
     actual = test_package_cmake.lstsq_numba(a.T, b)
     assert onp.is_array_1d(actual, np.float64)
-    np.testing.assert_allclose(actual, desired, rtol=1e-14)
+    np.testing.assert_allclose(actual, desired, rtol=1e-14, strict=True)
 
     assert not recwarn
     llvm = test_package_cmake.lstsq_numba.inspect_llvm()

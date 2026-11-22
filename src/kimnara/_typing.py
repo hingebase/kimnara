@@ -15,48 +15,37 @@
 __all__ = [
     "SCT",
     "ArrayLike",
-    "AtLeast1DT",
     "CustomInliningRule",
     "FastMathOptions",
     "Input",
     "Number",
     "NumberT",
-    "NumericT",
+    "Numeric",
+    "NumericInput",
+    "NumericOutput",
     "Output",
     "Outputs",
     "Scalar",
-    "ShapeT",
     "UFuncKwargs",
     "VarArgsIntrinsic",
 ]
 
-import sys
 from collections.abc import Callable
-from typing import TYPE_CHECKING, Literal, TypeAlias
+from typing import TYPE_CHECKING, Any, Literal
 
 import numpy as np
-import numpy.typing as npt
 import optype.numpy as onp
 from numba.core import cpu_options, ir  # pyright: ignore[reportMissingTypeStubs]
 from pint.facets.numpy.quantity import NumpyQuantity
 from pint.facets.plain import PlainQuantity
-from typing_extensions import Any, TypeAliasType, TypedDict, TypeVar, Unpack
+from typing_extensions import TypeAliasType, TypedDict, TypeVar  # ruff: ignore[deprecated-import]
 
 if TYPE_CHECKING:
     from llvmlite.ir import Value  # pyright: ignore[reportMissingTypeStubs]
 
     import kimnara as kn
 
-if sys.version_info >= (3, 14):
-    _Number = np.number
-else:
-    _Number = np.number[Any]
-
-# np.ndarray.shape was invariant in numpy<2.1,
-# where we must use `AtLeast1DT` instead of `onp.AtLeast1D`
-AtLeast1DT = TypeVar("AtLeast1DT", bound=onp.AtLeast1D)
-
-Number = (
+type Number = (
     np.int8 | np.int16 | np.int32 | np.int64 | np.intp
     | np.uint8 | np.uint16 | np.uint32 | np.uint64 | np.uintp
     | np.float32 | np.float64 | np.complex64 | np.complex128
@@ -67,8 +56,10 @@ NumberT = TypeVar(
     np.uint8, np.uint16, np.uint32, np.uint64, np.uintp,
     np.float32, np.float64, np.complex64, np.complex128,
 )
-NumericT = TypeVar("NumericT", bound=_Number | npt.NDArray[_Number])
-Scalar = np.bool_ | Number
+type Numeric = ArrayLike[np.number]
+type NumericInput[T: Numeric] = T | PlainQuantity[T]
+type NumericOutput[T: Numeric] = T | NumpyQuantity[T]
+type Scalar = np.bool_ | Number
 SCT = TypeVar(
     "SCT",
     np.bool_,
@@ -76,7 +67,6 @@ SCT = TypeVar(
     np.uint8, np.uint16, np.uint32, np.uint64, np.uintp,
     np.float32, np.float64, np.complex64, np.complex128,
 )
-ShapeT = TypeVar("ShapeT", bound=tuple[int, ...])
 
 _SCT = TypeVar("_SCT", bound=np.generic)
 _ShapeT = TypeVar("_ShapeT", bound=tuple[int, ...], default=Any)
@@ -85,27 +75,23 @@ ArrayLike = TypeAliasType(
     _SCT | np.ndarray[_ShapeT, np.dtype[_SCT]],
     type_params=(_SCT, _ShapeT),
 )
-Input = (
-    complex | ArrayLike[Scalar] | PlainQuantity[NumberT]
-        # The magnitude was invariant before
-        # https://github.com/hgrecco/pint/pull/2303
-        | PlainQuantity[np.ndarray[ShapeT, np.dtype[NumberT]]]
-)
-Output = ArrayLike[Scalar] | NumpyQuantity[ArrayLike[Number]]
-Outputs = Output | tuple[Output, ...]
+type Input = complex | ArrayLike[Scalar] | PlainQuantity[ArrayLike[Number]]
+type Output = ArrayLike[Scalar] | NumpyQuantity[ArrayLike[Number]]
+type Outputs = Output | tuple[Output, ...]
 
-CustomInliningRule = Callable[[ir.Expr, Any, Any], bool]
-_FastMathFlags = Literal[
+type CustomInliningRule = Callable[[ir.Expr, Any, Any], bool]
+type _FastMathFlags = Literal[
     "fast",
     "nnan", "ninf", "nsz", "arcp",
     "contract", "afn", "reassoc",
 ]
-FastMathOptions: TypeAlias = """
+type FastMathOptions = (
     bool
     | set[_FastMathFlags]
     | dict[_FastMathFlags, bool]
-    | cpu_options.FastMathOptions"""
-VarArgsIntrinsic: TypeAlias = "kn.typing.Intrinsic[Unpack[tuple[Value, ...]]]"
+    | cpu_options.FastMathOptions
+)
+type VarArgsIntrinsic = kn.typing.Intrinsic[*tuple[Value, ...]]
 
 
 class UFuncKwargs(TypedDict, total=False):

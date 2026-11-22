@@ -19,7 +19,7 @@ build:
     env:
       CI: ${{ env.get("CI", default="") }}
   python:
-    version_independent: ${{ match(python, ">=3.12.0") }}
+    version_independent: true
 
 requirements:
   build:
@@ -34,10 +34,7 @@ requirements:
       then: x86_64-microarch-level ==${{ microarch_level }}
   host:
     - kimnara
-    - if: match(python, ">=3.12.0")
-      then: python-abi3 ${{ python }}.*
-      else: python ${{ python }}.*
-    - python-gil ${{ python }}.*
+    - python-abi3 ${{ python }}.*
     - scikit-build-core >=0.11.3
     - uv >=0.10.2
   run:

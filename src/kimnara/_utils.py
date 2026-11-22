@@ -18,7 +18,6 @@ __all__ = [
     "base_repr",
     "function_base",
     "is_editable",
-    "isclass",
     "libc",
     "num",
     "unreachable",
@@ -28,35 +27,22 @@ import copyreg
 import ctypes
 import functools
 import importlib.metadata
+import inspect
 import json
 import operator
 import sys
-import types
 from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, NoReturn, TypeGuard, cast
+from typing import TYPE_CHECKING, Any, NoReturn, Protocol, TypeGuard, cast
 
 import numpy as np
 import numpy.typing as npt
 import optype.numpy as onp
-from numpy_typing_compat import NUMPY_GE_2_0
-from typing_extensions import Any, Protocol, TypeVar
+from numpy.lib import _function_base_impl  # ruff: ignore[import-private-name]
 
 from kimnara._typing import ArrayLike, Scalar
 
 if TYPE_CHECKING:
     from kimnara import _spec
-
-if sys.version_info >= (3, 11):
-    from inspect import isclass
-else:
-    from typing_extensions import TypeIs
-
-    # Keep the return type same as `inspect.isclass`
-    def isclass(x: object, /) -> TypeIs[type[object]]:
-        # https://github.com/python/cpython/issues/89828
-        return not isinstance(x, types.GenericAlias) and isinstance(x, type)
-
-_T = TypeVar("_T", bound=np.generic)
 
 
 class EqMixIn:
@@ -87,11 +73,11 @@ class EqMixIn:
 
 
 class _AtLeast1D(Protocol):
-    def __call__(
+    def __call__[T: np.generic](
         self,
-        obj: ArrayLike[_T],
+        obj: ArrayLike[T],
         /,
-    ) -> TypeGuard[np.ndarray[onp.AtLeast1D, np.dtype[_T]]]: ...
+    ) -> TypeGuard[np.ndarray[onp.AtLeast1D, np.dtype[T]]]: ...
 
 
 at_least_1d: _AtLeast1D = operator.attrgetter("ndim")
@@ -102,7 +88,7 @@ num = {code: np.dtype(code).num for code in (
 
 
 def base_repr(x: object, /) -> str:
-    return type.__repr__(x) if isclass(x) else object.__repr__(x)  # ruff: ignore[unnecessary-dunder-call]
+    return type.__repr__(x) if inspect.isclass(x) else object.__repr__(x)  # ruff: ignore[unnecessary-dunder-call]
 
 
 def calculate_padding(
@@ -181,10 +167,7 @@ class _FunctionBase(Protocol):
     ) -> None: ...
 
 
-function_base: _FunctionBase = getattr(
-    np.lib,
-    "_function_base_impl" if NUMPY_GE_2_0 else "function_base",
-)
+function_base = cast("_FunctionBase", _function_base_impl)
 if sys.platform == "win32":
     libc = ctypes.cdll.ucrtbase
 else:

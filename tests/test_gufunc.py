@@ -32,7 +32,7 @@ import kimnara as kn
 
 def test_multi_output_nb() -> None:
     """Numba gufunc should support multiple outputs."""
-    desired = np.arange(8, dtype=np.int16).reshape(2, 2, 2)  # pyright: ignore[reportUnknownMemberType]
+    desired = np.arange(8, dtype=np.int16).reshape(2, 2, 2)
     actual = _multi_output_nb(desired)
     assert isinstance(actual, tuple)
     out1, out2 = actual
@@ -40,23 +40,23 @@ def test_multi_output_nb() -> None:
     assert onp.is_array_3d(out1, np.int16)
     np.testing.assert_array_equal(out1, desired, strict=True)
     assert not kn.isaligned(out1, kn.SSE)
-    assert out1.base is None  # pyright: ignore[reportUnknownMemberType]
+    assert out1.base is None
 
     assert isinstance(out2, NumpyQuantity)
     assert onp.is_array_2d(out2.magnitude, np.int8)
-    np.testing.assert_equal(out2.magnitude, 1)
+    np.testing.assert_equal(out2.magnitude, 1, strict=False)
     assert kn.isaligned(out2.magnitude, kn.SSE)
-    assert out2.magnitude.base is not None  # pyright: ignore[reportUnknownMemberType]
+    assert out2.magnitude.base is not None
 
 
 def test_multi_output_py() -> None:
     """Python gufunc should support multiple outputs."""
-    desired = np.arange(4, dtype=np.uint16).reshape(2, 2)  # pyright: ignore[reportUnknownMemberType]
+    desired = np.arange(4, dtype=np.uint16).reshape(2, 2)
     out1, out2 = _multi_output_py(desired)
 
     assert isinstance(out1, NumpyQuantity)
     assert onp.is_array_1d(out1.magnitude, np.uint8)
-    np.testing.assert_equal(out1.magnitude, 1)
+    np.testing.assert_equal(out1.magnitude, 1, strict=False)
 
     assert onp.is_array_2d(out2, np.uint16)
     np.testing.assert_array_equal(out2, desired, strict=True)
@@ -65,7 +65,7 @@ def test_multi_output_py() -> None:
 def test_order_nb(subtests: pytest.Subtests) -> None:
     """Numba gufunc should support the `order` keyword argument."""
     with subtests.test("Fast path: output arrays allocated by NumPy"):
-        desired = np.arange(4, dtype=np.float64).reshape(2, 2, order="F")  # pyright: ignore[reportUnknownMemberType]
+        desired = np.arange(4, dtype=np.float64).reshape(2, 2, order="F")
         actual = _order_nb_1(desired)  # Pass order="C" internally
         assert onp.is_array_2d(actual, np.complex128)
         for align in kn.C, kn.SSE:
@@ -93,7 +93,7 @@ def test_order_nb(subtests: pytest.Subtests) -> None:
         assert out[1, 0] == x.ctypes.data  # `x` hasn't been copied
         assert out[1, 1] == out.ctypes.data  # `out` hasn't been copied
 
-        desired = np.arange(16, dtype=np.int64).reshape(2, 2, 4)  # pyright: ignore[reportUnknownMemberType]
+        desired = np.arange(16, dtype=np.int64).reshape(2, 2, 4)
         actual = _order_nb_2(desired, order="C")
         assert onp.is_array_3d(actual, np.int64)
         for align in kn.C, kn.AVX:
@@ -116,7 +116,7 @@ def test_order_nb(subtests: pytest.Subtests) -> None:
         assert out[1, 0] == x.ctypes.data  # `x` hasn't been copied
         assert out[1, 1] == out.ctypes.data  # `out` hasn't been copied
 
-        desired = np.arange(8, dtype=np.int64).reshape(2, 2, 2)  # pyright: ignore[reportUnknownMemberType]
+        desired = np.arange(8, dtype=np.int64).reshape(2, 2, 2)
         actual = _order_nb_3(desired, order="C")
         assert onp.is_array_3d(actual, np.int64)
         for align in kn.C, kn.SSE:
@@ -126,7 +126,7 @@ def test_order_nb(subtests: pytest.Subtests) -> None:
 
 def test_order_py() -> None:
     """Python gufunc should support the `order` keyword argument."""
-    desired = np.arange(4, dtype=np.int64).reshape(2, 2, order="F")  # pyright: ignore[reportUnknownMemberType]
+    desired = np.arange(4, dtype=np.int64).reshape(2, 2, order="F")
 
     actual = _order_py(desired)
     np.testing.assert_array_equal(actual, desired, strict=True)

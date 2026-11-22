@@ -14,6 +14,7 @@
 
 __all__ = ["cast_"]
 
+import inspect
 from collections.abc import Callable
 from typing import TYPE_CHECKING, ForwardRef, cast, get_origin, no_type_check
 
@@ -25,7 +26,7 @@ from numba.core.typing import context  # pyright: ignore[reportMissingTypeStubs]
 from typing_extensions import evaluate_forward_ref
 
 import kimnara as kn
-from kimnara import _spec, _utils
+from kimnara import _spec
 
 if TYPE_CHECKING:
     from types import ModuleType
@@ -76,7 +77,7 @@ def _(
             raise NotImplementedError
         [arg] = _spec.TypingContext.parse_args(inspected)
         dtype = arg.type
-        if not (_utils.isclass(dtype) and issubclass(dtype, _DTYPES)):
+        if not (inspect.isclass(dtype) and issubclass(dtype, _DTYPES)):
             raise NotImplementedError
         f = types.CPointer(numba.np.numpy_support.from_dtype(dtype))  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
         return (  # pyright: ignore[reportUnknownVariableType]

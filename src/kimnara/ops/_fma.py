@@ -17,7 +17,7 @@ __all__ = ["fma"]
 import sys
 from collections.abc import Callable
 from ctypes import CFUNCTYPE, c_double, c_float
-from typing import TYPE_CHECKING, cast, no_type_check
+from typing import TYPE_CHECKING, cast, no_type_check, overload
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 import optype.numpy as onp
@@ -25,7 +25,6 @@ from numba.core import cgutils, cpu, types  # pyright: ignore[reportMissingTypeS
 from numba.core.types import scalars  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.typing import context, templates  # pyright: ignore[reportMissingTypeStubs]
 from numpy import complex64, float32
-from typing_extensions import TypeVar, overload
 
 from kimnara import _utils
 
@@ -44,12 +43,11 @@ else:
         c_double,
     )(("fma", _utils.libc))
 
-_Op = complex | float32 | complex64
-_T = TypeVar("_T", onp.ToJustFloat64, float32)
+type _Op = complex | float32 | complex64
 
 
 @overload
-def fma(a: _T, b: _T, c: _T, /) -> _T: ...
+def fma[T: (onp.ToJustFloat64, float32)](a: T, b: T, c: T, /) -> T: ...
 @overload
 def fma(a: float32, b: float32, c: complex64, /) -> complex64: ...
 @overload

@@ -19,40 +19,28 @@ import contextlib
 import dataclasses
 import math
 import operator
-import sys
 import types
 import warnings
 from collections.abc import Iterable, Iterator, Sized
-from typing import TYPE_CHECKING, cast
+from typing import (
+    Any,
+    NamedTuple,
+    SupportsComplex,
+    SupportsFloat,
+    SupportsIndex,
+    cast,
+    final,
+    override,
+)
 
 import metpy.units  # pyright: ignore[reportMissingTypeStubs]
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import pint
 from optype.typing import AnyComplex
-from typing_extensions import (
-    Any,
-    NamedTuple,
-    Sentinel,
-    SupportsComplex,
-    SupportsFloat,
-    SupportsIndex,
-    TypeForm,
-    final,
-    override,
-)
+from typing_extensions import Sentinel, TypeForm
 from typing_inspection import introspection
 
 from kimnara import _spec, _utils
-
-if TYPE_CHECKING:
-    from pint.facets.plain import PlainQuantity
-
-if sys.version_info >= (3, 11):
-    _Complex = SupportsComplex
-else:
-    from exceptiongroup import ExceptionGroup
-
-    _Complex = SupportsComplex | complex
 
 MUTABLE = Sentinel("MUTABLE")
 
@@ -110,7 +98,7 @@ def scalar(value: AnyComplex) -> complex:
         if isinstance(value, SupportsFloat):
             with catch:
                 return float(value)
-        if isinstance(value, _Complex):
+        if isinstance(value, SupportsComplex):
             with catch:
                 return complex(value)
     message = f"Cannot convert {_utils.base_repr(value)} to a numeric scalar"
@@ -137,7 +125,7 @@ class _Catch(contextlib.AbstractContextManager["_Catch", bool]):
 
 
 ureg = cast(
-    "pint.registry.GenericUnitRegistry[PlainQuantity[Any], pint.Unit]",
+    "pint.registry.GenericUnitRegistry[pint.Quantity, pint.Unit]",
     cast("pint.registry.ApplicationRegistry", metpy.units.units).get(),
 )
 dimensionless = ureg.dimensionless

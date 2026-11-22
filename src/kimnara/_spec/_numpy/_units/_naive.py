@@ -16,7 +16,7 @@ __all__ = ["NaiveDequantifier", "UnitNaive"]
 
 import functools
 import math
-from typing import Literal, NoReturn, TypeGuard, cast
+from typing import Any, Literal, NoReturn, TypeGuard, cast, override
 
 import numpy as np
 import numpy.typing as npt
@@ -24,12 +24,11 @@ import optype as op
 import pint
 import pydantic_core
 from pint.facets.nonmultiplicative.objects import NonMultiplicativeQuantity
-from typing_extensions import Any, override
 
 import kimnara as kn
 from kimnara import _spec, _utils
 from kimnara._spec._numpy import _units
-from kimnara._typing import SCT, ArrayLike, ShapeT
+from kimnara._typing import SCT, ArrayLike
 
 
 class NaiveDequantifier(_units.BaseDequantifier[SCT]):
@@ -67,7 +66,7 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
 
     def control_output(
         self,
-        value: ArrayLike[np.number[Any]],
+        value: ArrayLike[np.number],
     ) -> dict[str, object]:
         match align := self.align:
             case kn.A | kn.C | kn.F:
@@ -83,10 +82,10 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
         )
         return {"out": out}
 
-    def dtype_match(
+    def dtype_match[T: tuple[int, ...]](
         self,
-        value: ArrayLike[np.number[Any] | np.bool_, ShapeT],
-    ) -> TypeGuard[ArrayLike[SCT, ShapeT]]:
+        value: ArrayLike[np.number | np.bool_, T],
+    ) -> TypeGuard[ArrayLike[SCT, T]]:
         return value.dtype.type is self.dtype
 
     def postprocess(
@@ -110,8 +109,7 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
         message = "Unsupported"
         raise pydantic_core.PydanticCustomError(error_type, message)
 
-    @_dequantify.register(bool)
-    @_dequantify.register(np.bool_)
+    @_dequantify.register
     def _(self, value: bool | np.bool_) -> SCT:  # ruff: ignore[boolean-type-hint-positional-argument]
         return self.dtype(value)
 
@@ -135,8 +133,8 @@ class NaiveDequantifier(_units.BaseDequantifier[SCT]):
             _validation_error("scalar", complex, self.dtype)
         return np.complex128(value)
 
-    @_dequantify.register(np.number)
-    def _(self, value: np.number[Any]) -> SCT:
+    @_dequantify.register
+    def _(self, value: np.number) -> SCT:
         try:
             return value.astype(self.dtype, casting="safe")
         except TypeError:

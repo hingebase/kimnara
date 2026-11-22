@@ -22,14 +22,13 @@ import sys
 import textwrap
 from collections.abc import Callable
 from types import ModuleType, SimpleNamespace
-from typing import cast, no_type_check
+from typing import Any, cast, no_type_check
 
 import executing
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from llvmlite import binding  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import bytecode, ir, registry, typeinfer, types  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.typing import context, ctypes_utils, templates, typeof  # pyright: ignore[reportMissingTypeStubs]
-from typing_extensions import Any, TypeVar
 
 import kimnara as kn
 from kimnara import _numba, _spec, _utils
@@ -49,7 +48,6 @@ if sys.version_info >= (3, 14):
         _TO_CTYPES[types.complex128] = c_double_complex  # pyright: ignore[reportArgumentType]
 
 _Inferable = ast.AnnAssign | ast.Expr  # | ast.Return
-_T = TypeVar("_T", bound="ctypes._CData")  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
 _Target = ast.Attribute | ast.Name
 
 
@@ -166,9 +164,7 @@ def _expr(node: ast.AST) -> str | ast.Expression:
     raise kn.TypeInferenceError(message)
 
 
-@_expr.register(ast.Attribute)
-@_expr.register(ast.Name)
-@_expr.register(ast.Subscript)
+@_expr.register
 def _(node: _Target | ast.Subscript) -> ast.Expression:
     return ast.Expression(node)
 
@@ -341,7 +337,7 @@ def _(_: None) -> tuple[None, type[ctypes.c_void_p]]:
 
 
 @_to_ctypes.register(ctypes.Array.__mro__[-2])
-def _(carg: _T) -> tuple[_T, type[_T]]:
+def _[T: ctypes._CData](carg: T) -> tuple[T, type[T]]:  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
     return carg, type(carg)
 
 

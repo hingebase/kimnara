@@ -33,12 +33,10 @@ def main() -> None:
             case _:
                 raise NotImplementedError
 
-    uv = os.getenv("UV", "uv")
-    for python in "3.10", "3.11", "3.12":
-        subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
-            [uv, "build", "--wheel", "-p", python, "--managed-python"],
-            check=True,
-        )
+    subprocess.run(  # ruff: ignore[subprocess-without-shell-equals-true]
+        [os.getenv("UV", "uv"), "build", "--wheel", "--managed-python"],
+        check=True,
+    )
 
     dist = pathlib.Path("dist")
     if sys.platform.startswith("linux"):

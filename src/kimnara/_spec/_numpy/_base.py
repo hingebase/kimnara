@@ -17,7 +17,7 @@ __all__ = ["ScalarType", "Type", "parse_units"]
 import ctypes
 import sys
 from collections.abc import Sequence
-from typing import TYPE_CHECKING, Annotated, cast, no_type_check
+from typing import Annotated, Any, no_type_check, override
 
 import annotated_types as at
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
@@ -26,7 +26,7 @@ import numpy as np
 import numpy.typing as npt
 import pint
 import pydantic
-from typing_extensions import Any, TypeForm, override
+from typing_extensions import TypeForm
 from typing_inspection import introspection
 
 import kimnara as kn
@@ -35,11 +35,6 @@ from kimnara._spec import _generic
 from kimnara._typing import Scalar
 
 from . import _units
-
-if TYPE_CHECKING:
-    from ctypes import _SimpleCData  # pyright: ignore[reportPrivateUsage]
-
-    from pint.facets.nonmultiplicative.objects import NonMultiplicativeQuantity
 
 
 class Type(_spec.Type):
@@ -82,10 +77,19 @@ class ScalarType(Type):
         self.dequantifier = unit.dequantifier(kn.A, dtype, prefer_scalar=True)
 
     @override
-    def to_ctypes(self) -> type["_SimpleCData[Any]"]:
+    def to_ctypes(self) -> type["ctypes._SimpleCData[Any]"]:  # pyright: ignore[reportPrivateUsage]
         dtype = self.dtype
         if issubclass(dtype, np.complexfloating):
-            return _as_ctypes_complex_type(dtype)
+            if sys.version_info < (3, 14):
+                message = "Complex numbers require Python 3.14 or later"
+                raise kn.TypeInferenceError(message)
+            match dtype:
+                case np.complex64:
+                    return ctypes.c_float_complex
+                case np.complex128:
+                    return ctypes.c_double_complex
+                case _:
+                    _utils.unreachable()
         return np.ctypeslib.as_ctypes_type(dtype)
 
     @override
@@ -114,32 +118,12 @@ def parse_units(
 
         # Fast path:
         # https://github.com/hgrecco/pint/blob/0.25.3/pint/facets/plain/unit.py#L152-L153
-        quantity = cast("NonMultiplicativeQuantity[Any]", unit * 1)
+        quantity = unit * 1
 
         if quantity._is_multiplicative:  # pyright: ignore[reportPrivateUsage]  # ruff: ignore[private-member-access]
             return _units.MultiplicativeUnit(unit)
         return _units.NonMultiplicativeUnit(unit)
     return _units.UnitNaive()
-
-
-if sys.version_info >= (3, 14):
-    def _as_ctypes_complex_type(
-        dtype: type[np.complexfloating],
-    ) -> type["_SimpleCData[complex]"]:
-        match dtype:
-            case np.complex64:
-                return ctypes.c_float_complex
-            case np.complex128:
-                return ctypes.c_double_complex
-            case _:
-                return _utils.unreachable()
-else:
-    def _as_ctypes_complex_type(
-        dtype: type[np.complexfloating[Any, Any]],
-    ) -> type["_SimpleCData[complex]"]:
-        del dtype
-        message = "Complex numbers require Python 3.14 or later"
-        raise kn.TypeInferenceError(message)
 
 
 _parse_units = _spec.ureg.parse_units

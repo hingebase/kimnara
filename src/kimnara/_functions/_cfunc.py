@@ -17,7 +17,7 @@ __all__ = ["NumbaCFunc", "PyCFunc"]
 import ctypes
 import functools
 from collections.abc import Callable
-from typing import TYPE_CHECKING, ClassVar, Literal, cast
+from typing import TYPE_CHECKING, Any, ClassVar, Literal, cast, override
 
 import numba  # pyright: ignore[reportMissingTypeStubs]
 from numba.core import cgutils, compiler, cpu, errors, registry, types  # pyright: ignore[reportMissingTypeStubs]
@@ -27,7 +27,6 @@ from numba.core.typing import context, templates  # pyright: ignore[reportMissin
 from numba.experimental.function_type import (  # pyright: ignore[reportMissingTypeStubs]
     lower_cast_dispatcher_to_function_type,  # pyright: ignore[reportUnknownVariableType]
 )
-from typing_extensions import Any, override
 
 import kimnara as kn
 from kimnara import _spec, _utils

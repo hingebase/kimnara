@@ -16,12 +16,11 @@ __all__ = ["NonMultiplicativeDequantifier", "NonMultiplicativeUnit"]
 
 import ctypes
 import dataclasses
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, override
 
 import numpy as np
 import pint
 import pydantic_core
-from typing_extensions import Any, override
 
 import kimnara as kn
 from kimnara import _utils
@@ -75,7 +74,7 @@ class NonMultiplicativeDequantifier(_units.BaseDequantifier[NumberT]):
         else:
             fast_path = False
             quantity = type(value)(magnitude.astype(dtype), value.units)
-            magnitude = quantity.m_as(self._unit)  # pyright: ignore[reportUnknownMemberType]
+            magnitude = quantity.m_as(self._unit)
         func = _func[dtype]
         if fast_path:
             out: npt.NDArray[NumberT] = func(magnitude, magnitude)
@@ -158,7 +157,7 @@ def _init() -> None:
         _types.append(types)
 
 
-_func: dict[type[np.number[Any]], np.ufunc] = {}
+_func: dict[type[np.number], np.ufunc] = {}
 _name: list[bytes] = []
 _types: list[bytes] = []
 _init()

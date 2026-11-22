@@ -17,11 +17,10 @@ __all__ = ["AVX", "AVX512", "SSE", "A", "Alignment", "C", "F", "Pad"]
 import contextlib
 import enum
 import functools
-from typing import Literal, cast
+from typing import Literal, cast, final, override
 
 import llvmlite.binding  # pyright: ignore[reportMissingTypeStubs]
 from optype.typing import AnyComplex
-from typing_extensions import final, override
 
 import kimnara as kn
 

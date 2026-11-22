@@ -14,15 +14,10 @@
 
 __all__ = ["OpenMPNumPyVectorize", "openmp_available"]
 
-import sys
 from collections.abc import Callable
-
-from typing_extensions import override
+from typing import override
 
 from . import _genericpool, register_custom_backend
-
-if sys.version_info < (3, 11):
-    from exceptiongroup import BaseExceptionGroup
 
 
 class OpenMPNumPyVectorize(_genericpool.NumPyVectorize):

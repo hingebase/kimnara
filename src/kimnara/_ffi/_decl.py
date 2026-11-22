@@ -19,13 +19,12 @@ import functools
 import inspect
 import types
 from collections.abc import Callable
-from typing import cast, no_type_check
+from typing import Any, Protocol, cast, no_type_check
 
 import numba.extending  # pyright: ignore[reportMissingTypeStubs]
 from llvmlite import binding  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.types import Type  # pyright: ignore[reportMissingTypeStubs]
 from numba.core.typing.context import Context  # pyright: ignore[reportMissingTypeStubs]
-from typing_extensions import Any, Protocol
 
 import kimnara as kn
 from kimnara import _numba, _spec, _utils

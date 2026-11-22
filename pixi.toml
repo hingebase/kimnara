@@ -21,6 +21,9 @@ ryl = ">=0.29.0"
 spydlog = { path = "packages/spydlog" }
 tombi = ">=1.10.0"
 
+[workspace.build-variants]
+python = ["3.12"]
+
 [workspace.target]
 linux-64 = { build-variants = { microarch_level = ["1"] } }
 linux-aarch64 = { build-variants = { microarch_level = ["0"] } }
@@ -46,75 +49,43 @@ cxx_compiler_version = ["2026.1"]
 microarch_level = ["1"]
 
 [dependencies]
-basedpyright = ">=1.39.10"
+basedpyright = ">=1.40.2"
 hypothesis = ">=6.155.7"
 pandas-stubs = ">=1.4.2,<4.0.0"
-scipy-stubs = ">=1.14.1,<2.0.0"
 pytest = ">=9.2.0"
+scipy-stubs = ">=1.14.1,<2.0.0"
+test-package-cmake = { path = "packages/test-package-cmake" }
 uv = ">=0.10.2"
 
 # For each minor version of NumPy, the convex hull of compatible minor
 # (Python, Numba) versions is obtained, and all the vertices of the convex hull
 # are tested.
 [environments]
-default = ["py310", "np124", "nb057", "tests"]
-py310np124 = ["py310", "np124", "nb"]
-py310np125 = ["py310", "np125", "nb"]
-py310np125nb058 = ["py310", "np125", "nb058"]
-py310np126 = ["py310", "np126", "nb"]
-py310np126nb058 = ["py310", "np126", "nb058"]
-py310np20 = ["py310", "np20", "nb"]
-py310np20nb060 = ["py310", "np20", "nb060"]
-py310np21 = ["py310", "np21", "nb"]
-py310np21nb061 = ["py310", "np21", "nb061"]
-py310np22 = ["py310", "np22", "nb"]
-py310np22nb061 = ["py310", "np22", "nb061"]
-py311np124 = ["py311", "np124", "cf"]
-py311np124nb057 = ["py311", "np124", "nb057"]
-py311np125 = ["py311", "np125", "cf"]
-py311np125nb058 = ["py311", "np125", "nb058"]
-py311np126nb058 = ["py311", "np126", "nb058"]
-py311np23 = ["py311", "np23", "cf"]
-py311np23nb062 = ["py311", "np23", "nb062"]
-py311np24 = ["py311", "np24", "cf"]
-py311np24nb064 = ["py311", "np24", "nb064"]
-py312np126 = ["abi3", "py312", "np126", "cf"]
-py312np126nb059 = ["abi3", "py312", "np126", "nb059"]
-py312np20 = ["abi3", "py312", "np20", "cf"]
-py312np20nb060 = ["abi3", "py312", "np20", "nb060"]
-py312np25 = ["abi3", "py312", "np25", "cf"]
-py312np25nb067 = ["abi3", "py312", "np25", "nb067"]
-py313np21 = ["abi3", "py313", "np21", "cf"]
-py313np21nb061 = ["abi3", "py313", "np21", "nb061"]
-py313np22 = ["abi3", "py313", "np22", "cf"]
-py313np22nb061 = ["abi3", "py313", "np22", "nb061"]
-py313np23nb062 = ["abi3", "py313", "np23", "nb062"]
-py314np23 = ["abi3", "py314", "np23", "cf"]
-py314np23nb063 = ["abi3", "py314", "np23", "nb063"]
-py314np24 = ["abi3", "py314", "np24", "cf"]
-py314np24nb064 = ["abi3", "py314", "np24", "nb064"]
-py314np25nb067 = ["abi3", "py314", "np25", "nb067"]
-py315np25 = ["abi3", "py315", "np25", "cf"]
+default = ["py312", "np22", "nb061", "tests"]
+py312np22 = ["py312", "np22", "nb"]
+py312np23 = ["py312", "np23", "nb"]
+py312np23nb062 = ["py312", "np23", "nb062"]
+py312np24 = ["py312", "np24", "nb"]
+py312np24nb064 = ["py312", "np24", "nb064"]
+py312np25 = ["py312", "np25", "nb"]
+py312np25nb067 = ["py312", "np25", "nb067"]
+py313np22 = ["py313", "np22", "nb"]
+py313np22nb061 = ["py313", "np22", "nb061"]
+py313np23nb062 = ["py313", "np23", "nb062"]
+py314np23 = ["py314", "np23", "nb"]
+py314np23nb063 = ["py314", "np23", "nb063"]
+py314np24 = ["py314", "np24", "nb"]
+py314np24nb064 = ["py314", "np24", "nb064"]
+py314np25nb067 = ["py314", "np25", "nb067"]
+py315np25 = ["py315", "np25", "nb"]
 
 [feature]
 # One variant per directory, see
 # https://github.com/numpy/numpy/tree/v2.5.0/pixi-packages
-abi3 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake" } } }
-py310 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py310" } } }
-py311 = { dependencies = { test-package-cmake = { path = "packages/test-package-cmake-py311" } } }
 py312 = { dependencies = { python-gil = "3.12.*" } }
 py313 = { dependencies = { python-gil = "3.13.*" } }
-np124 = { dependencies = { numpy = "==1.24.4" } }
-np125 = { dependencies = { numpy = "==1.25.2" } }
-np126 = { dependencies = { numpy = "==1.26.4" } }
-np20 = { dependencies = { numpy = "==2.0.2" } }
-np21 = { dependencies = { numpy = "==2.1.3" } }
 np22 = { dependencies = { numpy = "==2.2.6" } }
 np23 = { dependencies = { numpy = "==2.3.5" } }
-nb057 = { dependencies = { numba = "==0.57.1" } }
-nb058 = { dependencies = { numba = "==0.58.1" } }
-nb059 = { dependencies = { numba = "==0.59.1" } }
-nb060 = { dependencies = { numba = "==0.60.0" } }
 nb061 = { dependencies = { numba = "==0.61.2" } }
 nb062 = { dependencies = { numba = "==0.62.1" } }
 
@@ -146,30 +117,11 @@ dependencies = { numba = "==0.64.0" }
 platforms = ["linux-64", "linux-aarch64", "osx-arm64-macos-11-0", "win-64"]
 dependencies = { numba = "==0.67.0" }
 
-[feature.cf.target]
+[feature.nb.target]
 linux = { dependencies = { numba = ">=0.68.0" } }
 osx-64 = { dependencies = { numba = "==0.62.1" } }
 osx-arm64 = { dependencies = { numba = ">=0.68.0" } }
 win-64 = { dependencies = { numba = ">=0.68.0" } }
-
-# conda-forge has dropped support for Python 3.10
-[feature.nb]
-channels = ["conda-forge", "numba"]
-
-[feature.nb.target.linux.dependencies]
-llvmlite = { channel = "numba" }
-numba = { version = ">=0.68.0", channel = "numba" }
-
-[feature.nb.target.osx-64.dependencies]
-numba = { version = "==0.62.1", channel = "conda-forge" }
-
-[feature.nb.target.osx-arm64.dependencies]
-llvmlite = { channel = "numba" }
-numba = { version = ">=0.68.0", channel = "numba" }
-
-[feature.nb.target.win-64.dependencies]
-llvmlite = { channel = "numba" }
-numba = { version = ">=0.68.0", channel = "numba" }
 
 [target]
 linux-64 = { dependencies = { libblas = { build = "*_mkl" } } }
@@ -191,7 +143,7 @@ llvm-openmp = ">=11.0.0"
 mimalloc = ">=3.1.5,<4.0.0"
 nanobind = ">=2.12.0,<3.0.0"
 ninja = ">=1.11.1,<2.0.0"
-python = ">=3.10.0"
+python = ">=3.12.0"
 spdlog = ">=1.16.0,<2.0.0"
 tbb-devel = ">=2021.6.0,<2024.0.0"
 
@@ -257,34 +209,13 @@ tombi = { workspace = true }
 test = [
     { task = "configure", environment = "clangd" },
     { task = "pytest", environment = "default" },
-    { task = "pytest", environment = "py310np124" },
-    { task = "pytest", environment = "py310np125" },
-    { task = "pytest", environment = "py310np125nb058" },
-    { task = "pytest", environment = "py310np126" },
-    { task = "pytest", environment = "py310np126nb058" },
-    { task = "pytest", environment = "py310np20" },
-    { task = "pytest", environment = "py310np20nb060" },
-    { task = "pytest", environment = "py310np21" },
-    { task = "pytest", environment = "py310np21nb061" },
-    { task = "pytest", environment = "py310np22" },
-    { task = "pytest", environment = "py310np22nb061" },
-    { task = "pytest", environment = "py311np124" },
-    { task = "pytest", environment = "py311np124nb057" },
-    { task = "pytest", environment = "py311np125" },
-    { task = "pytest", environment = "py311np125nb058" },
-    { task = "pytest", environment = "py311np126nb058" },
-    { task = "pytest", environment = "py311np23" },
-    { task = "pytest", environment = "py311np23nb062" },
-    { task = "pytest", environment = "py311np24" },
-    { task = "pytest", environment = "py311np24nb064" },
-    { task = "pytest", environment = "py312np126" },
-    { task = "pytest", environment = "py312np126nb059" },
-    { task = "pytest", environment = "py312np20" },
-    { task = "pytest", environment = "py312np20nb060" },
+    { task = "pytest", environment = "py312np22" },
+    { task = "pytest", environment = "py312np23" },
+    { task = "pytest", environment = "py312np23nb062" },
+    { task = "pytest", environment = "py312np24" },
+    { task = "pytest", environment = "py312np24nb064" },
     { task = "pytest", environment = "py312np25" },
     { task = "pytest", environment = "py312np25nb067" },
-    { task = "pytest", environment = "py313np21" },
-    { task = "pytest", environment = "py313np21nb061" },
     { task = "pytest", environment = "py313np22" },
     { task = "pytest", environment = "py313np22nb061" },
     { task = "pytest", environment = "py313np23nb062" },
@@ -300,29 +231,8 @@ test = [
 test = [
     { task = "configure", environment = "clangd" },
     { task = "pytest", environment = "default" },
-    { task = "pytest", environment = "py310np124" },
-    { task = "pytest", environment = "py310np125" },
-    { task = "pytest", environment = "py310np125nb058" },
-    { task = "pytest", environment = "py310np126" },
-    { task = "pytest", environment = "py310np126nb058" },
-    { task = "pytest", environment = "py310np20" },
-    { task = "pytest", environment = "py310np20nb060" },
-    { task = "pytest", environment = "py310np21" },
-    { task = "pytest", environment = "py310np21nb061" },
-    { task = "pytest", environment = "py310np22" },
-    { task = "pytest", environment = "py310np22nb061" },
-    { task = "pytest", environment = "py311np124" },
-    { task = "pytest", environment = "py311np124nb057" },
-    { task = "pytest", environment = "py311np125" },
-    { task = "pytest", environment = "py311np125nb058" },
-    { task = "pytest", environment = "py311np126nb058" },
-    { task = "pytest", environment = "py311np23" },
-    { task = "pytest", environment = "py312np126" },
-    { task = "pytest", environment = "py312np126nb059" },
-    { task = "pytest", environment = "py312np20" },
-    { task = "pytest", environment = "py312np20nb060" },
-    { task = "pytest", environment = "py313np21" },
-    { task = "pytest", environment = "py313np21nb061" },
+    { task = "pytest", environment = "py312np22" },
+    { task = "pytest", environment = "py312np23" },
     { task = "pytest", environment = "py313np22" },
     { task = "pytest", environment = "py313np22nb061" },
     { task = "pytest", environment = "py313np23nb062" },

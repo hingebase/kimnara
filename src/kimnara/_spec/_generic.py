@@ -25,30 +25,29 @@ __all__ = [
 import abc
 import builtins
 import ctypes
-import sys
 from collections.abc import Iterable, Iterator
 from typing import (
     TYPE_CHECKING,
+    Any,
     ForwardRef,
     Literal,
+    NamedTuple,
     NoReturn,
+    Self,
     cast,
     get_args,
     get_origin,
     no_type_check,
+    override,
 )
 
 import numba.core.types  # pyright: ignore[reportMissingTypeStubs]
 import pint
-from typing_extensions import (
-    Any,
-    NamedTuple,
-    Self,
+from typing_extensions import (  # ruff: ignore[deprecated-import]
     Sentinel,
     TypeAliasType,
     TypeForm,
     evaluate_forward_ref,
-    override,
 )
 from typing_inspection import introspection, typing_objects
 
@@ -237,9 +236,6 @@ class TupleType(_spec.Type):
             case [_, builtins.Ellipsis]:
                 message = "tuple[T, ...] is unsupported in this context"
                 raise kn.TypeInferenceError(message)
-            case [()] if sys.version_info < (3, 11):
-                # https://github.com/python/cpython/issues/91137
-                self._args = ()
             case args:
                 self._args = tuple(map(ctx.infer, args))
 
