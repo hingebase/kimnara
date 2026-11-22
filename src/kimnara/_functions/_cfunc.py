@@ -203,6 +203,30 @@ def _can_convert_to(
     return None
 
 
+def _can_convert_to_voidptr(
+    self: types.RawPointer,
+    typingctx: context.Context,
+    other: types.Type,
+) -> Conversion | None:
+    if conversion := _super_can_convert_to_voidptr(self, typingctx, other):
+        return conversion
+    match other:
+        case types.Dispatcher(dispatcher=registry.CPUDispatcher() as disp):
+            if len(disp.overloads) == 1 and not disp.targetoptions.get(  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+                "no_cfunc_wrapper",
+                False,
+            ):
+                return Conversion.safe
+        case types.ExternalFunctionPointer() | types.CPointer():
+            return Conversion.safe
+        case types.FunctionType():
+            if type(other.get_precise()) is types.FunctionType:
+                return Conversion.safe
+        case _:
+            pass
+    return None
+
+
 def _ensure_can_convert(
     typingctx: context.Context,
     fromty: types.Type,
@@ -214,40 +238,51 @@ def _ensure_can_convert(
 
 
 @lower_cast(types.Dispatcher, types.ExternalFunctionPointer)
+@lower_cast(types.Dispatcher, types.RawPointer)
 def _(
     context: cpu.CPUContext,
     builder: "ir.IRBuilder",
     fromty: types.Dispatcher,
-    toty: types.ExternalFunctionPointer,
+    toty: types.ExternalFunctionPointer | types.RawPointer,
     val: "ir.Value",
 ) -> "ir.Instruction":
     _ensure_can_convert(context.typing_context, fromty, toty)  # pyright: ignore[reportUnknownArgumentType]
-    ftype = types.FunctionType(toty.sig)  # pyright: ignore[reportUnknownArgumentType]
-    ftype.cconv = toty.cconv  # pyright: ignore[reportUnknownMemberType]
+    if isinstance(toty, types.ExternalFunctionPointer):
+        ftype = types.FunctionType(toty.sig)  # pyright: ignore[reportUnknownArgumentType, reportUnknownMemberType]
+        ftype.cconv = toty.cconv  # pyright: ignore[reportUnknownMemberType]
+    else:
+        disp = cast("registry.CPUDispatcher", fromty.dispatcher)
+        [cres] = disp.overloads.values()  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+        ftype = types.FunctionType(cast("templates.Signature", cres.signature))
     val = lower_cast_dispatcher_to_function_type(  # pyright: ignore[reportUnknownVariableType]
         context, builder, fromty, ftype, val)
     return _lower_cast_function_type_to_function_pointer(
         context, builder, ftype, toty, val)  # pyright: ignore[reportUnknownArgumentType]
 
 
+@lower_cast(types.CPointer, types.RawPointer)
+@lower_cast(types.ExternalFunctionPointer, types.RawPointer)
 @lower_cast(types.ExternalFunctionPointer, types.ExternalFunctionPointer)
 def _(
     context: cpu.CPUContext,
-    _: "ir.IRBuilder",
-    fromty: types.ExternalFunctionPointer,
-    toty: types.ExternalFunctionPointer,
+    builder: "ir.IRBuilder",
+    fromty: types.CPointer | types.ExternalFunctionPointer,
+    toty: types.ExternalFunctionPointer | types.RawPointer,
     val: "ir.Value",
 ) -> "ir.Value":
     _ensure_can_convert(context.typing_context, fromty, toty)  # pyright: ignore[reportUnknownArgumentType]
+    if toty == types.voidptr:
+        return builder.bitcast(val, cgutils.voidptr_t)  # pyright: ignore[reportReturnType, reportUnknownMemberType]
     return val
 
 
 @lower_cast(types.FunctionType, types.ExternalFunctionPointer)
+@lower_cast(types.FunctionType, types.RawPointer)
 def _lower_cast_function_type_to_function_pointer(
     context: cpu.CPUContext,
     builder: "ir.IRBuilder",
     fromty: types.FunctionType,
-    toty: types.ExternalFunctionPointer,
+    toty: types.ExternalFunctionPointer | types.RawPointer,
     val: "ir.Value",
 ) -> "ir.Instruction":
     _ensure_can_convert(context.typing_context, fromty, toty)  # pyright: ignore[reportUnknownArgumentType]
@@ -276,5 +311,7 @@ def _(
 
 _super_can_convert_from = types.ExternalFunctionPointer.can_convert_from  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 _super_can_convert_to = types.NoneType.can_convert_to  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
+_super_can_convert_to_voidptr = types.RawPointer.can_convert_from  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 types.ExternalFunctionPointer.can_convert_from = _can_convert_from  # pyright: ignore[reportAttributeAccessIssue]
 types.NoneType.can_convert_to = _can_convert_to  # pyright: ignore[reportAttributeAccessIssue]
+types.RawPointer.can_convert_from = _can_convert_to_voidptr  # pyright: ignore[reportAttributeAccessIssue]
