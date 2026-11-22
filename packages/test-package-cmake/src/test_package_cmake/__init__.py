@@ -24,6 +24,7 @@ __all__ = [
     "hello",
     "lstsq_ctypes",
     "lstsq_numba",
+    "qsort",
     "test_logging_capi",
 ]
 
@@ -37,5 +38,6 @@ from ._test import (
     hello,
     lstsq_ctypes,
     lstsq_numba,
+    qsort,
     test_logging_capi,
 )

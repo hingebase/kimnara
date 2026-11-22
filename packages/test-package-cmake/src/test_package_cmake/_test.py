@@ -22,6 +22,7 @@ __all__ = [
     "hello",
     "lstsq_ctypes",
     "lstsq_numba",
+    "qsort",
     "test_logging_capi",
 ]
 
@@ -266,6 +267,19 @@ def lstsq_numba(
         kn.ops.invalid()
         return
     x[:] = b[:2]
+
+
+@kn.cfunc(nopython=True)
+def _cmp_func(
+    a: kn.typing.CPointer[np.intc],
+    b: kn.typing.CPointer[np.intc],
+) -> np.intc:
+    return a[0] - b[0]
+
+
+@kn.func(align="C", nopython=True)
+def qsort(arr: onp.Array1D[kn.Mut[np.intc]]) -> None:
+    kn.ccall(arr.ctypes, len(arr), arr.itemsize, _cmp_func)
 
 
 def test_logging_capi(logger: object) -> None:

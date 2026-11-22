@@ -14,21 +14,25 @@
 
 """Test `kn.cfunc`."""
 
-import ctypes
 import math
-import sys
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import scipy
 import test_package_cmake
+from numba.core import caching  # pyright: ignore[reportMissingTypeStubs]
 
 import kimnara as kn
+
+if TYPE_CHECKING:
+    from kimnara._functions._func import NumbaFunc
 
 
 def test_call_cfunc_in_numba() -> None:
     """`kn.cfunc` objects should be callable from Numba."""
     expected = 42
     assert test_package_cmake.call_cfunc_in_numba() == expected
+    _ensure_cache_enabled(test_package_cmake.call_cfunc_in_numba)
 
 
 def test_qsort() -> None:
@@ -36,20 +40,11 @@ def test_qsort() -> None:
 
     https://docs.python.org/3/library/ctypes.html#callback-functions
     """
-    if sys.platform == "win32":
-        libc = ctypes.cdll.ucrtbase
-    else:
-        libc = ctypes.CDLL(None)
-    qsort = ctypes.CFUNCTYPE(
-        None,
-        ctypes.c_void_p,
-        ctypes.c_size_t,
-        ctypes.c_size_t,
-        ctypes.CFUNCTYPE(ctypes.c_int, ctypes.c_ssize_t, ctypes.c_ssize_t),
-    )(("qsort", libc))
     ia = np.array([5, 1, 7, 33, 99], np.intc)
-    qsort(ia.ctypes, len(ia), ia.itemsize, _cmp_func)
-    np.testing.assert_array_equal(ia, [1, 5, 7, 33, 99])
+    test_package_cmake.qsort(ia)
+    expected = np.array([1, 5, 7, 33, 99], np.intc)
+    np.testing.assert_array_equal(ia, expected, strict=True)
+    _ensure_cache_enabled(test_package_cmake.qsort)
 
 
 def test_quad() -> None:
@@ -64,11 +59,8 @@ def test_quad() -> None:
     assert math.isclose(actual, desired, rel_tol=0, abs_tol=abs_tol)
 
 
-@kn.cfunc(cache=False, nopython=True)
-def _cmp_func(a: np.intp, b: np.intp) -> np.intc:
-    pa = kn.ops.cast("kn.typing.CPointer[np.intc]", a)
-    pb = kn.ops.cast("kn.typing.CPointer[np.intc]", b)
-    return pa[0] - pb[0]
+def _ensure_cache_enabled(func: "NumbaFunc[Any]") -> None:
+    assert isinstance(func.dispatcher._cache, caching.FunctionCache)  # pyright: ignore[reportAttributeAccessIssue, reportPrivateUsage, reportUnknownMemberType, reportUnknownVariableType]  # ruff: ignore[private-member-access]
 
 
 def _integrand(t: np.float64) -> np.float64:
